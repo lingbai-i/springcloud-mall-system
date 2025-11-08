@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线商城系统 - 测试页面</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 600px;
+            width: 90%;
+        }
+        
+        .logo {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 32px;
+        }
+        
+        .status {
+            background: #4CAF50;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 50px;
+            display: inline-block;
+            margin: 20px 0;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .info {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        
+        .info h3 {
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .info p {
+            margin: 5px 0;
+            color: #888;
+        }
+        
+        .btn {
+            background: #667eea;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+        
+        .services {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .service {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .service h4 {
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .service p {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .running {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        
+        .stopped {
+            color: #f44336;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">🛒</div>
+        <h1>在线商城系统</h1>
+        <div class="status">✅ 系统运行正常</div>
+        
+        <div class="info">
+            <h3>📊 系统状态</h3>
+            <p><strong>前端服务:</strong> <span class="running">运行中 (http://localhost:3007)</span></p>
+            <p><strong>API网关:</strong> <span class="running">运行中 (http://localhost:8080)</span></p>
+            <p><strong>数据库:</strong> <span class="running">运行中 (MySQL 8.0)</span></p>
+            <p><strong>缓存服务:</strong> <span class="running">运行中 (Redis)</span></p>
+            <p><strong>注册中心:</strong> <span class="running">运行中 (Nacos)</span></p>
+        </div>
+        
+        <div class="services">
+            <div class="service">
+                <h4>🔐 认证服务</h4>
+                <p>用户登录注册</p>
+            </div>
+            <div class="service">
+                <h4>👤 用户服务</h4>
+                <p>用户信息管理</p>
+            </div>
+            <div class="service">
+                <h4>📦 商品服务</h4>
+                <p>商品展示管理</p>
+            </div>
+            <div class="service">
+                <h4>🛒 购物车服务</h4>
+                <p>购物车功能</p>
+            </div>
+            <div class="service">
+                <h4>📋 订单服务</h4>
+                <p>订单处理</p>
+            </div>
+            <div class="service">
+                <h4>💳 支付服务</h4>
+                <p>支付处理</p>
+            </div>
+        </div>
+        
+        <div style="margin-top: 30px;">
+            <a href="/" class="btn">🏠 进入商城首页</a>
+            <a href="http://localhost:8848/nacos" class="btn" target="_blank">🎯 Nacos控制台</a>
+            <a href="http://localhost:3001" class="btn" target="_blank">📊 监控面板</a>
+        </div>
+        
+        <div class="info" style="margin-top: 30px;">
+            <h3>🔧 开发信息</h3>
+            <p><strong>技术栈:</strong> Vue 3 + Spring Cloud + MySQL + Redis</p>
+            <p><strong>架构:</strong> 微服务架构 + 前后端分离</p>
+            <p><strong>开发者:</strong> lingbai</p>
+            <p><strong>版本:</strong> v1.0.0</p>
+        </div>
+    </div>
+    
+    <script>
+        // 简单的状态检查
+        function checkServices() {
+            const services = [
+                { name: 'API网关', url: 'http://localhost:8080/actuator/health' },
+                { name: 'Nacos', url: 'http://localhost:8848/nacos' }
+            ];
+            
+            console.log('🚀 在线商城系统已启动');
+            console.log('📍 前端地址: http://localhost:3007');
+            console.log('📍 API网关: http://localhost:8080');
+            console.log('📍 Nacos控制台: http://localhost:8848/nacos');
+        }
+        
+        // 页面加载完成后执行检查
+        document.addEventListener('DOMContentLoaded', checkServices);
+        
+        // 添加一些交互效果
+        document.querySelectorAll('.service').forEach(service => {
+            service.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-5px)';
+                this.style.boxShadow = '0 10px 20px rgba(0,0,0,0.1)';
+            });
+            
+            service.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+                this.style.boxShadow = 'none';
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,88 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway-service
+  # 配置 Redis 连接到容器网络中的 redis 服务，使用 Spring Boot 标准键 spring.redis
+  redis:
+    host: redis
+    port: 6379
+  cloud:
+    gateway:
+      routes:
+        # 用户服务 - 直连模式
+        - id: user-service
+          uri: http://user-service:8082
+          predicates:
+            - Path=/api/users/**
+          filters:
+            - StripPrefix=1
+        # 用户服务 - 兼容前端路径
+        - id: user-service-compat
+          uri: http://user-service:8082
+          predicates:
+            - Path=/api/user-service/**
+          filters:
+            - StripPrefix=1
+        # 商品服务
+        - id: product-service
+          uri: http://product-service:8083
+          predicates:
+            - Path=/api/product/**
+          filters:
+            - StripPrefix=2
+        # 购物车服务
+        - id: cart-service
+          uri: http://cart-service:8085
+          predicates:
+            - Path=/api/cart/**
+          filters:
+            - StripPrefix=2
+        # 短信服务
+        - id: sms-service
+          uri: http://sms-service:8083
+          predicates:
+            - Path=/api/sms/**
+          filters:
+            - StripPrefix=1
+        # 管理服务
+        - id: admin-service
+          uri: http://admin-service:8081
+          predicates:
+            - Path=/api/admin/**
+          filters:
+            - StripPrefix=2
+        # 订单服务
+        - id: order-service
+          uri: http://order-service:8083
+          predicates:
+            - Path=/api/order/**
+          filters:
+            - StripPrefix=2
+      globalcors:
+        cors-configurations:
+          "[/**]":
+            allowedOriginPatterns: "*"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+            allowCredentials: true
+            exposedHeaders: "Content-Disposition,Content-Type,Cache-Control"
+
+# 日志配置
+logging:
+  level:
+    com.mall.gateway: debug
+    org.springframework.cloud.gateway: debug
+  pattern:
+    console: "%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"
+
+# 管理端点
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always

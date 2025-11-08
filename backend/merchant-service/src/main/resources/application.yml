@@ -1,0 +1,68 @@
+server:
+  port: 8087
+
+spring:
+  application:
+    name: merchant-service
+  profiles:
+    active: simple
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/mall_merchant?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: 123456
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: true
+  redis:
+    host: localhost
+    port: 6379
+    password: ""
+    database: 0
+    timeout: 3000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+        max-wait: -1ms
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848
+        namespace: ${spring.profiles.active}
+      config:
+        server-addr: 127.0.0.1:8848
+        namespace: ${spring.profiles.active}
+        file-extension: yml
+        group: DEFAULT_GROUP
+
+# 商家配置
+merchant:
+  audit:
+    auto-approve: false # 是否自动审核
+    expire-days: 30 # 审核过期天数
+  commission:
+    rate: 0.05 # 佣金比例 5%
+
+# 日志配置
+logging:
+  level:
+    com.mall.merchant: debug
+  pattern:
+    console: "%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"
+
+# 管理端点
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always

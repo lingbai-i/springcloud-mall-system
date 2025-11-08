@@ -1,0 +1,50 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: cart-service
+
+  # Redis配置 - Docker环境
+  data:
+    redis:
+      host: redis
+      port: 6379
+      password: ""
+      database: 1
+      timeout: 3000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-wait: -1ms
+          max-idle: 8
+          min-idle: 0
+
+  # Nacos配置 - Docker环境
+  cloud:
+    nacos:
+      discovery:
+        server-addr: nacos:8848
+        namespace: docker
+        group: DEFAULT_GROUP
+        enabled: true
+      config:
+        enabled: false
+
+# 日志配置
+logging:
+  level:
+    com.mall.cart: debug
+    org.springframework.data.redis: debug
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{50} - %msg%n"
+
+# 管理端点
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always

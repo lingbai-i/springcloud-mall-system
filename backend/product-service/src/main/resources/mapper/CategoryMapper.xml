@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mall.product.mapper.CategoryMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="BaseResultMap" type="com.mall.product.domain.entity.Category">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="name" property="name" jdbcType="VARCHAR"/>
+        <result column="parent_id" property="parentId" jdbcType="BIGINT"/>
+        <result column="level" property="level" jdbcType="INTEGER"/>
+        <result column="sort" property="sort" jdbcType="INTEGER"/>
+        <result column="icon" property="icon" jdbcType="VARCHAR"/>
+        <result column="description" property="description" jdbcType="VARCHAR"/>
+        <result column="status" property="status" jdbcType="INTEGER"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <!-- 递归查询分类的所有子分类ID -->
+    <select id="selectChildrenIds" resultType="java.lang.Long">
+        WITH RECURSIVE category_tree AS (
+            -- 查询直接子分类
+            SELECT id FROM category WHERE parent_id = #{parentId}
+            UNION ALL
+            -- 递归查询子分类的子分类
+            SELECT c.id FROM category c
+            INNER JOIN category_tree ct ON c.parent_id = ct.id
+        )
+        SELECT id FROM category_tree
+    </select>
+
+    <!-- 批量更新分类状态 -->
+    <update id="updateStatusBatch">
+        UPDATE category 
+        SET status = #{status}, update_time = NOW()
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <!-- 查询热门分类 -->
+    <select id="selectHotCategories" resultMap="BaseResultMap">
+        SELECT c.*, COALESCE(p.product_count, 0) as product_count
+        FROM category c
+        LEFT JOIN (
+            SELECT category_id, COUNT(*) as product_count
+            FROM product 
+            WHERE status = 1
+            GROUP BY category_id
+        ) p ON c.id = p.category_id
+        WHERE c.status = 1
+        ORDER BY p.product_count DESC, c.sort ASC
+        LIMIT #{limit}
+    </select>
+
+</mapper>

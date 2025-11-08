@@ -1,0 +1,71 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: user-service
+  cloud:
+    nacos:
+      config:
+        import-check:
+          enabled: false
+  
+  # 数据源配置
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3307/mall_user?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8
+    username: root
+    password: 123456
+    
+  # Redis配置
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: 
+      database: 0
+      timeout: 10000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-wait: -1ms
+          max-idle: 8
+          min-idle: 0
+
+# MyBatis Plus配置
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: false
+    call-setters-on-nulls: true
+    jdbc-type-for-null: 'null'
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+  mapper-locations: classpath*:mapper/*.xml
+
+# 日志配置
+logging:
+  level:
+    com.mall.user: debug
+    com.mall.user.mapper: debug
+  pattern:
+    console: "%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"
+
+# JWT配置
+jwt:
+  secret: mallSecretKeyForJWTTokenGenerationAndValidation2025ThisIsAVeryLongSecretKeyThatMeetsTheMinimumRequirementOf256BitsAndEvenMoreToEnsureSecurityCompliance
+  expiration: 86400000  # 24小时
+
+# 管理端点
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always

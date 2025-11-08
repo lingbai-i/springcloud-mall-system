@@ -1,0 +1,71 @@
+# 测试环境配置
+spring:
+  profiles:
+    active: test
+  
+  # 数据源配置 - 使用H2内存数据库进行测试
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+    
+  # JPA配置
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+        
+  # H2控制台配置
+  h2:
+    console:
+      enabled: true
+      
+  # Redis配置 - 使用嵌入式Redis进行测试
+  redis:
+    host: localhost
+    port: 6370
+    database: 1
+    timeout: 2000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+
+# 日志配置
+logging:
+  level:
+    com.mall.payment: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    
+# 支付配置
+payment:
+  alipay:
+    app-id: test_app_id
+    private-key: test_private_key
+    public-key: test_public_key
+    gateway-url: https://openapi.alipaydev.com/gateway.do
+    notify-url: http://localhost:8080/api/payment/callback/alipay
+    return-url: http://localhost:3000/payment/success
+    
+  wechat:
+    app-id: test_app_id
+    mch-id: test_mch_id
+    api-key: test_api_key
+    notify-url: http://localhost:8080/api/payment/callback/wechat
+    
+# JWT配置
+jwt:
+  secret: test_jwt_secret_key_for_payment_service_testing_environment
+  expiration: 86400000 # 24小时
+
+# 服务端口
+server:
+  port: 0 # 随机端口，避免测试时端口冲突

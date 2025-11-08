@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ * 订单服务日志配置
+ * 
+ * @author lingbai
+ * @since 2025-01-27
+ * 
+ * 修改日志：
+ * V1.0 2025-01-27：初始版本，配置订单服务的日志输出格式和级别
+-->
+<configuration>
+    <!-- 定义日志文件路径 -->
+    <property name="LOG_PATH" value="logs"/>
+    <property name="LOG_FILE" value="${LOG_PATH}/order-service"/>
+    
+    <!-- 控制台输出 -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%logger{50}] - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+    
+    <!-- 文件输出 - 所有日志 -->
+    <appender name="FILE_ALL" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_FILE}.log</file>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%logger{50}] - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_FILE}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>3GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+    
+    <!-- 文件输出 - 错误日志 -->
+    <appender name="FILE_ERROR" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_FILE}-error.log</file>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%logger{50}] - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_FILE}-error.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+    
+    <!-- 文件输出 - 业务日志 -->
+    <appender name="FILE_BUSINESS" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_FILE}-business.log</file>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%logger{50}] - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_FILE}-business.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>2GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+    
+    <!-- 文件输出 - 性能日志 -->
+    <appender name="FILE_PERFORMANCE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_FILE}-performance.log</file>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%logger{50}] - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_FILE}-performance.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>15</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+    
+    <!-- 订单服务业务日志 -->
+    <logger name="com.mall.order.service" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE_ALL"/>
+        <appender-ref ref="FILE_BUSINESS"/>
+        <appender-ref ref="FILE_ERROR"/>
+    </logger>
+    
+    <!-- 订单控制器日志 -->
+    <logger name="com.mall.order.controller" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE_ALL"/>
+        <appender-ref ref="FILE_BUSINESS"/>
+        <appender-ref ref="FILE_ERROR"/>
+    </logger>
+    
+    <!-- 性能监控日志 -->
+    <logger name="com.mall.order.metrics" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE_ALL"/>
+        <appender-ref ref="FILE_PERFORMANCE"/>
+        <appender-ref ref="FILE_ERROR"/>
+    </logger>
+    
+    <!-- 消息队列日志 -->
+    <logger name="com.mall.order.event" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE_ALL"/>
+        <appender-ref ref="FILE_ERROR"/>
+    </logger>
+    
+    <!-- 分布式锁日志 -->
+    <logger name="com.mall.order.lock" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE_ALL"/>
+        <appender-ref ref="FILE_ERROR"/>
+    </logger>
+    
+    <!-- SQL日志 -->
+    <logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE_ALL"/>
+    </logger>
+    
+    <!-- SQL参数日志 -->
+    <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="TRACE" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE_ALL"/>
+    </logger>
+    
+    <!-- Redis日志 -->
+    <logger name="org.springframework.data.redis" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE_ALL"/>
+    </logger>
+    
+    <!-- RabbitMQ日志 -->
+    <logger name="org.springframework.amqp" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE_ALL"/>
+        <appender-ref ref="FILE_ERROR"/>
+    </logger>
+    
+    <!-- 根日志级别 -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE_ALL"/>
+        <appender-ref ref="FILE_ERROR"/>
+    </root>
+    
+    <!-- 开发环境配置 -->
+    <springProfile name="dev">
+        <logger name="com.mall.order" level="DEBUG"/>
+        <logger name="org.springframework.web" level="DEBUG"/>
+    </springProfile>
+    
+    <!-- 测试环境配置 -->
+    <springProfile name="test">
+        <logger name="com.mall.order" level="INFO"/>
+        <logger name="org.springframework.web" level="INFO"/>
+    </springProfile>
+    
+    <!-- 生产环境配置 -->
+    <springProfile name="prod">
+        <logger name="com.mall.order" level="WARN"/>
+        <logger name="org.springframework.web" level="WARN"/>
+        <logger name="org.hibernate.SQL" level="WARN"/>
+        <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="WARN"/>
+    </springProfile>
+</configuration>

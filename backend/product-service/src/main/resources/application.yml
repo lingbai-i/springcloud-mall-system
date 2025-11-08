@@ -1,0 +1,89 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: product-service
+  profiles:
+    active: dev
+  
+  # 数据源配置 - 暂时禁用数据库连接用于测试
+  # datasource:
+  #   driver-class-name: com.mysql.cj.jdbc.Driver
+  #   url: jdbc:mysql://localhost:3306/mall_product?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false
+  #   username: root
+  #   password: 123456
+  #   hikari:
+  #     minimum-idle: 5
+  #     maximum-pool-size: 20
+  #     auto-commit: true
+  #     idle-timeout: 30000
+  #     pool-name: ProductHikariCP
+  #     max-lifetime: 1800000
+  #     connection-timeout: 30000
+  
+  # Redis配置 - 暂时禁用Redis连接用于测试
+  # redis:
+  #   host: localhost
+  #   port: 6379
+  #   password: 
+  #   database: 1
+  #   timeout: 3000ms
+  #   lettuce:
+  #     pool:
+  #       max-active: 8
+  #       max-wait: -1ms
+  #       max-idle: 8
+  #       min-idle: 0
+  
+  # Elasticsearch配置 - 暂时禁用Elasticsearch连接用于测试
+  # elasticsearch:
+  #   uris: http://localhost:9200
+  #   username: 
+  #   password: 
+  #   connection-timeout: 5s
+  #   socket-timeout: 60s
+  
+  # Nacos配置
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+        namespace: dev
+        group: DEFAULT_GROUP
+        enabled: false
+
+# MyBatis Plus配置
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: false
+    call-setters-on-nulls: true
+    jdbc-type-for-null: 'null'
+  global-config:
+    db-config:
+      id-type: AUTO
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+  mapper-locations: classpath*:mapper/*.xml
+
+
+
+# 日志配置
+logging:
+  level:
+    com.mall.product: DEBUG
+    com.mall.product.mapper: DEBUG
+  pattern:
+    console: '%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n'
+
+# 管理端点配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always

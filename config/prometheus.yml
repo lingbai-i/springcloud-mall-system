@@ -1,0 +1,45 @@
+# Prometheus配置文件
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+scrape_configs:
+  # Prometheus自身监控
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Spring Boot应用监控
+  - job_name: 'spring-boot-apps'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: 
+        - 'host.docker.internal:8080'  # Gateway
+        - 'host.docker.internal:8081'  # User Service
+        - 'host.docker.internal:8082'  # Product Service
+        - 'host.docker.internal:8083'  # Order Service
+        - 'host.docker.internal:8084'  # Payment Service
+
+  # MySQL监控（需要安装mysql_exporter）
+  - job_name: 'mysql'
+    static_configs:
+      - targets: ['mysql-exporter:9104']
+
+  # Redis监控（需要安装redis_exporter）
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+
+  # Elasticsearch监控
+  - job_name: 'elasticsearch'
+    static_configs:
+      - targets: ['elasticsearch:9200']
+
+  # Node Exporter监控（系统指标）
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node-exporter:9100']

@@ -1,0 +1,102 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: user-service
+  profiles:
+    active: simple
+
+  # 数据源配置
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3307/mall_user?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
+    username: root
+    password: 123456
+
+  # Redis配置 - 临时禁用
+  # data:
+  #   redis:
+  #     host: localhost
+  #     port: 6379
+  #     password:
+  #     database: 0
+  #     timeout: 10000ms
+  #     lettuce:
+  #       pool:
+  #         max-active: 8
+  #         max-wait: -1ms
+  #         max-idle: 8
+  #         min-idle: 0
+
+  # Nacos配置
+  # config:
+  #   import: optional:nacos:user-service.yml
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+        namespace: public
+        group: DEFAULT_GROUP
+      # config:
+      #   server-addr: localhost:8848
+      #   namespace: public
+      #   group: DEFAULT_GROUP
+      #   file-extension: yml
+      #   import-check:
+      #     enabled: false
+
+# MyBatis Plus配置
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: false
+    call-setters-on-nulls: true
+    jdbc-type-for-null: "null"
+  global-config:
+    db-config:
+      id-type: AUTO
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+  mapper-locations: classpath*:mapper/**/*Mapper.xml
+
+# JWT配置
+jwt:
+  secret: mallSecretKeyForJWTTokenGenerationAndValidation2025ThisIsAVeryLongSecretKeyThatMeetsTheMinimumRequirementOf256BitsAndEvenMoreToEnsureSecurityCompliance
+  expiration: 7200000 # 2小时，单位毫秒
+  issuer: mall-system
+
+# 日志配置
+logging:
+  level:
+    com.mall.user: DEBUG
+    org.springframework.security: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{50} - %msg%n"
+
+# Knife4j配置
+knife4j:
+  enable: true
+  openapi:
+    title: 用户服务API文档
+    description: 用户管理和认证相关接口
+    version: 1.0.0
+    concat-contact: lingbai
+    contact-email: lingbai@example.com
+    contact-url: https://github.com/lingbai
+  setting:
+    language: zh_cn
+    enable-swagger-models: true
+    enable-document-manage: true
+    swagger-model-name: 实体类列表
+
+# 管理端点配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when_authorized

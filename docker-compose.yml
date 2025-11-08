@@ -1,0 +1,393 @@
+services:
+  # -------------------------------------------
+  # 平台基础设施 + 业务服务容器化（仅通过 Docker 统一启动）
+  # 说明：后端各微服务以 Spring Boot 可执行 JAR 方式运行；
+  # - 统一挂载到容器 /app/app.jar，并以 `java -jar` 启动
+  # - 仅暴露网关端口到宿主机；其他微服务在容器网络中通过注册中心互通
+  # - 前端以 Vite 开发服务器运行，并绑定 0.0.0.0 供容器外访问
+  # -------------------------------------------
+  # MySQL数据库
+  mysql:
+    image: mysql:8.0
+    container_name: mall-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./sql:/docker-entrypoint-initdb.d
+    command: --default-authentication-plugin=mysql_native_password
+    networks:
+      - mall-network
+
+  # Redis缓存
+  redis:
+    image: redis:7-alpine
+    container_name: mall-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - mall-network
+
+  # Nacos注册中心和配置中心
+  nacos:
+    image: nacos/nacos-server:v2.3.0
+    container_name: mall-nacos
+    restart: always
+    environment:
+      MODE: standalone
+      SPRING_DATASOURCE_PLATFORM: mysql
+      MYSQL_SERVICE_HOST: mysql
+      MYSQL_SERVICE_DB_NAME: nacos
+      MYSQL_SERVICE_PORT: 3306
+      MYSQL_SERVICE_USER: root
+      MYSQL_SERVICE_PASSWORD: 123456
+      MYSQL_SERVICE_DB_PARAM: characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useSSL=false&allowPublicKeyRetrieval=true
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+    volumes:
+      - nacos_logs:/home/nacos/logs
+    depends_on:
+      - mysql
+    networks:
+      - mall-network
+
+  # Sentinel控制台
+  sentinel:
+    image: bladex/sentinel-dashboard:1.8.6
+    container_name: mall-sentinel
+    restart: always
+    ports:
+      - "8858:8858"
+    environment:
+      - JAVA_OPTS=-Dserver.port=8858 -Dcsp.sentinel.dashboard.server=localhost:8858 -Dproject.name=sentinel-dashboard
+    networks:
+      - mall-network
+
+  # RocketMQ NameServer
+  rocketmq-nameserver:
+    image: apache/rocketmq:5.1.4
+    container_name: mall-rocketmq-nameserver
+    restart: always
+    ports:
+      - "9876:9876"
+    environment:
+      JAVA_OPT_EXT: "-server -Xms512m -Xmx512m"
+    command: ["sh", "mqnamesrv"]
+    volumes:
+      - rocketmq_nameserver_logs:/home/rocketmq/logs
+    networks:
+      - mall-network
+
+  # RocketMQ Broker
+  rocketmq-broker:
+    image: apache/rocketmq:5.1.4
+    container_name: mall-rocketmq-broker
+    restart: always
+    user: "0:0"  # 使用 root 用户解决权限问题
+    ports:
+      - "10909:10909"
+      - "10911:10911"
+    environment:
+      NAMESRV_ADDR: "rocketmq-nameserver:9876"
+      ROCKETMQ_HOME: "/home/rocketmq/rocketmq-5.1.4"
+      JAVA_OPT_EXT: "-server -Xms512m -Xmx512m -Drocketmq.broker.diskSpaceWarningLevelRatio=0.90 -Drocketmq.broker.diskSpaceCleanForciblyRatio=0.85"
+    command: ["sh", "-c", "mkdir -p /home/rocketmq/store/config && chmod -R 755 /home/rocketmq/store && /home/rocketmq/rocketmq-5.1.4/bin/mqbroker -n rocketmq-nameserver:9876 -c /home/rocketmq/rocketmq-5.1.4/conf/broker.conf"]
+    volumes:
+      - rocketmq_broker_logs:/home/rocketmq/logs
+      - rocketmq_broker_store:/home/rocketmq/store
+      - ./config/broker.conf:/home/rocketmq/rocketmq-5.1.4/conf/broker.conf:ro
+    depends_on:
+      - rocketmq-nameserver
+    networks:
+      - mall-network
+
+  # RocketMQ Console
+  rocketmq-console:
+    image: styletang/rocketmq-console-ng:latest
+    container_name: mall-rocketmq-console
+    restart: always
+    ports:
+      - "8180:8080"
+    environment:
+      JAVA_OPTS: "-Drocketmq.namesrv.addr=rocketmq-nameserver:9876 -Dcom.rocketmq.sendMessageWithVIPChannel=false"
+    depends_on:
+      - rocketmq-nameserver
+    networks:
+      - mall-network
+
+  # Elasticsearch
+  elasticsearch:
+    image: elasticsearch:8.11.0
+    container_name: mall-elasticsearch
+    restart: always
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - xpack.security.enabled=false
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - mall-network
+
+  # Kibana
+  kibana:
+    image: kibana:8.11.0
+    container_name: mall-kibana
+    restart: always
+    ports:
+      - "5601:5601"
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
+    networks:
+      - mall-network
+
+  # MinIO对象存储
+  minio:
+    image: minio/minio:latest
+    container_name: mall-minio
+    restart: always
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - mall-network
+
+  # Prometheus监控
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: mall-prometheus
+    restart: always
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - mall-network
+
+  # Grafana可视化
+  grafana:
+    image: grafana/grafana:latest
+    container_name: mall-grafana
+    restart: always
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - mall-network
+
+  # SMS短信服务
+  sms-service:
+    image: eclipse-temurin:17-jre
+    container_name: mall-sms-service
+    restart: always
+    # 可选择暴露端口（如需要从宿主机直接访问）
+    ports:
+      - "8083:8083"
+    volumes:
+      - ./backend/sms-service/target:/app
+    working_dir: /app
+    command: ["java", "-Xmx512m", "-Xms256m", "-jar", "/app/sms-service-1.0.0.jar"]
+    environment:
+      SPRING_PROFILES_ACTIVE: "docker"
+      SERVER_PORT: 8083
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: "nacos:8848"
+      SPRING_CLOUD_NACOS_DISCOVERY_NAMESPACE: "docker"
+      SPRING_CLOUD_NACOS_CONFIG_SERVER_ADDR: "nacos:8848"
+      SPRING_DATA_REDIS_HOST: "redis"
+      SPRING_DATA_REDIS_PORT: "6379"
+      SPRING_DATA_REDIS_PASSWORD: ""
+      SPRING_DATA_REDIS_DATABASE: "2"
+    depends_on:
+      - mysql
+      - nacos
+      - redis
+    networks:
+      - mall-network
+
+  # 网关服务（对外唯一入口）
+  gateway-service:
+    image: eclipse-temurin:17-jre
+    container_name: mall-gateway-service
+    restart: always
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./backend/gateway-service/target:/app
+    working_dir: /app
+    command: ["java", "-Xmx512m", "-Xms256m", "-jar", "/app/gateway-service-1.0.0.jar"]
+    environment:
+      SPRING_PROFILES_ACTIVE: "simple"
+      # 修复：网关默认连接本机 Redis 导致健康检查失败，改为容器网络内的 redis 服务
+      SPRING_DATA_REDIS_HOST: "redis"
+      SPRING_DATA_REDIS_PORT: "6379"
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: "nacos:8848"
+      SPRING_CLOUD_NACOS_CONFIG_SERVER_ADDR: "nacos:8848"
+      SPRING_CONFIG_IMPORT: "optional:nacos:"
+      SPRING_CLOUD_NACOS_CONFIG_IMPORT_CHECK_ENABLED: "false"
+      SPRING_CLOUD_NACOS_DISCOVERY_ENABLED: "false"
+      SPRING_CLOUD_NACOS_CONFIG_ENABLED: "false"
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "*"
+      MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS: "always"
+    depends_on:
+      - mysql
+      - nacos
+      - redis
+    networks:
+      - mall-network
+
+  # 用户服务（内部网络可访问）
+  user-service:
+    image: eclipse-temurin:17-jre
+    container_name: mall-user-service
+    restart: always
+    volumes:
+      - ./backend/user-service/target:/app
+    working_dir: /app
+    command: ["java", "-Xmx512m", "-Xms256m", "-jar", "/app/user-service-1.0.0.jar"]
+    environment:
+      SPRING_PROFILES_ACTIVE: "docker"
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: "nacos:8848"
+      SPRING_CLOUD_NACOS_DISCOVERY_NAMESPACE: "docker"
+      SPRING_CLOUD_NACOS_CONFIG_SERVER_ADDR: "nacos:8848"
+      SPRING_CONFIG_IMPORT: "optional:nacos:"
+    depends_on:
+      - mysql
+      - nacos
+      - redis
+    networks:
+      - mall-network
+
+  # 商品服务（内部网络可访问）
+  product-service:
+    image: eclipse-temurin:17-jre
+    container_name: mall-product-service
+    restart: always
+    volumes:
+      - ./backend/product-service/target:/app
+    working_dir: /app
+    command: ["java", "-Xmx512m", "-Xms256m", "-jar", "/app/product-service-1.0.0.jar"]
+    environment:
+      SPRING_PROFILES_ACTIVE: "docker"
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: "nacos:8848"
+      SPRING_CLOUD_NACOS_DISCOVERY_NAMESPACE: "docker"
+      SPRING_CLOUD_NACOS_CONFIG_SERVER_ADDR: "nacos:8848"
+      SPRING_CONFIG_IMPORT: "optional:nacos:"
+    depends_on:
+      - mysql
+      - nacos
+      - redis
+    networks:
+      - mall-network
+
+  # 购物车服务（内部网络可访问）
+  cart-service:
+    image: eclipse-temurin:17-jre
+    container_name: mall-cart-service
+    restart: always
+    volumes:
+      - ./backend/cart-service/target:/app
+    working_dir: /app
+    command: ["java", "-Xmx512m", "-Xms256m", "-jar", "/app/cart-service-1.0.0.jar"]
+    environment:
+      SPRING_PROFILES_ACTIVE: "docker"
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: "nacos:8848"
+      SPRING_CLOUD_NACOS_DISCOVERY_NAMESPACE: "docker"
+      SPRING_CLOUD_NACOS_CONFIG_ENABLED: "false"
+      SPRING_CLOUD_NACOS_CONFIG_IMPORT_CHECK_ENABLED: "false"
+      SPRING_CONFIG_IMPORT: "optional:nacos:"
+    depends_on:
+      - mysql
+      - nacos
+      - redis
+    networks:
+      - mall-network
+
+  # 商家服务（内部网络可访问）
+  merchant-service:
+    image: eclipse-temurin:17-jre
+    container_name: mall-merchant-service
+    restart: always
+    volumes:
+      - ./backend/merchant-service/target:/app
+    working_dir: /app
+    command: ["java", "-Xmx512m", "-Xms256m", "-jar", "/app/merchant-service-1.0.0.jar"]
+    environment:
+      SPRING_PROFILES_ACTIVE: "docker"
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: "nacos:8848"
+      SPRING_CLOUD_NACOS_DISCOVERY_NAMESPACE: "docker"
+      SPRING_CLOUD_NACOS_CONFIG_ENABLED: "false"
+      SPRING_CLOUD_NACOS_CONFIG_IMPORT_CHECK_ENABLED: "false"
+      SPRING_CONFIG_IMPORT: "optional:nacos:"
+    depends_on:
+      - mysql
+      - nacos
+      - redis
+    networks:
+      - mall-network
+
+  # 前端（Vite 开发服务器，绑定 0.0.0.0）
+  frontend:
+    image: node:18-alpine
+    container_name: mall-frontend
+    restart: always
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    command: ["sh", "-c", "npm install && npm run dev -- --host 0.0.0.0"]
+    ports:
+      - "5173:5173"
+    depends_on:
+      - gateway-service
+    networks:
+      - mall-network
+
+volumes:
+  mysql_data:
+  redis_data:
+  nacos_logs:
+  rocketmq_nameserver_logs:
+  rocketmq_broker_logs:
+  rocketmq_broker_store:
+  elasticsearch_data:
+  minio_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  mall-network:
+    driver: bridge

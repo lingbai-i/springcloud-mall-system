@@ -1,0 +1,70 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: order-service
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+        namespace: public
+      config:
+        server-addr: localhost:8848
+        namespace: public
+        import-check:
+          enabled: false
+  datasource:
+    url: jdbc:mysql://localhost:3307/mall_order?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=UTC
+    username: root
+    password: 123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: true
+  redis:
+    host: localhost
+    port: 6379
+    password: 
+    database: 2
+    timeout: 5000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-wait: -1ms
+        max-idle: 8
+        min-idle: 0
+
+
+
+# Feign配置
+feign:
+  hystrix:
+    enabled: true
+  client:
+    config:
+      default:
+        connectTimeout: 5000
+        readTimeout: 10000
+
+# 订单相关配置
+order:
+  timeout-minutes: 30  # 订单超时时间（分钟）
+  auto-confirm-days: 7  # 自动确认收货天数
+  order-no-prefix: "ORD"  # 订单号前缀
+
+# 日志配置
+logging:
+  level:
+    com.mall.order: DEBUG
+    org.springframework.web: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/order-service.log
