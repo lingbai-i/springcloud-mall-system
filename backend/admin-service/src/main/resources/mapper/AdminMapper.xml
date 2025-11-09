@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mall.admin.mapper.AdminMapper">
+    
+    <!-- 根据管理员ID查询权限列表 -->
+    <select id="selectPermissionsByAdminId" resultType="java.lang.String">
+        SELECT DISTINCT p.permission_code
+        FROM permission p
+        INNER JOIN role_permission rp ON p.id = rp.permission_id
+        INNER JOIN admin_role ar ON rp.role_id = ar.role_id
+        WHERE ar.admin_id = #{adminId}
+    </select>
+    
+</mapper>

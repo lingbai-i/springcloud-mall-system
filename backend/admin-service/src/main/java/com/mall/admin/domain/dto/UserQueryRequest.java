@@ -4,29 +4,37 @@ import lombok.Data;
 
 /**
  * 用户查询请求DTO
- * 
- * @author lingbai
- * @version 1.0
- * @since 2025-01-27
  */
 @Data
 public class UserQueryRequest {
     
-    /** 页码 */
-    private Integer page = 1;
-    
-    /** 每页大小 */
-    private Integer size = 10;
-    
-    /** 搜索关键词 */
+    /**
+     * 关键词(用户名/手机/邮箱)
+     */
     private String keyword;
     
-    /** 用户状态 */
+    /**
+     * 状态筛选
+     */
     private Integer status;
     
-    /** 开始时间 */
-    private String startTime;
+    /**
+     * 注册开始日期
+     */
+    private String startDate;
     
-    /** 结束时间 */
-    private String endTime;
+    /**
+     * 注册结束日期
+     */
+    private String endDate;
+    
+    /**
+     * 页码,默认1
+     */
+    private Integer page = 1;
+    
+    /**
+     * 每页大小,默认10
+     */
+    private Integer pageSize = 10;
 }
