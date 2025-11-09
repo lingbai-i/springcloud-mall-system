@@ -7,28 +7,28 @@ spring:
   cloud:
     nacos:
       discovery:
-        server-addr: localhost:8848
+        server-addr: nacos:8848
         namespace: public
       config:
-        server-addr: localhost:8848
+        server-addr: nacos:8848
         namespace: public
         import-check:
           enabled: false
   datasource:
-    url: jdbc:mysql://localhost:3307/mall_order?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=UTC
+    url: jdbc:mysql://mysql:3307/mall_order?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=UTC
     username: root
     password: 123456
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQL8Dialect
         format_sql: true
   redis:
-    host: localhost
+    host: redis
     port: 6379
     password: ""
     database: 2
@@ -40,13 +40,11 @@ spring:
         max-idle: 8
         min-idle: 0
   rabbitmq:
-    host: localhost
+    host: rabbitmq
     port: 5672
     username: guest
     password: guest
     virtual-host: /
-
-
 
 # Feign配置
 feign:
@@ -84,8 +82,8 @@ order:
 # 日志配置
 logging:
   level:
-    com.mall.order: DEBUG
-    org.springframework.web: DEBUG
+    com.mall.order: INFO
+    org.springframework.web: INFO
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
     file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

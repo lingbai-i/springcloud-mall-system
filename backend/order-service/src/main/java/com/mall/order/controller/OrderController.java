@@ -1,5 +1,6 @@
 package com.mall.order.controller;
 
+import com.mall.common.core.domain.R;
 import com.mall.order.dto.CreateOrderRequest;
 import com.mall.order.entity.Order;
 import com.mall.order.enums.OrderStatus;
@@ -9,7 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
@@ -42,7 +42,7 @@ public class OrderController {
      * @return 订单分页列表
      */
     @GetMapping
-    public ResponseEntity<Page<Order>> getOrders(
+    public R<Page<Order>> getOrders(
             @RequestParam Long userId,
             @RequestParam(required = false) OrderStatus status,
             @RequestParam(defaultValue = "0") int page,
@@ -59,7 +59,7 @@ public class OrderController {
             orders = orderService.getUserOrders(userId, pageable);
         }
         
-        return ResponseEntity.ok(orders);
+        return R.ok(orders);
     }
     
     /**
@@ -70,11 +70,11 @@ public class OrderController {
      * @return 订单详情
      */
     @GetMapping("/{id}")
-    public ResponseEntity<Order> getOrderById(@PathVariable Long id, @RequestParam Long userId) {
+    public R<Order> getOrderById(@PathVariable Long id, @RequestParam Long userId) {
         log.info("获取订单详情，订单ID: {}, 用户ID: {}", id, userId);
         
         Order order = orderService.getOrderById(id, userId);
-        return ResponseEntity.ok(order);
+        return R.ok(order);
     }
     
     /**
@@ -84,11 +84,11 @@ public class OrderController {
      * @return 创建的订单
      */
     @PostMapping
-    public ResponseEntity<Order> createOrder(@Valid @RequestBody CreateOrderRequest request) {
+    public R<Order> createOrder(@Valid @RequestBody CreateOrderRequest request) {
         log.info("创建订单，用户ID: {}", request.getUserId());
         
         Order order = orderService.createOrder(request);
-        return ResponseEntity.ok(order);
+        return R.ok(order);
     }
     
     /**
@@ -100,7 +100,7 @@ public class OrderController {
      * @return 操作结果
      */
     @PutMapping("/{id}/cancel")
-    public ResponseEntity<Boolean> cancelOrder(
+    public R<Boolean> cancelOrder(
             @PathVariable Long id,
             @RequestParam Long userId,
             @RequestParam(required = false) String reason) {
@@ -108,7 +108,7 @@ public class OrderController {
         log.info("取消订单，订单ID: {}, 用户ID: {}, 原因: {}", id, userId, reason);
         
         Boolean result = orderService.cancelOrder(id, userId, reason);
-        return ResponseEntity.ok(result);
+        return R.ok(result);
     }
     
     /**
@@ -119,14 +119,14 @@ public class OrderController {
      * @return 操作结果
      */
     @PutMapping("/{id}/confirm")
-    public ResponseEntity<Boolean> confirmOrder(
+    public R<Boolean> confirmOrder(
             @PathVariable Long id,
             @RequestParam Long userId) {
         
         log.info("确认收货，订单ID: {}, 用户ID: {}", id, userId);
         
         Boolean result = orderService.confirmOrder(id, userId);
-        return ResponseEntity.ok(result);
+        return R.ok(result);
     }
     
     /**
@@ -138,7 +138,7 @@ public class OrderController {
      * @return 操作结果
      */
     @PostMapping("/{id}/refund")
-    public ResponseEntity<Boolean> applyRefund(
+    public R<Boolean> applyRefund(
             @PathVariable Long id,
             @RequestParam Long userId,
             @RequestParam String reason) {
@@ -146,7 +146,7 @@ public class OrderController {
         log.info("申请退款，订单ID: {}, 用户ID: {}, 原因: {}", id, userId, reason);
         
         Boolean result = orderService.applyRefund(id, userId, reason);
-        return ResponseEntity.ok(result);
+        return R.ok(result);
     }
     
     /**
@@ -157,14 +157,14 @@ public class OrderController {
      * @return 物流信息
      */
     @GetMapping("/{id}/logistics")
-    public ResponseEntity<Map<String, Object>> getOrderLogistics(
+    public R<Map<String, Object>> getOrderLogistics(
             @PathVariable Long id,
             @RequestParam Long userId) {
         
         log.info("获取订单物流信息，订单ID: {}, 用户ID: {}", id, userId);
         
         Map<String, Object> logistics = orderService.getOrderLogistics(id, userId);
-        return ResponseEntity.ok(logistics);
+        return R.ok(logistics);
     }
     
     /**
@@ -176,7 +176,7 @@ public class OrderController {
      * @return 支付信息
      */
     @PostMapping("/{id}/pay")
-    public ResponseEntity<Map<String, Object>> payOrder(
+    public R<Map<String, Object>> payOrder(
             @PathVariable Long id,
             @RequestParam Long userId,
             @RequestParam String paymentMethod) {
@@ -184,7 +184,7 @@ public class OrderController {
         log.info("订单支付，订单ID: {}, 用户ID: {}, 支付方式: {}", id, userId, paymentMethod);
         
         Map<String, Object> paymentInfo = orderService.payOrder(id, userId, paymentMethod);
-        return ResponseEntity.ok(paymentInfo);
+        return R.ok(paymentInfo);
     }
     
     /**
@@ -194,11 +194,11 @@ public class OrderController {
      * @return 订单统计信息
      */
     @GetMapping("/stats")
-    public ResponseEntity<Map<String, Object>> getOrderStats(@RequestParam Long userId) {
+    public R<Map<String, Object>> getOrderStats(@RequestParam Long userId) {
         log.info("获取用户订单统计，用户ID: {}", userId);
         
         Map<String, Object> stats = orderService.getOrderStats(userId);
-        return ResponseEntity.ok(stats);
+        return R.ok(stats);
     }
     
     /**
@@ -209,14 +209,14 @@ public class OrderController {
      * @return 新创建的订单
      */
     @PostMapping("/{id}/reorder")
-    public ResponseEntity<Order> reorder(
+    public R<Order> reorder(
             @PathVariable Long id,
             @RequestParam Long userId) {
         
         log.info("重新购买，订单ID: {}, 用户ID: {}", id, userId);
         
         Order newOrder = orderService.reorder(id, userId);
-        return ResponseEntity.ok(newOrder);
+        return R.ok(newOrder);
     }
     
     /**
@@ -227,13 +227,13 @@ public class OrderController {
      * @return 处理结果
      */
     @PostMapping("/payment-callback")
-    public ResponseEntity<Boolean> handlePaymentSuccess(
+    public R<Boolean> handlePaymentSuccess(
             @RequestParam String orderNo,
             @RequestParam String paymentId) {
         
         log.info("处理支付成功回调，订单号: {}, 支付ID: {}", orderNo, paymentId);
         
         Boolean result = orderService.handlePaymentSuccess(orderNo, paymentId);
-        return ResponseEntity.ok(result);
+        return R.ok(result);
     }
 }
