@@ -1,20 +1,20 @@
 package com.mall.admin;
 
+import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.cloud.openfeign.EnableFeignClients;
+import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 
 /**
- * 管理员服务启动类
- * 
- * @author lingbai
- * @version 1.0
- * @since 2025-01-27
+ * Admin Service 启动类
+ *
+ * @author Mall Team
  */
 @SpringBootApplication
-@EnableFeignClients
+@EnableDiscoveryClient
+@MapperScan("com.mall.admin.mapper")
 public class AdminServiceApplication {
-    
+
     public static void main(String[] args) {
         SpringApplication.run(AdminServiceApplication.class, args);
     }

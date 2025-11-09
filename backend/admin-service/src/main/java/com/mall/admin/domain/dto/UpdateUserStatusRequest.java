@@ -4,16 +4,16 @@ import lombok.Data;
 import javax.validation.constraints.NotNull;
 
 /**
- * 商家审批请求DTO
+ * 用户状态更新请求DTO
  */
 @Data
-public class MerchantApprovalRequest {
+public class UpdateUserStatusRequest {
     
-    @NotNull(message = "审批结果不能为空")
-    private Boolean approved;
+    @NotNull(message = "状态不能为空")
+    private Integer status;
     
     /**
-     * 审批意见
+     * 操作原因
      */
     private String reason;
 }
