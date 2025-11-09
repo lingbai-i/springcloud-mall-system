@@ -17,9 +17,9 @@
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         
-        <!-- Spring Boot & Cloud 版本 - 修复版本兼容性问题 -->
-        <spring-boot.version>3.1.12</spring-boot.version>
-        <spring-cloud.version>2022.0.5</spring-cloud.version>
+        <!-- Spring Boot & Cloud 版本 - 修复版本兼容性问题和安全漏洞 -->
+        <spring-boot.version>3.2.0</spring-boot.version>
+        <spring-cloud.version>2023.0.0</spring-cloud.version>
         <spring-cloud-alibaba.version>2022.0.0.0</spring-cloud-alibaba.version>
         
         <!-- 国产中间件版本 -->
@@ -29,15 +29,15 @@
         <rocketmq.version>2.2.3</rocketmq.version>
         
         <!-- 数据库相关 -->
-        <mysql.version>8.0.33</mysql.version>
-        <mybatis-plus.version>3.5.5</mybatis-plus.version>
+        <mysql.version>8.3.0</mysql.version>
+        <mybatis-plus.version>3.5.8</mybatis-plus.version>
         <redis.version>3.2.0</redis.version>
         
         <!-- 其他依赖 -->
-        <hutool.version>5.8.22</hutool.version>
-        <fastjson2.version>2.0.43</fastjson2.version>
-        <knife4j.version>4.3.0</knife4j.version>
-        <minio.version>8.5.7</minio.version>
+        <hutool.version>5.8.32</hutool.version>
+        <fastjson2.version>2.0.53</fastjson2.version>
+        <knife4j.version>4.5.0</knife4j.version>
+        <minio.version>8.5.12</minio.version>
     </properties>
 
     <modules>
