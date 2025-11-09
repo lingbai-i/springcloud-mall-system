@@ -4,7 +4,6 @@ import com.mall.admin.domain.dto.UserQueryRequest;
 import com.mall.admin.service.UserManagementService;
 import com.mall.common.core.domain.PageResult;
 import com.mall.common.core.domain.R;
-import com.mall.user.domain.entity.User;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -41,18 +40,18 @@ public class UserManagementController {
      */
     @GetMapping("/list")
     @Operation(summary = "分页查询用户列表", description = "管理员分页查询用户列表，支持关键词搜索和状态筛选")
-    public R<PageResult<User>> getUserList(@Valid UserQueryRequest request) {
+    public R<PageResult<Map<String, Object>>> getUserList(@Valid UserQueryRequest request) {
         log.info("管理员查询用户列表，参数：{}", request);
         
         try {
-            PageResult<User> result = userManagementService.getUserList(request);
+            PageResult<Map<String, Object>> result = userManagementService.getUserList(request);
             
             log.info("用户列表查询成功，总数：{}", result.getTotal());
-            return R.success(result);
+            return R.ok(result);
             
         } catch (Exception e) {
             log.error("查询用户列表异常", e);
-            return R.error("查询用户列表失败");
+            return R.fail("查询用户列表失败");
         }
     }
     
@@ -64,23 +63,23 @@ public class UserManagementController {
      */
     @GetMapping("/{userId}")
     @Operation(summary = "获取用户详情", description = "根据用户ID获取用户详细信息")
-    public R<User> getUserDetail(@PathVariable Long userId) {
+    public R<Map<String, Object>> getUserDetail(@PathVariable Long userId) {
         log.info("管理员查询用户详情，用户ID：{}", userId);
         
         try {
-            User user = userManagementService.getUserDetail(userId);
+            Map<String, Object> user = userManagementService.getUserDetail(userId);
             
             if (user == null) {
                 log.warn("用户不存在，ID：{}", userId);
-                return R.error("用户不存在");
+                return R.fail("用户不存在");
             }
             
             log.info("用户详情查询成功，用户ID：{}", userId);
-            return R.success(user);
+            return R.ok(user);
             
         } catch (Exception e) {
             log.error("查询用户详情异常，用户ID：{}", userId, e);
-            return R.error("查询用户详情失败");
+            return R.fail("查询用户详情失败");
         }
     }
     
@@ -102,11 +101,11 @@ public class UserManagementController {
             userManagementService.disableUser(userId, adminId);
             
             log.info("用户禁用成功，用户ID：{}，操作管理员ID：{}", userId, adminId);
-            return R.success("用户禁用成功");
+            return R.ok("用户禁用成功");
             
         } catch (Exception e) {
             log.error("禁用用户异常，用户ID：{}", userId, e);
-            return R.error("禁用用户失败");
+            return R.fail("禁用用户失败");
         }
     }
     
@@ -128,11 +127,11 @@ public class UserManagementController {
             userManagementService.enableUser(userId, adminId);
             
             log.info("用户启用成功，用户ID：{}，操作管理员ID：{}", userId, adminId);
-            return R.success("用户启用成功");
+            return R.ok("用户启用成功");
             
         } catch (Exception e) {
             log.error("启用用户异常，用户ID：{}", userId, e);
-            return R.error("启用用户失败");
+            return R.fail("启用用户失败");
         }
     }
     
@@ -154,11 +153,11 @@ public class UserManagementController {
             userManagementService.deleteUser(userId, adminId);
             
             log.info("用户删除成功，用户ID：{}，操作管理员ID：{}", userId, adminId);
-            return R.success("用户删除成功");
+            return R.ok("用户删除成功");
             
         } catch (Exception e) {
             log.error("删除用户异常，用户ID：{}", userId, e);
-            return R.error("删除用户失败");
+            return R.fail("删除用户失败");
         }
     }
     
@@ -189,11 +188,11 @@ public class UserManagementController {
             Map<String, Object> stats = userManagementService.getUserStats(params);
             
             log.info("用户统计数据获取成功");
-            return R.success(stats);
+            return R.ok(stats);
             
         } catch (Exception e) {
             log.error("获取用户统计数据异常", e);
-            return R.error("获取用户统计数据失败");
+            return R.fail("获取用户统计数据失败");
         }
     }
     

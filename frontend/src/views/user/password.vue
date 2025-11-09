@@ -13,10 +13,9 @@
         @click="$router.back()"
         class="back-btn"
       >
-        <el-button @click="$router.go(-1)" class="back-btn">
-          <LocalIcon name="fanhui" :size="16" />
-          返回
-        </el-button>
+        <LocalIcon name="fanhui" :size="16" />
+        返回
+      </el-button>
       <h1>修改密码</h1>
     </div>
 
@@ -504,6 +503,5 @@ const handleReLogin = async () => {
 
 .strength-bar {
   width: 100%;
-}
 }
 </style>

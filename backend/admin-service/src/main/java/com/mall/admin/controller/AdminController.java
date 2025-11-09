@@ -52,7 +52,7 @@ public class AdminController {
             
             if (token == null || token.isEmpty()) {
                 log.warn("管理员登录失败，用户名或密码错误：{}", request.getUsername());
-                return R.error("用户名或密码错误");
+                return R.fail("用户名或密码错误");
             }
             
             // 获取管理员信息并更新登录信息
@@ -63,11 +63,11 @@ public class AdminController {
             }
             
             log.info("管理员登录成功，用户名：{}", request.getUsername());
-            return R.success("登录成功", token);
+            return R.ok("登录成功", token);
             
         } catch (Exception e) {
             log.error("管理员登录异常，用户名：{}", request.getUsername(), e);
-            return R.error("登录失败，请稍后重试");
+            return R.fail("登录失败，请稍后重试");
         }
     }
     
@@ -86,11 +86,11 @@ public class AdminController {
             // 实际项目中可能需要清除JWT token或session
             
             log.info("管理员登出成功");
-            return R.success("登出成功");
+            return R.ok("登出成功");
             
         } catch (Exception e) {
             log.error("管理员登出异常", e);
-            return R.error("登出失败");
+            return R.fail("登出失败");
         }
     }
     
@@ -110,15 +110,15 @@ public class AdminController {
             
             if (response == null) {
                 log.warn("管理员不存在，ID：{}", adminId);
-                return R.error("管理员不存在");
+                return R.fail("管理员不存在");
             }
             
             log.info("获取管理员信息成功，ID：{}", adminId);
-            return R.success(response);
+            return R.ok(response);
             
         } catch (Exception e) {
             log.error("获取管理员信息异常，ID：{}", adminId, e);
-            return R.error("获取管理员信息失败");
+            return R.fail("获取管理员信息失败");
         }
     }
     
@@ -141,7 +141,7 @@ public class AdminController {
             
         } catch (Exception e) {
             log.error("获取当前管理员信息异常", e);
-            return R.error("获取管理员信息失败");
+            return R.fail("获取管理员信息失败");
         }
     }
     
@@ -166,23 +166,23 @@ public class AdminController {
             Admin admin = adminService.findById(adminId);
             if (admin == null) {
                 log.warn("管理员不存在，ID：{}", adminId);
-                return R.error("管理员不存在");
+                return R.fail("管理员不存在");
             }
             
             if (!adminService.verifyPassword(oldPassword, admin.getPassword())) {
                 log.warn("旧密码验证失败，管理员ID：{}", adminId);
-                return R.error("旧密码错误");
+                return R.fail("旧密码错误");
             }
             
             // 更新密码
             adminService.updatePassword(adminId, newPassword);
             
             log.info("管理员密码修改成功，ID：{}", adminId);
-            return R.success("密码修改成功");
+            return R.ok("密码修改成功");
             
         } catch (Exception e) {
             log.error("修改管理员密码异常，ID：{}", adminId, e);
-            return R.error("密码修改失败");
+            return R.fail("密码修改失败");
         }
     }
     
@@ -203,11 +203,11 @@ public class AdminController {
             adminService.updateAdmin(admin);
             
             log.info("管理员信息更新成功，ID：{}", adminId);
-            return R.success("管理员信息更新成功");
+            return R.ok("管理员信息更新成功");
             
         } catch (Exception e) {
             log.error("更新管理员信息异常，ID：{}", adminId, e);
-            return R.error("管理员信息更新失败");
+            return R.fail("管理员信息更新失败");
         }
     }
     
@@ -228,11 +228,11 @@ public class AdminController {
              
              String statusText = status == 1 ? "启用" : "禁用";
              log.info("管理员状态修改成功，ID：{}，状态：{}", adminId, statusText);
-             return R.success("管理员" + statusText + "成功");
+             return R.ok("管理员" + statusText + "成功");
              
          } catch (Exception e) {
              log.error("修改管理员状态异常，ID：{}，状态：{}", adminId, status, e);
-             return R.error("管理员状态修改失败");
+             return R.fail("管理员状态修改失败");
          }
      }
      
@@ -262,11 +262,11 @@ public class AdminController {
              PageResult<AdminInfoResponse> result = adminService.getAdminList(page, size, username, realName, role, status);
              
              log.info("查询管理员列表成功，总数：{}", result.getTotal());
-             return R.success(result);
+             return R.ok(result);
              
          } catch (Exception e) {
              log.error("查询管理员列表异常", e);
-             return R.error("查询管理员列表失败");
+             return R.fail("查询管理员列表失败");
          }
      }
      
@@ -286,17 +286,17 @@ public class AdminController {
              Admin existingAdmin = adminService.findByUsername(admin.getUsername());
              if (existingAdmin != null) {
                  log.warn("管理员用户名已存在：{}", admin.getUsername());
-                 return R.error("用户名已存在");
+                 return R.fail("用户名已存在");
              }
              
              adminService.createAdmin(admin);
              
              log.info("管理员创建成功，用户名：{}", admin.getUsername());
-             return R.success("管理员创建成功");
+             return R.ok("管理员创建成功");
              
          } catch (Exception e) {
              log.error("创建管理员异常，用户名：{}", admin.getUsername(), e);
-             return R.error("管理员创建失败");
+             return R.fail("管理员创建失败");
          }
      }
      
@@ -316,23 +316,23 @@ public class AdminController {
              Admin admin = adminService.findById(adminId);
              if (admin == null) {
                  log.warn("管理员不存在，ID：{}", adminId);
-                 return R.error("管理员不存在");
+                 return R.fail("管理员不存在");
              }
              
              // 不能删除超级管理员
              if (admin.isSuperAdmin()) {
                  log.warn("不能删除超级管理员，ID：{}", adminId);
-                 return R.error("不能删除超级管理员");
+                 return R.fail("不能删除超级管理员");
              }
              
              adminService.deleteAdmin(adminId);
              
              log.info("管理员删除成功，ID：{}", adminId);
-             return R.success("管理员删除成功");
+             return R.ok("管理员删除成功");
              
          } catch (Exception e) {
              log.error("删除管理员异常，ID：{}", adminId, e);
-             return R.error("管理员删除失败");
+             return R.fail("管理员删除失败");
          }
      }
     

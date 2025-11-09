@@ -9,20 +9,20 @@ spring:
       config:
         import-check:
           enabled: false
-  
+
   # 数据源配置
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3307/mall_user?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8
     username: root
     password: 123456
-    
+
   # Redis配置
   data:
     redis:
       host: localhost
       port: 6379
-      password: 
+      password:
       database: 0
       timeout: 10000ms
       lettuce:
@@ -38,7 +38,7 @@ mybatis-plus:
     map-underscore-to-camel-case: true
     cache-enabled: false
     call-setters-on-nulls: true
-    jdbc-type-for-null: 'null'
+    jdbc-type-for-null: "null"
   global-config:
     db-config:
       id-type: auto
@@ -58,7 +58,7 @@ logging:
 # JWT配置
 jwt:
   secret: mallSecretKeyForJWTTokenGenerationAndValidation2025ThisIsAVeryLongSecretKeyThatMeetsTheMinimumRequirementOf256BitsAndEvenMoreToEnsureSecurityCompliance
-  expiration: 86400000  # 24小时
+  expiration: 604800000 # 7天（7 * 24 * 60 * 60 * 1000）
 
 # 管理端点
 management:

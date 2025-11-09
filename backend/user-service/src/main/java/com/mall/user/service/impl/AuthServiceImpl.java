@@ -88,9 +88,9 @@ public class AuthServiceImpl implements AuthService {
             verifyRequest.put("code", captcha);
             verifyRequest.put("purpose", purpose != null ? purpose.toUpperCase() : "REGISTER");
 
-            // 调用SMS服务验证接口
+            // 调用SMS服务验证接口（直接调用SMS服务，不经过网关）
             Mono<Map> response = webClient.post()
-                    .uri(smsServiceUrl + "/api/sms/verify")
+                    .uri(smsServiceUrl + "/sms/verify")
                     .bodyValue(verifyRequest)
                     .retrieve()
                     .bodyToMono(Map.class);
@@ -131,8 +131,13 @@ public class AuthServiceImpl implements AuthService {
             throw new RuntimeException("用户名和密码不能为空");
         }
 
-        // 根据用户名查询用户
+        // 根据用户名或手机号查询用户
         User user = userService.findByUsername(loginRequest.getUsername());
+        if (user == null) {
+            // 如果用户名找不到，尝试用手机号查找
+            user = userService.findByPhone(loginRequest.getUsername());
+        }
+
         if (user == null) {
             throw new RuntimeException("用户名或密码错误");
         }
@@ -237,6 +242,7 @@ public class AuthServiceImpl implements AuthService {
         user.setPhone(registerRequest.getPhone());
         user.setStatus(1); // 默认启用(1-正常，0-禁用)
         user.setGender(0); // 默认未知
+        user.setDeleted(0); // 设置删除标志为0（未删除）
 
         // 保存用户
         boolean result = userService.insertUser(user);

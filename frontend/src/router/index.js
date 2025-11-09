@@ -99,6 +99,15 @@ const routes = [
             }
           },
           {
+            path: 'security',
+            name: 'UserSecurity',
+            component: () => import('@/views/user/security.vue'),
+            meta: {
+              title: '账户安全',
+              requiresAuth: true
+            }
+          },
+          {
             path: 'orders',
             name: 'UserOrders',
             component: () => import('@/views/user/orders.vue'),
@@ -122,6 +131,24 @@ const routes = [
             component: () => import('@/views/user/addresses.vue'),
             meta: {
               title: '收货地址',
+              requiresAuth: true
+            }
+          },
+          {
+            path: 'favorites',
+            name: 'UserFavorites',
+            component: () => import('@/views/user/favorites.vue'),
+            meta: {
+              title: '我的收藏',
+              requiresAuth: true
+            }
+          },
+          {
+            path: 'settings',
+            name: 'UserSettings',
+            component: () => import('@/views/user/Settings.vue'),
+            meta: {
+              title: '系统设置',
               requiresAuth: true
             }
           }

@@ -53,11 +53,11 @@ public class MerchantManagementController {
             PageResult<Merchant> result = merchantManagementService.getMerchantList(request);
             
             log.info("商家列表查询成功，总数：{}", result.getTotal());
-            return R.success(result);
+            return R.ok(result);
             
         } catch (Exception e) {
             log.error("查询商家列表异常", e);
-            return R.error("查询商家列表失败");
+            return R.fail("查询商家列表失败");
         }
     }
     
@@ -77,15 +77,15 @@ public class MerchantManagementController {
             
             if (merchant == null) {
                 log.warn("商家不存在，ID：{}", merchantId);
-                return R.error("商家不存在");
+                return R.fail("商家不存在");
             }
             
             log.info("商家详情查询成功，商家ID：{}", merchantId);
-            return R.success(merchant);
+            return R.ok(merchant);
             
         } catch (Exception e) {
             log.error("查询商家详情异常，商家ID：{}", merchantId, e);
-            return R.error("查询商家详情失败");
+            return R.fail("查询商家详情失败");
         }
     }
     
@@ -109,11 +109,11 @@ public class MerchantManagementController {
             String result = request.getApproved() ? "通过" : "拒绝";
             log.info("商家审核成功，商家ID：{}，审核结果：{}，操作管理员ID：{}", 
                     request.getMerchantId(), result, adminId);
-            return R.success("商家审核" + result + "成功");
+            return R.ok("商家审核" + result + "成功");
             
         } catch (Exception e) {
             log.error("审核商家异常，商家ID：{}", request.getMerchantId(), e);
-            return R.error("审核商家失败");
+            return R.fail("审核商家失败");
         }
     }
     
@@ -135,11 +135,11 @@ public class MerchantManagementController {
             merchantManagementService.disableMerchant(merchantId, adminId);
             
             log.info("商家禁用成功，商家ID：{}，操作管理员ID：{}", merchantId, adminId);
-            return R.success("商家禁用成功");
+            return R.ok("商家禁用成功");
             
         } catch (Exception e) {
             log.error("禁用商家异常，商家ID：{}", merchantId, e);
-            return R.error("禁用商家失败");
+            return R.fail("禁用商家失败");
         }
     }
     
@@ -161,11 +161,11 @@ public class MerchantManagementController {
             merchantManagementService.enableMerchant(merchantId, adminId);
             
             log.info("商家启用成功，商家ID：{}，操作管理员ID：{}", merchantId, adminId);
-            return R.success("商家启用成功");
+            return R.ok("商家启用成功");
             
         } catch (Exception e) {
             log.error("启用商家异常，商家ID：{}", merchantId, e);
-            return R.error("启用商家失败");
+            return R.fail("启用商家失败");
         }
     }
     
@@ -187,11 +187,11 @@ public class MerchantManagementController {
             merchantManagementService.deleteMerchant(merchantId, adminId);
             
             log.info("商家删除成功，商家ID：{}，操作管理员ID：{}", merchantId, adminId);
-            return R.success("商家删除成功");
+            return R.ok("商家删除成功");
             
         } catch (Exception e) {
             log.error("删除商家异常，商家ID：{}", merchantId, e);
-            return R.error("删除商家失败");
+            return R.fail("删除商家失败");
         }
     }
     

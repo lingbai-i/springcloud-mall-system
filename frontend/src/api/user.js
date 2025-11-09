@@ -11,7 +11,7 @@ import request from '@/utils/request'
 // 获取用户详细信息
 export function getUserProfile() {
   return request({
-    url: '/user-service/auth/me',
+    url: '/users/profile',
     method: 'get'
   })
 }
@@ -19,7 +19,7 @@ export function getUserProfile() {
 // 更新用户资料
 export function updateUserProfile(data) {
   return request({
-    url: '/user-service/user/profile',
+    url: '/users/profile',
     method: 'put',
     data
   })
@@ -28,7 +28,7 @@ export function updateUserProfile(data) {
 // 修改密码
 export function changePassword(data) {
   return request({
-    url: '/user-service/user/password',
+    url: '/users/change-password',
     method: 'put',
     data
   })
@@ -40,7 +40,7 @@ export function uploadAvatar(file) {
   formData.append('file', file)
   
   return request({
-    url: '/user-service/user/avatar',
+    url: '/users/avatar',
     method: 'post',
     data: formData,
     headers: {
@@ -52,7 +52,7 @@ export function uploadAvatar(file) {
 // 检查用户名唯一性
 export function checkUsernameUnique(username) {
   return request({
-    url: '/user-service/user/checkUsernameUnique',
+    url: '/users/check-username',
     method: 'get',
     params: { username }
   })
@@ -61,7 +61,7 @@ export function checkUsernameUnique(username) {
 // 检查手机号唯一性
 export function checkPhoneUnique(phone) {
   return request({
-    url: '/user-service/user/checkPhoneUnique',
+    url: '/users/check-phone',
     method: 'get',
     params: { phone }
   })
@@ -70,7 +70,7 @@ export function checkPhoneUnique(phone) {
 // 检查邮箱唯一性
 export function checkEmailUnique(email) {
   return request({
-    url: '/user-service/user/checkEmailUnique',
+    url: '/users/check-email',
     method: 'get',
     params: { email }
   })
@@ -79,7 +79,7 @@ export function checkEmailUnique(email) {
 // 获取用户统计信息
 export function getUserStats() {
   return request({
-    url: '/user-service/user/stats',
+    url: '/users/stats',
     method: 'get'
   })
 }
@@ -87,7 +87,7 @@ export function getUserStats() {
 // 获取用户操作日志
 export function getUserLogs(params) {
   return request({
-    url: '/user-service/user/logs',
+    url: '/users/logs',
     method: 'get',
     params
   })
@@ -96,7 +96,7 @@ export function getUserLogs(params) {
 // 绑定手机号
 export function bindPhone(data) {
   return request({
-    url: '/user-service/user/bind/phone',
+    url: '/users/bind/phone',
     method: 'post',
     data
   })
@@ -105,7 +105,7 @@ export function bindPhone(data) {
 // 绑定邮箱
 export function bindEmail(data) {
   return request({
-    url: '/user-service/user/bind/email',
+    url: '/users/bind/email',
     method: 'post',
     data
   })
@@ -114,7 +114,7 @@ export function bindEmail(data) {
 // 解绑手机号
 export function unbindPhone(data) {
   return request({
-    url: '/user-service/user/unbind/phone',
+    url: '/users/unbind/phone',
     method: 'post',
     data
   })
@@ -123,7 +123,7 @@ export function unbindPhone(data) {
 // 解绑邮箱
 export function unbindEmail(data) {
   return request({
-    url: '/user-service/user/unbind/email',
+    url: '/users/unbind/email',
     method: 'post',
     data
   })
@@ -132,7 +132,7 @@ export function unbindEmail(data) {
 // 注销账号
 export function deleteAccount(data) {
   return request({
-    url: '/user-service/user/delete',
+    url: '/users/delete',
     method: 'post',
     data
   })

@@ -5,7 +5,6 @@ import com.mall.admin.domain.dto.UserQueryRequest;
 import com.mall.admin.service.UserManagementService;
 import com.mall.common.core.domain.PageResult;
 import com.mall.common.core.domain.R;
-import com.mall.user.domain.entity.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -36,7 +35,7 @@ public class UserManagementServiceImpl implements UserManagementService {
      * @return 分页用户列表
      */
     @Override
-    public PageResult<User> getUserList(UserQueryRequest request) {
+    public PageResult<Map<String, Object>> getUserList(UserQueryRequest request) {
         log.info("管理员查询用户列表，参数：{}", request);
         
         try {
@@ -79,7 +78,7 @@ public class UserManagementServiceImpl implements UserManagementService {
      * @return 用户详情
      */
     @Override
-    public User getUserDetail(Long userId) {
+    public Map<String, Object> getUserDetail(Long userId) {
         log.info("管理员查询用户详情，用户ID：{}", userId);
         
         try {

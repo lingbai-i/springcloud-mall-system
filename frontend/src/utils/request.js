@@ -23,7 +23,7 @@ import * as logger from '@/utils/logger'
  * @version 1.1 2025-11-08T08:46:54+08:00：增加 CSRF 头注入与统一日志
  */
 const service = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
+  baseURL: '/api',  // 使用Vite代理，会被转发到http://localhost:8082
   timeout: 15000,
   withCredentials: true,
   headers: {
@@ -61,9 +61,8 @@ service.interceptors.request.use(
         config.headers['X-CSRF-TOKEN'] = csrfToken
         config.headers['X-XSRF-TOKEN'] = csrfToken
         logger.debug('[HTTP] 注入 CSRF 令牌头', { url: config.url })
-      } else {
-        logger.warn('[HTTP] 未从 Cookie 获取到 CSRF 令牌', { url: config.url })
       }
+      // 注意：当前CSRF功能未在后端启用，无需警告
     }
 
     // 添加请求ID用于追踪
@@ -140,14 +139,30 @@ service.interceptors.response.use(
     logger.error('Response error', error)
     
     if (error.response) {
-      const { status, data } = error.response
+      const { status, data, config } = error.response
+      
+      // 定义非关键API列表（失败时不弹出“登录过期”提示）
+      const nonCriticalPaths = [
+        '/cart-service',  // 购物车服务
+        '/product-service',  // 商品服务
+        '/order-service'  // 订单服务
+      ]
+      
+      const isNonCriticalApi = nonCriticalPaths.some(path => 
+        config?.url?.includes(path)
+      )
       
       switch (status) {
         case 400:
           ElMessage.error(data.message || '请求参数错误')
           break
         case 401:
-          handleTokenExpired()
+          // 只对关键API（如用户服务）弹出登录过期提示
+          if (!isNonCriticalApi) {
+            handleTokenExpired()
+          } else {
+            logger.debug('非关键API返回401，静默处理', { url: config?.url })
+          }
           break
         case 403:
           ElMessage.error('没有权限访问')

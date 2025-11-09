@@ -29,10 +29,10 @@
         </div>
         <div 
           class="tab-item"
-          :class="{ active: loginType === 'sms' }"
-          @click="switchLoginType('sms')"
+          :class="{ active: loginType === 'phone' }"
+          @click="switchLoginType('phone')"
         >
-          验证码登录
+          手机号登录
         </div>
       </div>
 
@@ -69,7 +69,7 @@
           </el-form-item>
         </template>
 
-        <!-- 验证码登录表单 -->
+        <!-- 手机号登录表单 -->
         <template v-else>
           <el-form-item prop="phone">
             <el-input
@@ -77,7 +77,7 @@
               placeholder="请输入手机号"
               size="large"
               clearable
-              @keyup.enter="handleSubmit"
+              @keyup.enter="handlePhoneLogin"
             />
           </el-form-item>
           
@@ -88,7 +88,7 @@
                 placeholder="请输入验证码"
                 size="large"
                 clearable
-                @keyup.enter="handleSubmit"
+                @keyup.enter="handlePhoneLogin"
               />
               <el-button
                 type="text"
@@ -105,7 +105,7 @@
         <!-- 记住登录状态 -->
         <div class="login-options">
           <el-checkbox v-model="rememberMe">记住登录状态</el-checkbox>
-          <a href="#" class="forgot-password" @click="handleForgotPassword">忘记密码？</a>
+          <a href="#" class="forgot-password" v-if="loginType === 'password'" @click="handleForgotPassword">忘记密码？</a>
         </div>
 
         <!-- 登录按钮 -->
@@ -115,16 +115,15 @@
             size="large"
             class="login-btn"
             :loading="loginLoading"
-            @click="handleSubmit"
+            @click="loginType === 'phone' ? handlePhoneLogin() : handleSubmit()"
           >
             {{ loginLoading ? '登录中...' : '登录' }}
           </el-button>
         </el-form-item>
 
-        <!-- 注册链接 -->
-        <div class="register-link">
-          <span>还没有账号？</span>
-          <a href="#" @click.prevent="handleGoRegister">立即注册</a>
+        <!-- 提示信息 -->
+        <div class="register-tip" v-if="loginType === 'phone'">
+          <span>首次使用手机号登录将自动注册</span>
         </div>
       </el-form>
     </div>
@@ -168,7 +167,7 @@ const visible = computed({
 })
 
 /**
- * 登录类型：password-密码登录，sms-验证码登录
+ * 登录类型：password-密码登录，phone-手机号登录
  */
 const loginType = ref('password')
 

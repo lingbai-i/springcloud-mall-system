@@ -2,7 +2,6 @@ package com.mall.admin.service;
 
 import com.mall.admin.domain.dto.UserQueryRequest;
 import com.mall.common.core.domain.PageResult;
-import com.mall.user.domain.entity.User;
 
 import java.util.Map;
 
@@ -21,7 +20,7 @@ public interface UserManagementService {
      * @param request 查询请求
      * @return 用户分页列表
      */
-    PageResult<User> getUserList(UserQueryRequest request);
+    PageResult<Map<String, Object>> getUserList(UserQueryRequest request);
     
     /**
      * 根据ID获取用户详情
@@ -29,7 +28,7 @@ public interface UserManagementService {
      * @param userId 用户ID
      * @return 用户详情
      */
-    User getUserDetail(Long userId);
+    Map<String, Object> getUserDetail(Long userId);
     
     /**
      * 禁用用户

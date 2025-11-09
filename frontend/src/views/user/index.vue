@@ -7,62 +7,82 @@
 -->
 <template>
   <div class="user-center">
-    <!-- 用户信息卡片 -->
-    <el-card class="user-info-card" shadow="hover">
-      <div class="user-header">
-        <div class="avatar-section">
-          <el-avatar :size="80" :src="userInfo.avatar" class="user-avatar">
-            {{ userInfo.nickname?.charAt(0) || 'U' }}
-          </el-avatar>
-          <el-button 
-            type="text" 
-            class="change-avatar-btn"
-            @click="showAvatarUpload = true"
-          >
-            更换头像
-          </el-button>
-        </div>
-        <div class="user-details">
-          <h2 class="username">{{ userInfo.nickname || userInfo.username }}</h2>
-          <p class="user-meta">
-            <el-tag v-if="userInfo.gender" :type="getGenderTagType(userInfo.gender)">
-              {{ getGenderText(userInfo.gender) }}
-            </el-tag>
-            <span v-if="userInfo.birthday" class="birthday">
-              <LocalIcon name="rili" :size="16" />
-              {{ userInfo.birthday }}
-            </span>
-          </p>
-          <p v-if="userInfo.bio" class="user-bio">{{ userInfo.bio }}</p>
-          <div class="user-stats">
-            <div class="stat-item">
-              <span class="stat-label">注册时间</span>
-              <span class="stat-value">{{ formatDate(userInfo.createTime) }}</span>
+    <!-- 侧边栏布局 -->
+    <div class="user-layout">
+      <!-- 左侧导航菜单 -->
+      <div class="sidebar">
+        <!-- 用户信息卡片 -->
+        <el-card class="user-info-card" shadow="hover">
+          <div class="user-header">
+            <div class="avatar-section">
+              <el-avatar :size="60" :src="userInfo.avatar" class="user-avatar">
+                {{ userInfo.nickname?.charAt(0) || 'U' }}
+              </el-avatar>
+              <el-button 
+                type="text" 
+                size="small"
+                class="change-avatar-btn"
+                @click="showAvatarUpload = true"
+              >
+                更换头像
+              </el-button>
             </div>
-            <div class="stat-item">
-              <span class="stat-label">最后登录</span>
-              <span class="stat-value">{{ formatDate(userInfo.lastLoginTime) }}</span>
+            <div class="user-details">
+              <h3 class="username">{{ userInfo.nickname || userInfo.username }}</h3>
+              <p v-if="userInfo.bio" class="user-bio">{{ userInfo.bio }}</p>
             </div>
           </div>
+        </el-card>
+
+        <!-- 功能菜单 -->
+        <el-menu
+          :default-active="activeMenu"
+          class="user-menu"
+          @select="handleMenuSelect"
+        >
+          <el-menu-item
+            v-for="menu in menuList"
+            :key="menu.key"
+            :index="menu.key"
+          >
+            <LocalIcon :name="menu.icon" :size="20" :color="activeMenu === menu.key ? menu.color : '#606266'" />
+            <span>{{ menu.title }}</span>
+          </el-menu-item>
+        </el-menu>
+      </div>
+
+      <!-- 右侧内容区域 -->
+      <div class="content-area">
+        <!-- 个人资料 -->
+        <div v-show="activeMenu === 'profile'" class="content-panel">
+          <ProfileView />
+        </div>
+
+        <!-- 账户安全 -->
+        <div v-show="activeMenu === 'security'" class="content-panel">
+          <SecurityView />
+        </div>
+
+        <!-- 我的订单 -->
+        <div v-show="activeMenu === 'orders'" class="content-panel">
+          <OrdersView />
+        </div>
+
+        <!-- 收货地址 -->
+        <div v-show="activeMenu === 'addresses'" class="content-panel">
+          <AddressesView />
+        </div>
+
+        <!-- 我的收藏 -->
+        <div v-show="activeMenu === 'favorites'" class="content-panel">
+          <FavoritesView />
+        </div>
+
+        <!-- 系统设置 -->
+        <div v-show="activeMenu === 'settings'" class="content-panel">
+          <SettingsView />
         </div>
       </div>
-    </el-card>
-
-    <!-- 功能菜单 -->
-    <div class="menu-grid">
-      <el-card 
-        v-for="menu in menuList" 
-        :key="menu.key"
-        class="menu-card"
-        shadow="hover"
-        @click="handleMenuClick(menu)"
-      >
-        <div class="menu-content">
-          <LocalIcon :name="menu.icon" :size="32" :color="menu.color" />
-          <h3>{{ menu.title }}</h3>
-          <p>{{ menu.description }}</p>
-        </div>
-      </el-card>
     </div>
 
     <!-- 头像上传对话框 -->
@@ -105,6 +125,12 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import LocalIcon from '@/components/LocalIcon.vue'
+import ProfileView from './profile.vue'
+import SecurityView from './security.vue'
+import OrdersView from './orders.vue'
+import AddressesView from './addresses.vue'
+import FavoritesView from './favorites.vue'
+import SettingsView from './Settings.vue'
 
 /**
  * 用户中心主页面组件
@@ -127,6 +153,7 @@ const userInfo = computed(() => userStore.userInfo || {})
 const showAvatarUpload = ref(false)
 const previewAvatar = ref('')
 const uploading = ref(false)
+const activeMenu = ref('profile') // 当前激活的菜单
 
 // 功能菜单配置
 const menuList = reactive([
@@ -135,48 +162,42 @@ const menuList = reactive([
     title: '个人资料',
     description: '编辑个人信息',
     icon: 'wo',
-    color: '#409EFF',
-    path: '/user/profile'
+    color: '#409EFF'
   },
   {
     key: 'security',
     title: '账户安全',
     description: '密码和安全设置',
     icon: 'anquan',
-    color: '#F56C6C',
-    path: '/user/security'
+    color: '#F56C6C'
   },
   {
     key: 'orders',
     title: '我的订单',
     description: '查看订单状态',
     icon: 'quanbudingdan',
-    color: '#E6A23C',
-    path: '/user/orders'
+    color: '#E6A23C'
   },
   {
     key: 'addresses',
     title: '收货地址',
     description: '管理收货地址',
     icon: 'dizhi',
-    color: '#67C23A',
-    path: '/user/addresses'
+    color: '#67C23A'
   },
   {
     key: 'favorites',
     title: '我的收藏',
     description: '收藏的商品',
     icon: 'shoucang',
-    color: '#FF6B6B',
-    path: '/user/favorites'
+    color: '#FF6B6B'
   },
   {
     key: 'settings',
     title: '系统设置',
     description: '个性化设置',
     icon: 'shezhi',
-    color: '#9C88FF',
-    path: '/user/settings'
+    color: '#9C88FF'
   }
 ])
 
@@ -196,12 +217,10 @@ onMounted(async () => {
 })
 
 /**
- * 处理菜单点击
+ * 处理菜单选择
  */
-const handleMenuClick = (menu) => {
-  if (menu.path) {
-    router.push(menu.path)
-  }
+const handleMenuSelect = (key) => {
+  activeMenu.value = key
 }
 
 /**
@@ -316,30 +335,43 @@ const handleAvatarDialogClose = () => {
 
 <style scoped>
 .user-center {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 20px;
 }
 
+.user-layout {
+  display: flex;
+  gap: 20px;
+  min-height: calc(100vh - 200px);
+}
+
+/* 侧边栏样式 */
+.sidebar {
+  width: 260px;
+  flex-shrink: 0;
+}
+
 .user-info-card {
-  margin-bottom: 30px;
+  margin-bottom: 20px;
 }
 
 .user-header {
   display: flex;
-  align-items: flex-start;
-  gap: 20px;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
 }
 
 .avatar-section {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .user-avatar {
-  border: 3px solid #f0f0f0;
+  border: 2px solid #f0f0f0;
 }
 
 .change-avatar-btn {
@@ -348,92 +380,64 @@ const handleAvatarDialogClose = () => {
 }
 
 .user-details {
-  flex: 1;
+  width: 100%;
+  text-align: center;
 }
 
 .username {
-  margin: 0 0 10px 0;
-  color: #303133;
-  font-size: 24px;
-  font-weight: 600;
-}
-
-.user-meta {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  margin-bottom: 10px;
-}
-
-.birthday {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  color: #606266;
-  font-size: 14px;
-}
-
-.user-bio {
-  color: #606266;
-  font-size: 14px;
-  line-height: 1.5;
-  margin-bottom: 15px;
-}
-
-.user-stats {
-  display: flex;
-  gap: 30px;
-}
-
-.stat-item {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.stat-label {
-  font-size: 12px;
-  color: #909399;
-}
-
-.stat-value {
-  font-size: 14px;
-  color: #303133;
-  font-weight: 500;
-}
-
-.menu-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
-}
-
-.menu-card {
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.menu-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-}
-
-.menu-content {
-  text-align: center;
-  padding: 20px;
-}
-
-.menu-content h3 {
-  margin: 15px 0 10px 0;
+  margin: 0 0 8px 0;
   color: #303133;
   font-size: 18px;
   font-weight: 600;
 }
 
-.menu-content p {
+.user-bio {
   color: #606266;
-  font-size: 14px;
+  font-size: 12px;
+  line-height: 1.5;
   margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-menu {
+  border: none;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.user-menu .el-menu-item {
+  height: 50px;
+  line-height: 50px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 0 20px;
+}
+
+.user-menu .el-menu-item:hover {
+  background-color: #f5f7fa;
+}
+
+.user-menu .el-menu-item.is-active {
+  background-color: #ecf5ff;
+  color: #409EFF;
+}
+
+/* 内容区域样式 */
+.content-area {
+  flex: 1;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.content-panel {
+  width: 100%;
+  height: 100%;
 }
 
 .avatar-uploader {
@@ -489,20 +493,20 @@ const handleAvatarDialogClose = () => {
 /* 响应式设计 */
 @media (max-width: 768px) {
   .user-center {
-    padding: 15px;
+    padding: 10px;
   }
   
-  .user-header {
+  .user-layout {
     flex-direction: column;
-    text-align: center;
   }
   
-  .menu-grid {
-    grid-template-columns: 1fr;
+  .sidebar {
+    width: 100%;
   }
   
-  .user-stats {
-    justify-content: center;
+  .user-menu .el-menu-item {
+    height: 45px;
+    line-height: 45px;
   }
 }
 </style>

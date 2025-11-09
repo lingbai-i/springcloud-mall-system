@@ -133,4 +133,5 @@ public interface AdminRepository extends JpaRepository<Admin, Long> {
      */
     @Query("SELECT COUNT(a) FROM Admin a WHERE a.createTime BETWEEN :startTime AND :endTime")
     Long countByCreateTimeBetween(@Param("startTime") LocalDateTime startTime, 
-                                 @Param("endTime") LocalDateTime
+                                 @Param("endTime") LocalDateTime endTime);
+}

@@ -8,42 +8,6 @@
       </template>
       
       <el-tabs v-model="activeTab" class="settings-tabs">
-        <!-- 安全设置 -->
-        <el-tab-pane label="安全设置" name="security">
-          <el-form :model="securityForm" :rules="securityRules" ref="securityFormRef" label-width="120px">
-            <el-form-item label="当前密码" prop="currentPassword">
-              <el-input
-                v-model="securityForm.currentPassword"
-                type="password"
-                placeholder="请输入当前密码"
-                show-password
-              />
-            </el-form-item>
-            
-            <el-form-item label="新密码" prop="newPassword">
-              <el-input
-                v-model="securityForm.newPassword"
-                type="password"
-                placeholder="请输入新密码"
-                show-password
-              />
-            </el-form-item>
-            
-            <el-form-item label="确认新密码" prop="confirmPassword">
-              <el-input
-                v-model="securityForm.confirmPassword"
-                type="password"
-                placeholder="请再次输入新密码"
-                show-password
-              />
-            </el-form-item>
-            
-            <el-form-item>
-              <el-button type="primary" @click="changePassword">修改密码</el-button>
-            </el-form-item>
-          </el-form>
-        </el-tab-pane>
-        
         <!-- 通知设置 -->
         <el-tab-pane label="通知设置" name="notification">
           <el-form :model="notificationForm" label-width="120px">
@@ -162,18 +126,10 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus'
 import { userApi } from '@/api/user'
 
-const activeTab = ref('security')
+const activeTab = ref('notification')
 const showDeleteDialog = ref(false)
 
-const securityFormRef = ref<FormInstance>()
 const deleteFormRef = ref<FormInstance>()
-
-// 安全设置表单
-const securityForm = reactive({
-  currentPassword: '',
-  newPassword: '',
-  confirmPassword: ''
-})
 
 // 通知设置表单
 const notificationForm = reactive({
@@ -194,30 +150,6 @@ const deleteForm = reactive({
   password: ''
 })
 
-// 安全设置验证规则
-const securityRules = {
-  currentPassword: [
-    { required: true, message: '请输入当前密码', trigger: 'blur' }
-  ],
-  newPassword: [
-    { required: true, message: '请输入新密码', trigger: 'blur' },
-    { min: 6, max: 20, message: '密码长度在 6 到 20 个字符', trigger: 'blur' }
-  ],
-  confirmPassword: [
-    { required: true, message: '请确认新密码', trigger: 'blur' },
-    {
-      validator: (rule: any, value: string, callback: Function) => {
-        if (value !== securityForm.newPassword) {
-          callback(new Error('两次输入的密码不一致'))
-        } else {
-          callback()
-        }
-      },
-      trigger: 'blur'
-    }
-  ]
-}
-
 // 删除账户验证规则
 const deleteRules = {
   password: [
@@ -236,34 +168,6 @@ const getUserSettings = async () => {
   } catch (error) {
     ElMessage.error('获取设置失败')
   }
-}
-
-/**
- * 修改密码
- */
-const changePassword = async () => {
-  if (!securityFormRef.value) return
-  
-  await securityFormRef.value.validate(async (valid) => {
-    if (valid) {
-      try {
-        const response = await userApi.changePassword({
-          currentPassword: securityForm.currentPassword,
-          newPassword: securityForm.newPassword
-        })
-        
-        if (response.code === 200) {
-          ElMessage.success('密码修改成功')
-          // 重置表单
-          securityFormRef.value?.resetFields()
-        } else {
-          ElMessage.error(response.message || '密码修改失败')
-        }
-      } catch (error) {
-        ElMessage.error('密码修改失败')
-      }
-    }
-  })
 }
 
 /**

@@ -36,11 +36,11 @@
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
         
-        <!-- MyBatis Plus - 暂时禁用 -->
-        <!-- <dependency>
+        <!-- MyBatis Plus -->
+        <dependency>
             <groupId>com.baomidou</groupId>
             <artifactId>mybatis-plus-boot-starter</artifactId>
-        </dependency> -->
+        </dependency>
         
         <!-- Lombok -->
         <dependency>

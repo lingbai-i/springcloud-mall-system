@@ -1,7 +1,6 @@
 package com.mall.admin.client;
 
 import com.mall.common.core.domain.R;
-import com.mall.user.domain.entity.User;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 
@@ -35,7 +34,7 @@ public interface UserClient {
      * @return 用户详情
      */
     @GetMapping("/{userId}")
-    R<User> getUserDetail(@PathVariable("userId") Long userId);
+    R<Map<String, Object>> getUserDetail(@PathVariable("userId") Long userId);
     
     /**
      * 禁用用户

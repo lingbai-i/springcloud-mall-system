@@ -42,11 +42,11 @@ public class SystemController {
             SystemStatsResponse stats = systemService.getSystemStats();
             
             log.info("系统统计数据获取成功");
-            return R.success(stats);
+            return R.ok(stats);
             
         } catch (Exception e) {
             log.error("获取系统统计数据异常", e);
-            return R.error("获取系统统计数据失败");
+            return R.fail("获取系统统计数据失败");
         }
     }
     
@@ -77,11 +77,11 @@ public class SystemController {
             Map<String, Object> stats = systemService.getOrderStats(params);
             
             log.info("订单统计数据获取成功");
-            return R.success(stats);
+            return R.ok(stats);
             
         } catch (Exception e) {
             log.error("获取订单统计数据异常", e);
-            return R.error("获取订单统计数据失败");
+            return R.fail("获取订单统计数据失败");
         }
     }
     
@@ -112,11 +112,11 @@ public class SystemController {
             Map<String, Object> stats = systemService.getSalesStats(params);
             
             log.info("销售统计数据获取成功");
-            return R.success(stats);
+            return R.ok(stats);
             
         } catch (Exception e) {
             log.error("获取销售统计数据异常", e);
-            return R.error("获取销售统计数据失败");
+            return R.fail("获取销售统计数据失败");
         }
     }
     
@@ -147,11 +147,11 @@ public class SystemController {
             Map<String, Object> stats = systemService.getProductStats(params);
             
             log.info("商品统计数据获取成功");
-            return R.success(stats);
+            return R.ok(stats);
             
         } catch (Exception e) {
             log.error("获取商品统计数据异常", e);
-            return R.error("获取商品统计数据失败");
+            return R.fail("获取商品统计数据失败");
         }
     }
     
@@ -182,11 +182,11 @@ public class SystemController {
             Map<String, Object> stats = systemService.getFinanceStats(params);
             
             log.info("财务统计数据获取成功");
-            return R.success(stats);
+            return R.ok(stats);
             
         } catch (Exception e) {
             log.error("获取财务统计数据异常", e);
-            return R.error("获取财务统计数据失败");
+            return R.fail("获取财务统计数据失败");
         }
     }
 }

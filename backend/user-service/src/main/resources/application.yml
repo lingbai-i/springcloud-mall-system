@@ -64,7 +64,7 @@ mybatis-plus:
 # JWT配置
 jwt:
   secret: mallSecretKeyForJWTTokenGenerationAndValidation2025ThisIsAVeryLongSecretKeyThatMeetsTheMinimumRequirementOf256BitsAndEvenMoreToEnsureSecurityCompliance
-  expiration: 7200000 # 2小时，单位毫秒
+  expiration: 604800000 # 7天，单位毫秒（7 * 24 * 60 * 60 * 1000）
   issuer: mall-system
 
 # 日志配置

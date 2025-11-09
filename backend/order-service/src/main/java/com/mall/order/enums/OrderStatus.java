@@ -16,6 +16,11 @@ public enum OrderStatus {
     PENDING("pending", "待付款"),
     
     /**
+     * 待付款别名（兼容旧代码）
+     */
+    PENDING_PAYMENT("pending", "待付款"),
+    
+    /**
      * 已付款 - 用户已完成付款，等待商家发货
      */
     PAID("paid", "已付款"),

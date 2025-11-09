@@ -360,6 +360,75 @@ services:
     networks:
       - mall-network
 
+  # 订单服务（内部网络可访问）
+  order-service:
+    image: eclipse-temurin:17-jre
+    container_name: mall-order-service
+    restart: always
+    volumes:
+      - ./backend/order-service/target:/app
+    working_dir: /app
+    command: ["java", "-Xmx512m", "-Xms256m", "-jar", "/app/order-service-1.0.0.jar"]
+    environment:
+      SPRING_PROFILES_ACTIVE: "docker"
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: "nacos:8848"
+      SPRING_CLOUD_NACOS_DISCOVERY_NAMESPACE: "docker"
+      SPRING_CLOUD_NACOS_CONFIG_ENABLED: "false"
+      SPRING_CLOUD_NACOS_CONFIG_IMPORT_CHECK_ENABLED: "false"
+      SPRING_CONFIG_IMPORT: "optional:nacos:"
+    depends_on:
+      - mysql
+      - nacos
+      - redis
+    networks:
+      - mall-network
+
+  # 支付服务（内部网络可访问）
+  payment-service:
+    image: eclipse-temurin:17-jre
+    container_name: mall-payment-service
+    restart: always
+    volumes:
+      - ./backend/payment-service/target:/app
+    working_dir: /app
+    command: ["java", "-Xmx512m", "-Xms256m", "-jar", "/app/payment-service-1.0.0.jar"]
+    environment:
+      SPRING_PROFILES_ACTIVE: "docker"
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: "nacos:8848"
+      SPRING_CLOUD_NACOS_DISCOVERY_NAMESPACE: "docker"
+      SPRING_CLOUD_NACOS_CONFIG_ENABLED: "false"
+      SPRING_CLOUD_NACOS_CONFIG_IMPORT_CHECK_ENABLED: "false"
+      SPRING_CONFIG_IMPORT: "optional:nacos:"
+    depends_on:
+      - mysql
+      - nacos
+      - redis
+    networks:
+      - mall-network
+
+  # 管理服务（内部网络可访问）
+  admin-service:
+    image: eclipse-temurin:17-jre
+    container_name: mall-admin-service
+    restart: always
+    volumes:
+      - ./backend/admin-service/target:/app
+    working_dir: /app
+    command: ["java", "-Xmx512m", "-Xms256m", "-jar", "/app/admin-service-1.0.0.jar"]
+    environment:
+      SPRING_PROFILES_ACTIVE: "docker"
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: "nacos:8848"
+      SPRING_CLOUD_NACOS_DISCOVERY_NAMESPACE: "docker"
+      SPRING_CLOUD_NACOS_CONFIG_ENABLED: "false"
+      SPRING_CLOUD_NACOS_CONFIG_IMPORT_CHECK_ENABLED: "false"
+      SPRING_CONFIG_IMPORT: "optional:nacos:"
+    depends_on:
+      - mysql
+      - nacos
+      - redis
+    networks:
+      - mall-network
+
   # 前端（Vite 开发服务器，绑定 0.0.0.0）
   frontend:
     image: node:18-alpine

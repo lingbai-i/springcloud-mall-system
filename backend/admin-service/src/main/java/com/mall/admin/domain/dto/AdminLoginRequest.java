@@ -2,7 +2,7 @@ package com.mall.admin.domain.dto;
 
 import lombok.Data;
 
-import javax.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotBlank;
 
 /**
  * 管理员登录请求DTO

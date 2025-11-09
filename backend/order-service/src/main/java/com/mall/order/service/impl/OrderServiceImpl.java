@@ -46,9 +46,10 @@ public class OrderServiceImpl implements OrderService {
     private final OrderItemRepository orderItemRepository;
     private final ProductClient productClient;
     private final CartClient cartClient;
-    private final OrderEventPublisher orderEventPublisher;
-    private final DistributedLockService distributedLockService;
-    private final OrderMetricsService orderMetricsService;
+    // TODO: 待实现的服务
+    // private final OrderEventPublisher orderEventPublisher;
+    // private final DistributedLockService distributedLockService;
+    // private final OrderMetricsService orderMetricsService;
     private final PaymentClient paymentClient;
     
     @Value("${order.timeout-minutes:30}")
@@ -65,14 +66,16 @@ public class OrderServiceImpl implements OrderService {
     public Order createOrder(CreateOrderRequest request) {
         log.info("开始创建订单，用户ID: {}", request.getUserId());
         
+        // TODO: 待实现分布式锁
         // 获取分布式锁，防止用户重复创建订单
-        String[] lockInfo = distributedLockService.getOrderCreateLock(request.getUserId());
-        String lockKey = lockInfo[0];
-        String lockValue = lockInfo[1];
+        // String[] lockInfo = distributedLockService.getOrderCreateLock(request.getUserId());
+        // String lockKey = lockInfo[0];
+        // String lockValue = lockInfo[1];
         
-        return distributedLockService.executeWithLock(lockKey, lockValue, 10L, () -> {
-            return doCreateOrder(request);
-        });
+        // return distributedLockService.executeWithLock(lockKey, lockValue, 10L, () -> {
+        //     return doCreateOrder(request);
+        // });
+        return doCreateOrder(request);
     }
     
     /**
@@ -161,16 +164,17 @@ public class OrderServiceImpl implements OrderService {
             log.info("订单创建成功: orderId={}, orderNo={}, userId={}, totalAmount={}", 
                     savedOrder.getId(), savedOrder.getOrderNo(), request.getUserId(), totalAmount);
 
+            // TODO: 待实现事件发布
             // 发布订单创建事件
-            try {
-                OrderEvent orderCreatedEvent = OrderEvent.createOrderCreatedEvent(
-                        savedOrder.getId(), savedOrder.getOrderNo(), request.getUserId(), totalAmount);
-                orderEventPublisher.publishOrderCreatedEvent(orderCreatedEvent);
-                log.debug("订单创建事件发布成功: orderId={}", savedOrder.getId());
-            } catch (Exception e) {
-                log.error("发布订单创建事件失败: orderId={}, error={}", savedOrder.getId(), e.getMessage(), e);
-                // 不影响主流程，继续执行
-            }
+            // try {
+            //     OrderEvent orderCreatedEvent = OrderEvent.createOrderCreatedEvent(
+            //             savedOrder.getId(), savedOrder.getOrderNo(), request.getUserId(), totalAmount);
+            //     orderEventPublisher.publishOrderCreatedEvent(orderCreatedEvent);
+            //     log.debug("订单创建事件发布成功: orderId={}", savedOrder.getId());
+            // } catch (Exception e) {
+            //     log.error("发布订单创建事件失败: orderId={}, error={}", savedOrder.getId(), e.getMessage(), e);
+            //     // 不影响主流程，继续执行
+            // }
             
             // 8. 扣减库存
             for (CreateOrderRequest.OrderItemRequest item : request.getOrderItems()) {
@@ -192,15 +196,17 @@ public class OrderServiceImpl implements OrderService {
                 log.warn("清空购物车失败，用户ID: {}", request.getUserId(), e);
             }
             
+            // TODO: 待实现指标记录
             // 记录订单创建成功指标
-            orderMetricsService.recordOrderCreated(totalAmount);
-            orderMetricsService.recordOrderCreateTime(System.currentTimeMillis() - startTime);
+            // orderMetricsService.recordOrderCreated(totalAmount);
+            // orderMetricsService.recordOrderCreateTime(System.currentTimeMillis() - startTime);
             
             return savedOrder;
             
         } catch (Exception e) {
+            // TODO: 待实现指标记录
             // 记录订单创建失败指标
-            orderMetricsService.recordOrderCreateTime(System.currentTimeMillis() - startTime);
+            // orderMetricsService.recordOrderCreateTime(System.currentTimeMillis() - startTime);
             log.error("创建订单失败，用户ID: {}", request.getUserId(), e);
             throw new RuntimeException("创建订单失败: " + e.getMessage());
         }

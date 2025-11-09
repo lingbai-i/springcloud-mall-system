@@ -699,24 +699,36 @@ const handleLoginSuccess = async (loginData) => {
  * 跳转到购物车
  */
 const goToCart = () => {
-  ElMessage.info('跳转到购物车页面...')
-  // router.push('/cart')
+  if (!isLoggedIn.value) {
+    ElMessage.warning('请先登录')
+    showLoginModal.value = true
+    return
+  }
+  router.push('/cart')
 }
 
 /**
  * 跳转到个人中心
  */
 const goToProfile = () => {
-  ElMessage.info('跳转到个人中心...')
-  // router.push('/profile')
+  if (!isLoggedIn.value) {
+    ElMessage.warning('请先登录')
+    showLoginModal.value = true
+    return
+  }
+  router.push('/user/profile')
 }
 
 /**
  * 跳转到订单页面
  */
 const goToOrders = () => {
-  ElMessage.info('跳转到订单页面...')
-  // router.push('/orders')
+  if (!isLoggedIn.value) {
+    ElMessage.warning('请先登录')
+    showLoginModal.value = true
+    return
+  }
+  router.push('/user/orders')
 }
 
 /**
@@ -778,8 +790,7 @@ const updateCountdown = () => {
 /**
  * 加载购物车数量
  */
-const loadCartCount = async () => {
-  if (!isLoggedIn.value || !userInfo.userId) {
+const loadCartCount = async () => {  if (!isLoggedIn.value || !userInfo.userId) {
     cartCount.value = 0
     return
   }
@@ -792,7 +803,9 @@ const loadCartCount = async () => {
       cartCount.value = 0
     }
   } catch (error) {
-    console.error('获取购物车数量失败:', error)
+    // 购物车服务可能未启动或不可用，静默处理错误
+    // 避免因购物车API失败而触发"登录过期"弹窗
+    console.warn('获取购物车数量失败（购物车服务可能未启动）:', error.message)
     cartCount.value = 0
   }
 }
