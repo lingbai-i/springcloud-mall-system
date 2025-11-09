@@ -10,12 +10,19 @@ import com.mall.order.entity.Order;
 import com.mall.order.entity.OrderItem;
 import com.mall.order.enums.OrderStatus;
 import com.mall.order.event.OrderEvent;
+import com.mall.order.event.OrderEventPublisher;
+import com.mall.order.exception.InsufficientStockException;
+import com.mall.order.exception.OrderException;
+import com.mall.order.exception.OrderNotFoundException;
+import com.mall.order.exception.OrderPermissionException;
+import com.mall.order.exception.OrderStatusException;
+import com.mall.order.metrics.OrderMetricsService;
 import com.mall.order.repository.OrderItemRepository;
 import com.mall.order.repository.OrderRepository;
+import com.mall.order.service.DistributedLockService;
 import com.mall.order.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -46,11 +53,10 @@ public class OrderServiceImpl implements OrderService {
     private final OrderItemRepository orderItemRepository;
     private final ProductClient productClient;
     private final CartClient cartClient;
-    // TODO: 待实现的服务
-    // private final OrderEventPublisher orderEventPublisher;
-    // private final DistributedLockService distributedLockService;
-    // private final OrderMetricsService orderMetricsService;
     private final PaymentClient paymentClient;
+    private final OrderEventPublisher orderEventPublisher;
+    private final DistributedLockService distributedLockService;
+    private final OrderMetricsService orderMetricsService;
     
     @Value("${order.timeout-minutes:30}")
     private Integer orderTimeoutMinutes;
@@ -66,16 +72,14 @@ public class OrderServiceImpl implements OrderService {
     public Order createOrder(CreateOrderRequest request) {
         log.info("开始创建订单，用户ID: {}", request.getUserId());
         
-        // TODO: 待实现分布式锁
         // 获取分布式锁，防止用户重复创建订单
-        // String[] lockInfo = distributedLockService.getOrderCreateLock(request.getUserId());
-        // String lockKey = lockInfo[0];
-        // String lockValue = lockInfo[1];
+        String[] lockInfo = distributedLockService.getOrderCreateLock(request.getUserId());
+        String lockKey = lockInfo[0];
+        String lockValue = lockInfo[1];
         
-        // return distributedLockService.executeWithLock(lockKey, lockValue, 10L, () -> {
-        //     return doCreateOrder(request);
-        // });
-        return doCreateOrder(request);
+        return distributedLockService.executeWithLock(lockKey, lockValue, 10L, () -> {
+            return doCreateOrder(request);
+        });
     }
     
     /**
@@ -98,7 +102,7 @@ public class OrderServiceImpl implements OrderService {
             // 2. 获取商品信息并验证库存
             List<Long> productIds = request.getOrderItems().stream()
                     .map(CreateOrderRequest.OrderItemRequest::getProductId)
-                    .collect(Collectors.toList());
+                    .toList();
             
             List<Map<String, Object>> products = productClient.getProductsBatch(productIds);
             if (products.size() != productIds.size()) {
@@ -109,7 +113,7 @@ public class OrderServiceImpl implements OrderService {
             for (CreateOrderRequest.OrderItemRequest item : request.getOrderItems()) {
                 Boolean stockSufficient = productClient.checkStock(item.getProductId(), item.getQuantity());
                 if (!stockSufficient) {
-                    throw new IllegalArgumentException("商品库存不足，商品ID: " + item.getProductId());
+                    throw new InsufficientStockException(item.getProductId());
                 }
             }
             
@@ -134,7 +138,7 @@ public class OrderServiceImpl implements OrderService {
                 Map<String, Object> product = products.stream()
                         .filter(p -> Objects.equals(p.get("id"), itemRequest.getProductId()))
                         .findFirst()
-                        .orElseThrow(() -> new IllegalArgumentException("商品不存在: " + itemRequest.getProductId()));
+                        .orElseThrow(() -> new OrderNotFoundException("商品不存在: " + itemRequest.getProductId()));
                 
                 OrderItem orderItem = new OrderItem();
                 orderItem.setOrder(order);
@@ -164,17 +168,16 @@ public class OrderServiceImpl implements OrderService {
             log.info("订单创建成功: orderId={}, orderNo={}, userId={}, totalAmount={}", 
                     savedOrder.getId(), savedOrder.getOrderNo(), request.getUserId(), totalAmount);
 
-            // TODO: 待实现事件发布
             // 发布订单创建事件
-            // try {
-            //     OrderEvent orderCreatedEvent = OrderEvent.createOrderCreatedEvent(
-            //             savedOrder.getId(), savedOrder.getOrderNo(), request.getUserId(), totalAmount);
-            //     orderEventPublisher.publishOrderCreatedEvent(orderCreatedEvent);
-            //     log.debug("订单创建事件发布成功: orderId={}", savedOrder.getId());
-            // } catch (Exception e) {
-            //     log.error("发布订单创建事件失败: orderId={}, error={}", savedOrder.getId(), e.getMessage(), e);
-            //     // 不影响主流程，继续执行
-            // }
+            try {
+                OrderEvent orderCreatedEvent = OrderEvent.createOrderCreatedEvent(
+                        savedOrder.getId(), savedOrder.getOrderNo(), request.getUserId(), totalAmount);
+                orderEventPublisher.publishOrderCreatedEvent(orderCreatedEvent);
+                log.debug("订单创建事件发布成功: orderId={}", savedOrder.getId());
+            } catch (Exception e) {
+                log.error("发布订单创建事件失败: orderId={}, error={}", savedOrder.getId(), e.getMessage(), e);
+                // 不影响主流程，继续执行
+            }
             
             // 8. 扣减库存
             for (CreateOrderRequest.OrderItemRequest item : request.getOrderItems()) {
@@ -185,7 +188,7 @@ public class OrderServiceImpl implements OrderService {
                 
                 Boolean deductResult = productClient.deductStock(stockRequest);
                 if (!deductResult) {
-                    throw new RuntimeException("库存扣减失败，商品ID: " + item.getProductId());
+                    throw new OrderException("库存扣减失败，商品ID: " + item.getProductId());
                 }
             }
             
@@ -196,19 +199,19 @@ public class OrderServiceImpl implements OrderService {
                 log.warn("清空购物车失败，用户ID: {}", request.getUserId(), e);
             }
             
-            // TODO: 待实现指标记录
             // 记录订单创建成功指标
-            // orderMetricsService.recordOrderCreated(totalAmount);
-            // orderMetricsService.recordOrderCreateTime(System.currentTimeMillis() - startTime);
+            orderMetricsService.recordOrderCreated(totalAmount);
+            orderMetricsService.recordOrderCreateTime(System.currentTimeMillis() - startTime);
             
             return savedOrder;
             
+        } catch (OrderException e) {
+            // 业务异常直接抛出
+            log.error("创建订单失败，用户ID: {}, 错误: {}", request.getUserId(), e.getMessage());
+            throw e;
         } catch (Exception e) {
-            // TODO: 待实现指标记录
-            // 记录订单创建失败指标
-            // orderMetricsService.recordOrderCreateTime(System.currentTimeMillis() - startTime);
             log.error("创建订单失败，用户ID: {}", request.getUserId(), e);
-            throw new RuntimeException("创建订单失败: " + e.getMessage());
+            throw new OrderException("创建订单失败: " + e.getMessage(), e);
         }
     }
 
@@ -220,18 +223,20 @@ public class OrderServiceImpl implements OrderService {
         try {
             // 1. 根据订单ID查询订单
             Order order = orderRepository.findById(orderId)
-                    .orElseThrow(() -> new IllegalArgumentException("订单不存在"));
+                    .orElseThrow(() -> new OrderNotFoundException(orderId));
             
             // 2. 验证订单所有者
             if (!order.getUserId().equals(userId)) {
-                throw new IllegalArgumentException("无权限查看此订单");
+                throw new OrderPermissionException("无权限查看此订单");
             }
             
             return order;
             
+        } catch (OrderException e) {
+            throw e;
         } catch (Exception e) {
             log.error("获取订单详情失败，订单ID: {}", orderId, e);
-            throw new RuntimeException("获取订单详情失败: " + e.getMessage());
+            throw new OrderException("获取订单详情失败: " + e.getMessage(), e);
         }
     }
 
@@ -241,7 +246,7 @@ public class OrderServiceImpl implements OrderService {
         log.info("根据订单号获取订单详情，订单号: {}", orderNo);
         
         return orderRepository.findByOrderNo(orderNo)
-                .orElseThrow(() -> new IllegalArgumentException("订单不存在"));
+                .orElseThrow(() -> new OrderNotFoundException(orderNo));
     }
 
     @Override
@@ -354,13 +359,13 @@ public class OrderServiceImpl implements OrderService {
             
             // 2. 验证订单所有者
             if (!order.getUserId().equals(userId)) {
-                throw new IllegalArgumentException("无权限操作此订单");
+                throw new OrderPermissionException("无权限操作此订单");
             }
             
             // 3. 验证订单状态，只有待付款和已付款的订单可以取消
             if (order.getStatus() != OrderStatus.PENDING &&
             order.getStatus() != OrderStatus.PAID) {
-                throw new IllegalArgumentException("当前订单状态不允许取消");
+                throw new OrderStatusException("当前订单状态不允许取消");
             }
             
             // 4. 更新订单状态
@@ -412,9 +417,11 @@ public class OrderServiceImpl implements OrderService {
             log.info("订单取消成功，订单号: {}", order.getOrderNo());
             return true;
             
+        } catch (OrderException e) {
+            throw e;
         } catch (Exception e) {
             log.error("取消订单失败，订单ID: {}", orderId, e);
-            throw new RuntimeException("取消订单失败: " + e.getMessage());
+            throw new OrderException("取消订单失败: " + e.getMessage(), e);
         }
     }
 
@@ -431,12 +438,12 @@ public class OrderServiceImpl implements OrderService {
             
             // 2. 验证订单所有者
             if (!order.getUserId().equals(userId)) {
-                throw new IllegalArgumentException("无权限操作此订单");
+                throw new OrderPermissionException("无权限操作此订单");
             }
             
             // 3. 验证订单状态，只有已发货的订单可以确认收货
             if (order.getStatus() != OrderStatus.SHIPPED) {
-                throw new IllegalArgumentException("当前订单状态不允许确认收货");
+                throw new OrderStatusException("当前订单状态不允许确认收货");
             }
             
             // 4. 更新订单状态
@@ -458,9 +465,11 @@ public class OrderServiceImpl implements OrderService {
             log.info("确认收货成功，订单号: {}", order.getOrderNo());
             return true;
             
+        } catch (OrderException e) {
+            throw e;
         } catch (Exception e) {
             log.error("确认收货失败，订单ID: {}", orderId, e);
-            throw new RuntimeException("确认收货失败: " + e.getMessage());
+            throw new OrderException("确认收货失败: " + e.getMessage(), e);
         }
     }
 
@@ -476,14 +485,14 @@ public class OrderServiceImpl implements OrderService {
             
             // 2. 验证订单所有者
             if (!order.getUserId().equals(userId)) {
-                throw new IllegalArgumentException("无权限操作此订单");
+                throw new OrderPermissionException("无权限操作此订单");
             }
             
             // 3. 验证订单状态，只有已付款、已发货、已完成的订单可以申请退款
             if (order.getStatus() != OrderStatus.PAID && 
                 order.getStatus() != OrderStatus.SHIPPED && 
                 order.getStatus() != OrderStatus.COMPLETED) {
-                throw new IllegalArgumentException("当前订单状态不允许申请退款");
+                throw new OrderStatusException("当前订单状态不允许申请退款");
             }
             
             // 4. 更新订单状态
@@ -505,15 +514,17 @@ public class OrderServiceImpl implements OrderService {
                 // 回滚订单状态
                 order.setStatus(OrderStatus.PAID);
                 orderRepository.save(order);
-                throw new RuntimeException("申请退款失败，请稍后重试");
+                throw new OrderException("申请退款失败，请稍后重试");
             }
             
             log.info("申请退款成功，订单号: {}", order.getOrderNo());
             return true;
             
+        } catch (OrderException e) {
+            throw e;
         } catch (Exception e) {
             log.error("申请退款失败，订单ID: {}", orderId, e);
-            throw new RuntimeException("申请退款失败: " + e.getMessage());
+            throw new OrderException("申请退款失败: " + e.getMessage(), e);
         }
     }
 
@@ -529,12 +540,12 @@ public class OrderServiceImpl implements OrderService {
             
             // 2. 验证订单所有者
             if (!order.getUserId().equals(userId)) {
-                throw new IllegalArgumentException("无权限操作此订单");
+                throw new OrderPermissionException("无权限操作此订单");
             }
             
             // 3. 验证订单状态，只有待付款的订单可以支付
             if (order.getStatus() != OrderStatus.PENDING) {
-                throw new IllegalArgumentException("当前订单状态不允许支付");
+                throw new OrderStatusException("当前订单状态不允许支付");
             }
             
             // 4. 调用支付服务创建支付订单
@@ -550,9 +561,11 @@ public class OrderServiceImpl implements OrderService {
             log.info("创建支付订单成功，订单号: {}", order.getOrderNo());
             return paymentResult;
             
+        } catch (OrderException e) {
+            throw e;
         } catch (Exception e) {
             log.error("订单支付失败，订单ID: {}", orderId, e);
-            throw new RuntimeException("订单支付失败: " + e.getMessage());
+            throw new OrderException("订单支付失败: " + e.getMessage(), e);
         }
     }
 
@@ -716,9 +729,11 @@ public class OrderServiceImpl implements OrderService {
             log.info("重新购买成功，新订单号: {}", newOrder.getOrderNo());
             return newOrder;
             
+        } catch (OrderException e) {
+            throw e;
         } catch (Exception e) {
             log.error("重新购买失败，订单ID: {}", orderId, e);
-            throw new RuntimeException("重新购买失败: " + e.getMessage());
+            throw new OrderException("重新购买失败: " + e.getMessage(), e);
         }
     }
 

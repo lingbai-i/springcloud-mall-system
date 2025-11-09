@@ -1,23 +1,22 @@
 package com.mall.order.exception;
 
+import com.mall.common.core.domain.R;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 全局异常处理器
- * 统一处理订单服务中的异常
+ * 统一处理订单服务的异常，转换为标准响应格式
  * 
  * @author lingbai
  * @version 1.0
@@ -28,147 +27,121 @@ import java.util.Set;
 public class GlobalExceptionHandler {
     
     /**
+     * 处理订单不存在异常
+     */
+    @ExceptionHandler(OrderNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public R<Void> handleOrderNotFoundException(OrderNotFoundException e) {
+        log.warn("订单不存在异常: {}", e.getMessage());
+        return R.fail(404, e.getMessage());
+    }
+    
+    /**
+     * 处理订单状态异常
+     */
+    @ExceptionHandler(OrderStatusException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public R<Void> handleOrderStatusException(OrderStatusException e) {
+        log.warn("订单状态异常: {}", e.getMessage());
+        return R.fail(400, e.getMessage());
+    }
+    
+    /**
+     * 处理订单权限异常
+     */
+    @ExceptionHandler(OrderPermissionException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public R<Void> handleOrderPermissionException(OrderPermissionException e) {
+        log.warn("订单权限异常: {}", e.getMessage());
+        return R.fail(403, e.getMessage());
+    }
+    
+    /**
+     * 处理库存不足异常
+     */
+    @ExceptionHandler(InsufficientStockException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public R<Void> handleInsufficientStockException(InsufficientStockException e) {
+        log.warn("库存不足异常: {}", e.getMessage());
+        return R.fail(400, e.getMessage());
+    }
+    
+    /**
+     * 处理订单业务异常
+     */
+    @ExceptionHandler(OrderException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public R<Void> handleOrderException(OrderException e) {
+        log.warn("订单业务异常: {}", e.getMessage());
+        return R.fail(400, e.getMessage());
+    }
+    
+    /**
      * 处理参数校验异常
-     * 
-     * @param e 方法参数校验异常
-     * @return 错误响应
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, Object>> handleValidationException(MethodArgumentNotValidException e) {
-        log.error("参数校验失败", e);
-        
-        Map<String, Object> response = new HashMap<>();
-        Map<String, String> errors = new HashMap<>();
-        
-        // 获取所有字段错误
-        for (FieldError error : e.getBindingResult().getFieldErrors()) {
-            errors.put(error.getField(), error.getDefaultMessage());
-        }
-        
-        response.put("code", 400);
-        response.put("message", "参数校验失败");
-        response.put("errors", errors);
-        
-        return ResponseEntity.badRequest().body(response);
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public R<Void> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
+        String message = e.getBindingResult().getFieldErrors().stream()
+                .map(FieldError::getDefaultMessage)
+                .collect(Collectors.joining(", "));
+        log.warn("参数校验失败: {}", message);
+        return R.fail(400, "参数校验失败: " + message);
     }
     
     /**
      * 处理绑定异常
-     * 
-     * @param e 绑定异常
-     * @return 错误响应
      */
     @ExceptionHandler(BindException.class)
-    public ResponseEntity<Map<String, Object>> handleBindException(BindException e) {
-        log.error("参数绑定失败", e);
-        
-        Map<String, Object> response = new HashMap<>();
-        Map<String, String> errors = new HashMap<>();
-        
-        // 获取所有字段错误
-        for (FieldError error : e.getBindingResult().getFieldErrors()) {
-            errors.put(error.getField(), error.getDefaultMessage());
-        }
-        
-        response.put("code", 400);
-        response.put("message", "参数绑定失败");
-        response.put("errors", errors);
-        
-        return ResponseEntity.badRequest().body(response);
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public R<Void> handleBindException(BindException e) {
+        String message = e.getFieldErrors().stream()
+                .map(FieldError::getDefaultMessage)
+                .collect(Collectors.joining(", "));
+        log.warn("参数绑定失败: {}", message);
+        return R.fail(400, "参数绑定失败: " + message);
     }
     
     /**
      * 处理约束违反异常
-     * 
-     * @param e 约束违反异常
-     * @return 错误响应
      */
     @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<Map<String, Object>> handleConstraintViolationException(ConstraintViolationException e) {
-        log.error("约束违反", e);
-        
-        Map<String, Object> response = new HashMap<>();
-        Map<String, String> errors = new HashMap<>();
-        
-        Set<ConstraintViolation<?>> violations = e.getConstraintViolations();
-        for (ConstraintViolation<?> violation : violations) {
-            String propertyPath = violation.getPropertyPath().toString();
-            String message = violation.getMessage();
-            errors.put(propertyPath, message);
-        }
-        
-        response.put("code", 400);
-        response.put("message", "约束违反");
-        response.put("errors", errors);
-        
-        return ResponseEntity.badRequest().body(response);
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public R<Void> handleConstraintViolationException(ConstraintViolationException e) {
+        String message = e.getConstraintViolations().stream()
+                .map(ConstraintViolation::getMessage)
+                .collect(Collectors.joining(", "));
+        log.warn("约束违反: {}", message);
+        return R.fail(400, "约束违反: " + message);
     }
     
     /**
      * 处理非法参数异常
-     * 
-     * @param e 非法参数异常
-     * @return 错误响应
      */
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<Map<String, Object>> handleIllegalArgumentException(IllegalArgumentException e) {
-        log.error("非法参数", e);
-        
-        Map<String, Object> response = new HashMap<>();
-        response.put("code", 400);
-        response.put("message", e.getMessage());
-        
-        return ResponseEntity.badRequest().body(response);
-    }
-    
-    /**
-     * 处理订单异常
-     * 
-     * @param e 订单异常
-     * @return 错误响应
-     */
-    @ExceptionHandler(OrderException.class)
-    public ResponseEntity<Map<String, Object>> handleOrderException(OrderException e) {
-        log.error("订单业务异常", e);
-        
-        Map<String, Object> response = new HashMap<>();
-        response.put("code", e.getCode());
-        response.put("message", e.getMessage());
-        
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public R<Void> handleIllegalArgumentException(IllegalArgumentException e) {
+        log.warn("非法参数异常: {}", e.getMessage());
+        return R.fail(400, e.getMessage());
     }
     
     /**
      * 处理运行时异常
-     * 
-     * @param e 运行时异常
-     * @return 错误响应
      */
     @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<Map<String, Object>> handleRuntimeException(RuntimeException e) {
-        log.error("运行时异常", e);
-        
-        Map<String, Object> response = new HashMap<>();
-        response.put("code", 500);
-        response.put("message", "系统内部错误: " + e.getMessage());
-        
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public R<Void> handleRuntimeException(RuntimeException e) {
+        log.error("运行时异常: {}", e.getMessage(), e);
+        return R.fail(500, "系统异常: " + e.getMessage());
     }
     
     /**
      * 处理通用异常
-     * 
-     * @param e 异常
-     * @return 错误响应
      */
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, Object>> handleException(Exception e) {
-        log.error("未知异常", e);
-        
-        Map<String, Object> response = new HashMap<>();
-        response.put("code", 500);
-        response.put("message", "系统异常，请联系管理员");
-        
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public R<Void> handleException(Exception e) {
+        log.error("系统异常: {}", e.getMessage(), e);
+        return R.fail(500, "系统异常，请稍后重试");
     }
 }
