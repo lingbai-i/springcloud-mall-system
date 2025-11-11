@@ -6,6 +6,8 @@ import request from '@/utils/request'
  * @author lingbai
  * @version 1.0
  * @since 2025-10-21
+ * 修改日志：
+ * V1.1 2025-11-09T20:51:45+08:00：补充头像上传接口的后端兼容性说明；建议前端统一使用 updateUserProfile 提交 base64 头像数据，避免接口缺失导致的调用失败。
  */
 
 // 获取用户详细信息
@@ -34,8 +36,22 @@ export function changePassword(data) {
   })
 }
 
+// 首次设置密码（SMS登录用户）
+export function setPassword(data) {
+  return request({
+    url: '/users/set-password',
+    method: 'put',
+    data
+  })
+}
+
 // 上传头像
 export function uploadAvatar(file) {
+  /**
+   * 兼容性说明：
+   * 当前后端用户服务并未实现 `/users/avatar` 的文件上传端点；若直接调用该接口可能返回 404 或失败。
+   * 推荐做法：将图片转换为 Base64 字符串后，调用 `updateUserProfile({ avatar: base64 })`，由后端以字符串形式存储头像。
+   */
   const formData = new FormData()
   formData.append('file', file)
   

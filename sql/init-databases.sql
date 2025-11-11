@@ -26,21 +26,28 @@ USE `mall_user`;
 CREATE TABLE IF NOT EXISTS `users` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '用户ID',
     `username` VARCHAR(50) NOT NULL UNIQUE COMMENT '用户名',
-    `email` VARCHAR(100) NOT NULL UNIQUE COMMENT '邮箱',
+    `email` VARCHAR(100) NULL COMMENT '邮箱',
     `phone` VARCHAR(20) COMMENT '手机号',
     `password` VARCHAR(255) NOT NULL COMMENT '密码',
+    `password_set_time` DATETIME NULL COMMENT '密码设置时间',
     `nickname` VARCHAR(50) COMMENT '昵称',
     `avatar` VARCHAR(255) COMMENT '头像URL',
     `gender` TINYINT DEFAULT 0 COMMENT '性别: 0-未知, 1-男, 2-女',
     `birthday` DATE COMMENT '生日',
+    `bio` VARCHAR(500) COMMENT '个人简介',
     `status` TINYINT DEFAULT 1 COMMENT '状态: 0-禁用, 1-正常',
+    `version` INT DEFAULT 0 COMMENT '版本号（乐观锁）',
     `last_login_time` DATETIME COMMENT '最后登录时间',
     `created_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `updated_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `create_by` VARCHAR(50) COMMENT '创建人',
+    `update_by` VARCHAR(50) COMMENT '更新人',
+    `deleted` TINYINT DEFAULT 0 COMMENT '删除标记: 0-未删除, 1-已删除',
     INDEX `idx_username` (`username`),
     INDEX `idx_email` (`email`),
     INDEX `idx_phone` (`phone`),
-    INDEX `idx_status` (`status`)
+    INDEX `idx_status` (`status`),
+    INDEX `idx_deleted` (`deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
 
 -- 用户地址表
@@ -149,29 +156,13 @@ CREATE TABLE IF NOT EXISTS `order_items` (
     INDEX `idx_product_id` (`product_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='订单商品表';
 
--- 插入测试数据
-USE `mall_user`;
-INSERT INTO `users` (`username`, `email`, `password`, `nickname`, `status`) VALUES
-('admin', 'admin@mall.com', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iKyF5bB4M1A0A4EvCWmPK0jQk6fO', '管理员', 1),
-('test', 'test@mall.com', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iKyF5bB4M1A0A4EvCWmPK0jQk6fO', '测试用户', 1);
-
-USE `mall_product`;
-INSERT INTO `categories` (`name`, `parent_id`, `level`, `sort_order`, `status`) VALUES
-('电子产品', 0, 1, 1, 1),
-('服装鞋帽', 0, 1, 2, 1),
-('家居用品', 0, 1, 3, 1),
-('手机数码', 1, 2, 1, 1),
-('电脑办公', 1, 2, 2, 1);
-
-INSERT INTO `products` (`name`, `category_id`, `merchant_id`, `description`, `price`, `original_price`, `stock`, `status`) VALUES
-('iPhone 15 Pro', 4, 1, '苹果最新旗舰手机', 7999.00, 8999.00, 100, 1),
-('MacBook Pro', 5, 1, '苹果笔记本电脑', 12999.00, 14999.00, 50, 1),
-('小米14', 4, 2, '小米旗舰手机', 3999.00, 4499.00, 200, 1);
+-- ============================================
+-- 注意：不再插入任何测试数据
+-- 所有数据应通过系统前端或API添加
+-- 管理员账号请参考 sql/init.sql
+-- ============================================
 
 COMMIT;
 
 -- 显示初始化完成信息
 SELECT '数据库初始化完成！' AS message;
-SELECT COUNT(*) AS user_count FROM `mall_user`.`users`;
-SELECT COUNT(*) AS category_count FROM `mall_product`.`categories`;
-SELECT COUNT(*) AS product_count FROM `mall_product`.`products`;

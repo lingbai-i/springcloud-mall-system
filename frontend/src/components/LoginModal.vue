@@ -77,7 +77,7 @@
               placeholder="请输入手机号"
               size="large"
               clearable
-              @keyup.enter="handlePhoneLogin"
+              @keyup.enter="handleSubmit"
             />
           </el-form-item>
           
@@ -88,7 +88,7 @@
                 placeholder="请输入验证码"
                 size="large"
                 clearable
-                @keyup.enter="handlePhoneLogin"
+                @keyup.enter="handleSubmit"
               />
               <el-button
                 type="text"
@@ -115,7 +115,7 @@
             size="large"
             class="login-btn"
             :loading="loginLoading"
-            @click="loginType === 'phone' ? handlePhoneLogin() : handleSubmit()"
+            @click="handleSubmit"
           >
             {{ loginLoading ? '登录中...' : '登录' }}
           </el-button>
@@ -309,14 +309,14 @@ const handleSubmit = async () => {
       }
       await userStore.login(loginData)
     } else {
-      // 验证码登录
+      // 验证码登录（未注册自动注册）
       const response = await loginBySms({
         phone: loginForm.phone,
-        code: loginForm.smsCode
+        smsCode: loginForm.smsCode
       })
       
       // 处理验证码登录响应
-      if (response.success && response.data) {
+      if (response && response.code === 200 && response.data) {
         const { accessToken, userInfo: userData } = response.data
         // 保存token到localStorage
         localStorage.setItem('token', accessToken)

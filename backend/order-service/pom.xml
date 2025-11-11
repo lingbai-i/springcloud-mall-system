@@ -5,8 +5,9 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.mall</groupId>
-        <artifactId>mall-backend</artifactId>
+        <artifactId>mall-parent</artifactId>
         <version>1.0.0</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>order-service</artifactId>

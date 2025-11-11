@@ -3,6 +3,7 @@ package com.mall.cart.config;
 import com.mall.cart.security.JwtAuthenticationFilter;
 import com.mall.cart.security.JwtAuthenticationEntryPoint;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -14,6 +15,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import jakarta.annotation.PostConstruct;
 import java.util.Arrays;
 
 /**
@@ -27,11 +29,20 @@ import java.util.Arrays;
 @EnableWebSecurity
 public class SecurityConfig {
 
+    @Value("${security.jwt.enabled:true}")
+    private boolean jwtEnabled;
+
     @Autowired
     private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Autowired
     private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+
+    @PostConstruct
+    public void init() {
+        System.out.println("[Cart SecurityConfig] JWT认证已" + (jwtEnabled ? "启用" : "禁用") + " (security.jwt.enabled="
+                + jwtEnabled + ")");
+    }
 
     /**
      * 安全过滤器链配置
@@ -43,33 +54,34 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            // 禁用CSRF
-            .csrf(csrf -> csrf.disable())
-            // 配置CORS
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            // 配置会话管理
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            // 配置异常处理
-            .exceptionHandling(exceptions -> exceptions
-                .authenticationEntryPoint(jwtAuthenticationEntryPoint)
-            )
-            // 添加JWT认证过滤器
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-            // 配置请求授权
-            .authorizeHttpRequests(authz -> authz
-                // 允许访问的公共端点
-                .requestMatchers(
-                    "/actuator/**",
-                    "/swagger-ui/**",
-                    "/v3/api-docs/**",
-                    "/swagger-resources/**",
-                    "/webjars/**",
-                    "/doc.html",
-                    "/favicon.ico"
-                ).permitAll()
-                // 其他请求需要认证
-                .anyRequest().authenticated()
-            );
+                // 禁用CSRF
+                .csrf(csrf -> csrf.disable())
+                // 配置CORS
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                // 配置会话管理
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+
+        // 开发模式：允许所有请求
+        if (!jwtEnabled) {
+            http.authorizeHttpRequests(authz -> authz.anyRequest().permitAll());
+        } else {
+            // 生产模式：启用JWT认证
+            http
+                    .exceptionHandling(exceptions -> exceptions
+                            .authenticationEntryPoint(jwtAuthenticationEntryPoint))
+                    .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                    .authorizeHttpRequests(authz -> authz
+                            .requestMatchers(
+                                    "/actuator/**",
+                                    "/swagger-ui/**",
+                                    "/v3/api-docs/**",
+                                    "/swagger-resources/**",
+                                    "/webjars/**",
+                                    "/doc.html",
+                                    "/favicon.ico")
+                            .permitAll()
+                            .anyRequest().authenticated());
+        }
 
         return http.build();
     }

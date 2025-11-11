@@ -1,38 +1,36 @@
+<!--
+  商家设置中心占位页
+  @author lingbai
+  修改日志：
+  V1.1 2025-11-09T20:53:01+08:00：新增占位组件以修复缺失文件导致的开发服务器启动失败；仅用于占位，后续可替换为真实设置页面。
+-->
 <template>
-  <!-- 简单占位页面，避免路由导入缺失导致 Vite 构建失败 -->
   <div class="merchant-settings">
-    <h1>商家设置</h1>
-    <p>此为占位页面，后续可替换为真实设置界面。</p>
+    <el-card>
+      <template #header>
+        <div class="card-header">设置中心</div>
+      </template>
+      <p>该页面为占位实现，用于保证项目可启动。</p>
+      <p>后续请替换为真实的商家设置功能。</p>
+    </el-card>
   </div>
+  
+  <!--
+    设计说明：
+    - 为了不干扰当前任务（用户中心头像与资料更新），这里保持最小可运行实现。
+    - 路由依赖该文件存在，否则 Vite 依赖扫描会报错并中断 dev server。
+  -->
 </template>
 
 <script setup>
-/**
- * 商家设置页面占位组件
- *
- * 设计目的：
- * - 修复前端启动错误：路由引用 '@/views/merchant/settings/index.vue' 文件不存在
- * - 提供最小可渲染组件以确保 Vite 开发服务器能够成功启动
- *
- * 后续扩展：
- * - 替换为实际的商家设置表单与逻辑
- * - 集成状态管理与 API 接口
- */
-
-// 当前占位组件无业务逻辑，仅用于消除构建时缺失文件错误
+// 目前无需逻辑，仅占位以保障路由声明不报错
 </script>
 
 <style scoped>
 .merchant-settings {
-  padding: 24px;
+  padding: 16px;
 }
-
-h1 {
-  font-size: 20px;
-  margin-bottom: 8px;
-}
-
-p {
-  color: #666;
+.card-header {
+  font-weight: 600;
 }
 </style>

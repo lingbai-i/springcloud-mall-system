@@ -91,6 +91,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         UserInfoResponse response = new UserInfoResponse();
         BeanUtils.copyProperties(user, response);
+
+        // 设置userId字段（从 id 复制）
+        response.setUserId(user.getId());
+
+        // 设置是否已设置密码标识（password_set_time不为空表示已设置）
+        response.setHasSetPassword(user.getPasswordSetTime() != null);
+
         return response;
     }
 
@@ -102,14 +109,108 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public boolean updateUserInfo(UpdateUserRequest request) {
-        // 临时返回false，等待数据库连接恢复
-        return false;
+        try {
+            // 根据用户名查找用户
+            User user = findByUsername(request.getUsername());
+            if (user == null) {
+                throw new RuntimeException("用户不存在");
+            }
+
+            // 更新用户信息（只更新非空字段）
+            if (StrUtil.isNotBlank(request.getNickname())) {
+                user.setNickname(request.getNickname());
+            }
+            if (StrUtil.isNotBlank(request.getEmail())) {
+                user.setEmail(request.getEmail());
+            }
+            if (StrUtil.isNotBlank(request.getPhone())) {
+                user.setPhone(request.getPhone());
+            }
+            if (request.getGender() != null) {
+                user.setGender(request.getGender());
+            }
+            if (StrUtil.isNotBlank(request.getBirthday())) {
+                user.setBirthday(request.getBirthday());
+            }
+            if (StrUtil.isNotBlank(request.getAvatar())) {
+                user.setAvatar(request.getAvatar());
+            }
+            if (StrUtil.isNotBlank(request.getBio())) {
+                user.setBio(request.getBio());
+            }
+
+            // 使用MyBatis-Plus更新
+            return updateById(user);
+        } catch (Exception e) {
+            System.err.println("更新用户信息异常: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("更新用户信息失败: " + e.getMessage());
+        }
     }
 
     @Override
     public boolean changePassword(ChangePasswordRequest request) {
-        // 临时返回false，等待数据库连接恢复
-        return false;
+        try {
+            // 根据用户名查找用户
+            User user = findByUsername(request.getUsername());
+            if (user == null) {
+                throw new RuntimeException("用户不存在");
+            }
+
+            // 验证旧密码
+            if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+                throw new RuntimeException("旧密码错误");
+            }
+
+            // 设置新密码
+            user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+
+            // 更新密码设置时间
+            user.setPasswordSetTime(java.time.LocalDateTime.now());
+
+            // 更新密码
+            return updateById(user);
+        } catch (Exception e) {
+            System.err.println("修改密码异常: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("修改密码失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 首次设置密码（不需要旧密码）
+     * 用于SMS登录的用户首次设置自己的密码
+     * 
+     * @param username    用户名
+     * @param newPassword 新密码
+     * @return 设置结果
+     */
+    public boolean setPassword(String username, String newPassword) {
+        try {
+            // 根据用户名查找用户
+            User user = findByUsername(username);
+            if (user == null) {
+                throw new RuntimeException("用户不存在");
+            }
+
+            // 检查是否已经设置过密码
+            if (user.getPasswordSetTime() != null) {
+                throw new RuntimeException("密码已设置，请使用修改密码功能");
+            }
+
+            // 设置新密码
+            user.setPassword(passwordEncoder.encode(newPassword));
+
+            // 设置密码设置时间
+            user.setPasswordSetTime(java.time.LocalDateTime.now());
+
+            // 更新密码
+            return updateById(user);
+        } catch (Exception e) {
+            System.err.println("设置密码异常: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("设置密码失败: " + e.getMessage());
+        }
     }
 
     @Override
@@ -135,16 +236,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             return false;
         }
     }
-    
+
     @Override
     public boolean updateById(User user) {
         try {
             // 设置更新时间
             user.setUpdateTime(java.time.LocalDateTime.now());
-            
+
             // 使用MyBatis-Plus更新数据库
             int result = userMapper.updateById(user);
-            
+
             return result > 0;
         } catch (Exception e) {
             System.err.println("用户更新异常: " + e.getMessage());

@@ -1,12 +1,13 @@
-# 基于SpringCloud的微服务在线商城系统
+# 基于 SpringCloud 的微服务在线商城系统
 
 ## 项目简介
 
-本项目是一个基于SpringCloud Alibaba的微服务架构在线商城系统，采用前后端分离的设计模式，前端使用Vue3+Element Plus，后端使用Spring Boot + Spring Cloud Alibaba技术栈，严格遵循国产中间件要求。
+本项目是一个基于 SpringCloud Alibaba 的微服务架构在线商城系统，采用前后端分离的设计模式，前端使用 Vue3+Element Plus，后端使用 Spring Boot + Spring Cloud Alibaba 技术栈，严格遵循国产中间件要求。
 
 ## 技术架构
 
 ### 后端技术栈
+
 - **核心框架**: Java 22 + Spring Boot 3.x + Spring Cloud Alibaba
 - **注册中心**: Nacos
 - **配置中心**: Nacos Config
@@ -23,16 +24,18 @@
 - **文档**: Knife4j (Swagger3)
 
 ### 前端技术栈
+
 - **框架**: Vue 3 + Vite
-- **UI组件**: Element Plus
+- **UI 组件**: Element Plus
 - **状态管理**: Pinia
 - **路由**: Vue Router 4
-- **HTTP客户端**: Axios
+- **HTTP 客户端**: Axios
 - **工具库**: VueUse + Hutool
 
 ## 系统架构
 
 ### 微服务划分
+
 ```
 ├── gateway-service          # 网关服务
 ├── auth-service            # 认证服务
@@ -54,6 +57,7 @@
 ```
 
 ### 数据库设计
+
 - `mall_user`: 用户相关数据
 - `mall_product`: 商品相关数据
 - `mall_order`: 订单相关数据
@@ -62,6 +66,7 @@
 ## 功能特性
 
 ### 用户端功能
+
 - ✅ 用户注册登录
 - ✅ 商品浏览搜索
 - ✅ 购物车管理
@@ -71,6 +76,7 @@
 - ✅ 收货地址管理
 
 ### 商家端功能
+
 - ✅ 商家入驻审核
 - ✅ 店铺管理
 - ✅ 商品发布管理
@@ -80,6 +86,7 @@
 - ✅ 数据统计
 
 ### 管理端功能
+
 - ✅ 系统监控
 - ✅ 用户管理
 - ✅ 商家审核
@@ -90,16 +97,64 @@
 ## 🚀 快速开始
 
 ### 环境要求
-- **JDK**: 8+ (推荐JDK 11)
-- **Node.js**: 16+
+
+- **JDK**: 17+ (推荐 JDK 17)
+- **Node.js**: 18+
 - **Maven**: 3.6+
 - **Docker**: 20+ & Docker Compose
 - **MySQL**: 8.0+
 - **Redis**: 6.0+
 
-### ⚡ 一键启动 (推荐)
+## 🎯 本地开发（推荐）
 
-**Windows用户:**
+**适用场景**：日常开发、调试、快速迭代
+
+### 一键启动
+
+```bash
+start-dev.bat
+```
+
+此脚本会：
+
+1. 启动 Docker 基础设施（MySQL、Redis、Nacos）
+2. 询问是否启动后端微服务
+3. 询问是否启动前端
+
+### 手动启动
+
+```bash
+# 1. 仅启动基础设施
+docker-compose -f docker-compose-dev.yml up -d
+
+# 2. 在IDE中启动需要的微服务
+#    - GatewayServiceApplication (8080)
+#    - UserServiceApplication (8082)
+#    - ProductServiceApplication (8083)
+#    - CartServiceApplication (8088)
+
+# 3. 启动前端
+cd frontend && npm run dev
+```
+
+### 停止服务
+
+```bash
+stop-dev.bat
+```
+
+> 💡 **提示**：本地开发模式启动更快，占用资源更少，适合日常开发。详见 [快速上手指南](QUICK_START.md)
+
+---
+
+## 📦 完整部署（用于测试/生产）
+
+**适用场景**：功能测试、演示、生产部署
+
+### ⚡ 一键启动
+
+**Windows 用户:**
+
 ```bash
 # 1. 启动所有服务
 start-all-services.bat
@@ -111,7 +166,8 @@ check-services.bat
 stop-all-services.bat
 ```
 
-**Linux/Mac用户:**
+**Linux/Mac 用户:**
+
 ```bash
 # 1. 给脚本执行权限
 chmod +x *.sh
@@ -126,12 +182,14 @@ chmod +x *.sh
 ### 📋 手动启动步骤
 
 #### 1. 克隆项目
+
 ```bash
 git clone <repository-url>
 cd 在线商城系统
 ```
 
 #### 2. 启动基础设施
+
 ```bash
 # 启动MySQL、Redis、Nacos等中间件
 docker-compose up -d
@@ -141,6 +199,7 @@ docker-compose ps
 ```
 
 #### 3. 初始化数据库
+
 ```bash
 # 连接MySQL并执行初始化脚本
 mysql -u root -p123456 < sql/init-databases.sql
@@ -150,6 +209,7 @@ docker exec -i mysql mysql -uroot -p123456 < sql/init-databases.sql
 ```
 
 #### 4. 启动后端微服务
+
 ```bash
 cd backend
 
@@ -169,6 +229,7 @@ cd admin-service && mvn spring-boot:run &       # 管理服务 (8086)
 ```
 
 #### 5. 启动前端项目
+
 ```bash
 cd frontend
 
@@ -181,31 +242,32 @@ npm run dev
 
 ### 🌐 访问地址
 
-| 服务 | 地址 | 账号密码 |
-|------|------|----------|
-| 🎨 **前端应用** | http://localhost:3003 | test/123456 |
-| 📡 **API网关** | http://localhost:8080 | - |
-| 🎯 **Nacos控制台** | http://localhost:8848/nacos | nacos/nacos |
-| 🗄️ **MySQL数据库** | localhost:3306 | root/123456 |
-| 📊 **Redis缓存** | localhost:6379 | - |
+| 服务                | 地址                        | 账号密码    |
+| ------------------- | --------------------------- | ----------- |
+| 🎨 **前端应用**     | http://localhost:3003       | test/123456 |
+| 📡 **API 网关**     | http://localhost:8080       | -           |
+| 🎯 **Nacos 控制台** | http://localhost:8848/nacos | nacos/nacos |
+| 🗄️ **MySQL 数据库** | localhost:3306              | root/123456 |
+| 📊 **Redis 缓存**   | localhost:6379              | -           |
 
 ### 📊 微服务端口分配
 
-| 服务名称 | 端口 | 状态检查 |
-|----------|------|----------|
-| Gateway Service | 8080 | http://localhost:8080/actuator/health |
-| Auth Service | 8081 | http://localhost:8081/actuator/health |
-| User Service | 8082 | http://localhost:8082/actuator/health |
-| Product Service | 8083 | http://localhost:8083/actuator/health |
-| Order Service | 8084 | http://localhost:8084/actuator/health |
-| Payment Service | 8085 | http://localhost:8085/actuator/health |
-| Admin Service | 8086 | http://localhost:8086/actuator/health |
+| 服务名称         | 端口 | 状态检查                              |
+| ---------------- | ---- | ------------------------------------- |
+| Gateway Service  | 8080 | http://localhost:8080/actuator/health |
+| Auth Service     | 8081 | http://localhost:8081/actuator/health |
+| User Service     | 8082 | http://localhost:8082/actuator/health |
+| Product Service  | 8083 | http://localhost:8083/actuator/health |
+| Order Service    | 8084 | http://localhost:8084/actuator/health |
+| Payment Service  | 8085 | http://localhost:8085/actuator/health |
+| Admin Service    | 8086 | http://localhost:8086/actuator/health |
 | Merchant Service | 8087 | http://localhost:8087/actuator/health |
-| Cart Service | 8088 | http://localhost:8088/actuator/health |
+| Cart Service     | 8088 | http://localhost:8088/actuator/health |
 
 ### 🔍 启动验证
 
 #### 检查基础设施
+
 ```bash
 # 检查Docker容器状态
 docker-compose ps
@@ -215,6 +277,7 @@ curl http://localhost:8848/nacos/v1/ns/instance/list?serviceName=gateway-service
 ```
 
 #### 检查微服务状态
+
 ```bash
 # 检查网关健康状态
 curl http://localhost:8080/actuator/health
@@ -223,7 +286,8 @@ curl http://localhost:8080/actuator/health
 curl http://localhost:8848/nacos/v1/ns/service/list?pageNo=1&pageSize=10
 ```
 
-#### 测试API接口
+#### 测试 API 接口
+
 ```bash
 # 测试用户注册
 curl -X POST http://localhost:8080/api/user/register \
@@ -260,12 +324,14 @@ spring-cloud-mall/
 ## 开发规范
 
 ### 代码规范
-- 遵循阿里巴巴Java开发手册
+
+- 遵循阿里巴巴 Java 开发手册
 - 使用统一的代码格式化配置
 - 必须编写单元测试
 - 接口必须有完整的文档注释
 
 ### 提交规范
+
 ```
 feat: 新功能
 fix: 修复bug
@@ -277,6 +343,7 @@ chore: 构建过程或辅助工具的变动
 ```
 
 ### 分支管理
+
 - `main`: 主分支，用于生产环境
 - `develop`: 开发分支
 - `feature/*`: 功能分支
@@ -284,7 +351,8 @@ chore: 构建过程或辅助工具的变动
 
 ## 部署说明
 
-### Docker部署
+### Docker 部署
+
 ```bash
 # 构建镜像
 docker-compose build
@@ -296,7 +364,8 @@ docker-compose up -d
 docker-compose ps
 ```
 
-### Kubernetes部署
+### Kubernetes 部署
+
 ```bash
 # 部署到K8s集群
 kubectl apply -f k8s/
@@ -308,49 +377,58 @@ kubectl get pods -n mall
 ## 监控告警
 
 ### 应用监控
-- 使用Prometheus收集指标
-- Grafana展示监控面板
+
+- 使用 Prometheus 收集指标
+- Grafana 展示监控面板
 - 支持自定义告警规则
 
 ### 日志监控
-- 使用ELK Stack收集日志
+
+- 使用 ELK Stack 收集日志
 - 支持日志检索和分析
 - 异常日志自动告警
 
 ### 链路追踪
-- 使用SkyWalking进行链路追踪
+
+- 使用 SkyWalking 进行链路追踪
 - 支持性能分析和问题定位
 
 ## 性能优化
 
 ### 缓存策略
-- Redis多级缓存
+
+- Redis 多级缓存
 - 本地缓存+分布式缓存
 - 缓存预热和更新策略
 
 ### 数据库优化
+
 - 读写分离
 - 分库分表
 - 索引优化
 
 ### 接口优化
+
 - 接口限流
 - 数据压缩
-- CDN加速
+- CDN 加速
 
 ## 安全防护
 
 ### 认证授权
-- JWT Token认证
-- RBAC权限控制
-- OAuth2.0集成
+
+- JWT Token 认证
+- RBAC 权限控制
+- OAuth2.0 集成
 
 ### 数据安全
+
 - 敏感数据加密
-- SQL注入防护
-- XSS攻击防护
+- SQL 注入防护
+- XSS 攻击防护
 
 ### 接口安全
+
 - 接口签名验证
 - 防重放攻击
 - 限流熔断
@@ -358,27 +436,33 @@ kubectl get pods -n mall
 ## 测试策略
 
 ### 单元测试
+
 - JUnit5 + Mockito
-- 测试覆盖率要求80%+
+- 测试覆盖率要求 80%+
 
 ### 集成测试
+
 - TestContainers
 - 端到端测试
 
 ### 性能测试
-- JMeter压力测试
+
+- JMeter 压力测试
 - 性能基准测试
 
 ## 常见问题
 
-### Q: 如何解决Nacos连接失败？
-A: 检查Nacos服务是否启动，确认网络连接正常。
+### Q: 如何解决 Nacos 连接失败？
+
+A: 检查 Nacos 服务是否启动，确认网络连接正常。
 
 ### Q: 如何配置多环境？
-A: 在Nacos中创建不同的命名空间，对应dev/test/prod环境。
+
+A: 在 Nacos 中创建不同的命名空间，对应 dev/test/prod 环境。
 
 ### Q: 如何扩展新的微服务？
-A: 参考现有服务结构，创建新的服务模块，注册到Nacos。
+
+A: 参考现有服务结构，创建新的服务模块，注册到 Nacos。
 
 ## 贡献指南
 

@@ -64,6 +64,10 @@ public class UserInfoResponse {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime lastLoginTime;
     
+    /** 是否已设置密码（用于区分SMS自动注册用户） */
+    @Schema(description = "是否已设置密码")
+    private Boolean hasSetPassword;
+    
     // 构造函数
     public UserInfoResponse() {}
     
@@ -162,6 +166,14 @@ public class UserInfoResponse {
     
     public void setLastLoginTime(LocalDateTime lastLoginTime) {
         this.lastLoginTime = lastLoginTime;
+    }
+    
+    public Boolean getHasSetPassword() {
+        return hasSetPassword;
+    }
+    
+    public void setHasSetPassword(Boolean hasSetPassword) {
+        this.hasSetPassword = hasSetPassword;
     }
     
     /**

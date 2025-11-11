@@ -1,5 +1,5 @@
 server:
-  port: 8083
+  port: 8089
   servlet:
     context-path: /
 
@@ -37,7 +37,7 @@ spring:
     host: localhost
     port: 6379
     password: ""
-    database: 2
+    database: 0
     timeout: 3000ms
     lettuce:
       pool:

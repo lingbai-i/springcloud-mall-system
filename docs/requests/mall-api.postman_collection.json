@@ -1,0 +1,225 @@
+{
+  "info": {
+    "name": "Mall API Collection",
+    "_postman_id": "9bcb1e7b-0f22-4f0e-9a7a-collection",
+    "description": "在线商城接口集合。生成时间: 2025-11-09T22:11:30+08:00\n\n说明:\n- 本集合覆盖短信发送/验证接口，含网关与直连两种方式。\n- 变量可切换不同运行模式：gateway、sms_service、frontend_dev。\n- 如需扩展用户注册/登录，请按 README 指南更新路径。\n\n变更:\n- V1.1 2025-11-09T22:11:30+08:00：修正前端开发端口为 5173，并同步前端代理说明。",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "gateway_url", "value": "http://localhost:8080", "type": "string" },
+    { "key": "sms_service_url", "value": "http://localhost:8083", "type": "string" },
+    { "key": "frontend_dev_url", "value": "http://localhost:5173", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "SMS",
+      "item": [
+        {
+          "name": "Send — via Gateway (/api/sms/send)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/sms/send",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "sms", "send"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"13900139003\",\n  \"purpose\": \"REGISTER\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "通过网关转发到 SMS 服务。Gateway StripPrefix=2 -> /sms/send。"
+          }
+        },
+        {
+          "name": "Verify — via Gateway (/api/sms/verify)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/sms/verify",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "sms", "verify"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"13900139003\",\n  \"code\": \"123456\",\n  \"purpose\": \"REGISTER\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "通过网关验证验证码。Gateway StripPrefix=2 -> /sms/verify。"
+          }
+        },
+        {
+          "name": "Send — Direct (/sms/send)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{sms_service_url}}/sms/send",
+              "host": ["{{sms_service_url}}"],
+              "path": ["sms", "send"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"13900139003\",\n  \"purpose\": \"REGISTER\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "直连 SMS 服务的网关路径控制器 (GatewaySmsController)。"
+          }
+        },
+        {
+          "name": "Send — Direct (/send)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{sms_service_url}}/send",
+              "host": ["{{sms_service_url}}"],
+              "path": ["send"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"13900139003\",\n  \"purpose\": \"REGISTER\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "直连 SMS 服务的基础控制器 (SmsController)。"
+          }
+        },
+        {
+          "name": "Verify — Direct (/sms/verify)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{sms_service_url}}/sms/verify",
+              "host": ["{{sms_service_url}}"],
+              "path": ["sms", "verify"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"13900139003\",\n  \"code\": \"123456\",\n  \"purpose\": \"REGISTER\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "直连 SMS 服务验证接口 (GatewaySmsController)。"
+          }
+        },
+        {
+          "name": "Verify — Direct (/verify)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{sms_service_url}}/verify",
+              "host": ["{{sms_service_url}}"],
+              "path": ["verify"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"13900139003\",\n  \"code\": \"123456\",\n  \"purpose\": \"REGISTER\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "直连 SMS 服务基础控制器验证接口 (SmsController)。"
+          }
+        },
+        {
+          "name": "Health — SMS Service",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{sms_service_url}}/sms/health",
+              "host": ["{{sms_service_url}}"],
+              "path": ["sms", "health"]
+            },
+            "description": "健康检查：返回 SMS 服务运行状态。"
+          }
+        },
+        {
+          "name": "Send — via Frontend Dev Proxy",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{frontend_dev_url}}/api/sms/send",
+              "host": ["{{frontend_dev_url}}"],
+              "path": ["api", "sms", "send"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"13900139003\",\n  \"purpose\": \"REGISTER\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "通过 Vite 代理到 SMS 服务 (frontend/vite.config.js: /api/sms -> http://localhost:8083/sms)。"
+          }
+        }
+      ]
+    },
+    {
+      "name": "User (Gateway)",
+      "item": [
+        {
+          "name": "Register — via Gateway (/api/users/register)",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": {
+              "raw": "{{gateway_url}}/api/users/register",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "users", "register"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser1\",\n  \"password\": \"test123456\",\n  \"confirmPassword\": \"test123456\",\n  \"nickname\": \"测试用户1\",\n  \"email\": \"test1@example.com\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "占位：用户服务注册接口。SecurityConfig已放行路径 /users/register 与 /api/users/register。具体字段以实际控制器实现为准。"
+          }
+        },
+        {
+          "name": "Login — via Gateway (/api/users/login)",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": {
+              "raw": "{{gateway_url}}/api/users/login",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "users", "login"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser2\",\n  \"password\": \"test123456\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "占位：用户服务登录接口。具体返回的token/会话字段以实际实现为准。"
+          }
+        },
+        {
+          "name": "Gateway Test — /api/users/test",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{gateway_url}}/api/users/test",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "users", "test"]
+            },
+            "description": "用于验证网关转发的测试端点 (UserController.test)。"
+          }
+        }
+      ]
+    }
+  ]
+}

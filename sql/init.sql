@@ -1,3 +1,9 @@
+-- ============================================
+-- 初始化数据库脚本
+-- 说明：仅创建数据库结构和基础分类数据
+-- 注意：不包含任何测试数据
+-- ============================================
+
 -- 创建数据库
 CREATE DATABASE IF NOT EXISTS `mall_user` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE DATABASE IF NOT EXISTS `mall_product` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -218,14 +224,20 @@ CREATE TABLE `store` (
   KEY `idx_merchant_id` (`merchant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='店铺表';
 
--- 插入测试数据
+-- ============================================
+-- 初始化管理员账号
+-- 默认管理员：admin / password
+-- ============================================
 USE `mall_user`;
 
--- 插入测试用户
+-- 插入默认管理员账号
 INSERT INTO `sys_user` (`id`, `username`, `nickname`, `email`, `phone`, `password`, `status`) VALUES
-(1, 'admin', '管理员', 'admin@mall.com', '13800138000', '$2a$10$7JB720yubVSOfvVWbGReyO.ZhMqcpAVwddZhz2ltHPUtOcxYWLsTS', '0'),
-(2, 'user001', '普通用户1', 'user001@mall.com', '13800138001', '$2a$10$7JB720yubVSOfvVWbGReyO.ZhMqcpAVwddZhz2ltHPUtOcxYWLsTS', '0'),
-(3, 'merchant001', '商家用户1', 'merchant001@mall.com', '13800138002', '$2a$10$7JB720yubVSOfvVWbGReyO.ZhMqcpAVwddZhz2ltHPUtOcxYWLsTS', '0');
+(1, 'admin', '系统管理员', 'admin@mall.com', '13800138000', '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG', '0');
+
+-- 如果存在 users 表，也插入管理员账号
+INSERT INTO `users` (`id`, `username`, `nickname`, `email`, `phone`, `password`, `status`) 
+VALUES (1, 'admin', '系统管理员', 'admin@mall.com', '13800138888', '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG', 1)
+ON DUPLICATE KEY UPDATE username=username;
 
 USE `mall_product`;
 
@@ -240,23 +252,8 @@ INSERT INTO `product_category` (`id`, `parent_id`, `name`, `icon`, `sort_order`)
 (21, 2, '电脑整机', NULL, 1),
 (22, 2, '电脑配件', NULL, 2);
 
--- 插入商品SPU
-INSERT INTO `product_spu` (`id`, `spu_code`, `name`, `description`, `category_id`, `merchant_id`, `status`) VALUES
-(1, 'SPU001', 'iPhone 15 Pro', '苹果iPhone 15 Pro，搭载A17 Pro芯片', 11, 1, 1),
-(2, 'SPU002', 'MacBook Pro 14', '苹果MacBook Pro 14英寸，M3芯片', 21, 1, 1);
-
--- 插入商品SKU
-INSERT INTO `product_sku` (`id`, `sku_code`, `spu_id`, `name`, `price`, `original_price`, `stock`) VALUES
-(1, 'SKU001001', 1, 'iPhone 15 Pro 128GB 深空黑色', 7999.00, 8999.00, 100),
-(2, 'SKU001002', 1, 'iPhone 15 Pro 256GB 深空黑色', 8999.00, 9999.00, 80),
-(3, 'SKU002001', 2, 'MacBook Pro 14 M3 16GB+512GB', 15999.00, 17999.00, 50);
-
-USE `mall_merchant`;
-
--- 插入商家数据
-INSERT INTO `merchant` (`id`, `merchant_code`, `company_name`, `legal_person`, `contact_name`, `contact_phone`, `contact_email`, `status`) VALUES
-(1, 'M001', '苹果授权经销商', '张三', '李四', '13800138000', 'contact@apple-store.com', 'APPROVED');
-
--- 插入店铺数据
-INSERT INTO `store` (`id`, `merchant_id`, `store_name`, `store_description`, `status`) VALUES
-(1, 1, '苹果官方旗舰店', '苹果官方授权旗舰店，正品保证', 'OPEN');
+-- ============================================
+-- 注意：不再插入任何测试数据
+-- 如需测试数据，请在应用启动后通过前端添加
+-- 或使用单独的测试数据脚本
+-- ============================================

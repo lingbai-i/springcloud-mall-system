@@ -210,6 +210,22 @@ services:
     networks:
       - mall-network
 
+  # RabbitMQ消息队列
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: mall-rabbitmq
+    restart: always
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - mall-network
+
   # SMS短信服务
   sms-service:
     image: eclipse-temurin:17-jre
@@ -376,10 +392,15 @@ services:
       SPRING_CLOUD_NACOS_CONFIG_ENABLED: "false"
       SPRING_CLOUD_NACOS_CONFIG_IMPORT_CHECK_ENABLED: "false"
       SPRING_CONFIG_IMPORT: "optional:nacos:"
+      SPRING_RABBITMQ_HOST: "rabbitmq"
+      SPRING_RABBITMQ_PORT: "5672"
+      SPRING_RABBITMQ_USERNAME: "guest"
+      SPRING_RABBITMQ_PASSWORD: "guest"
     depends_on:
       - mysql
       - nacos
       - redis
+      - rabbitmq
     networks:
       - mall-network
 
@@ -456,6 +477,7 @@ volumes:
   minio_data:
   prometheus_data:
   grafana_data:
+  rabbitmq_data:
 
 networks:
   mall-network:

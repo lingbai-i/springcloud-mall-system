@@ -60,6 +60,11 @@ jwt:
   secret: mallSecretKeyForJWTTokenGenerationAndValidation2025ThisIsAVeryLongSecretKeyThatMeetsTheMinimumRequirementOf256BitsAndEvenMoreToEnsureSecurityCompliance
   expiration: 604800000 # 7天（7 * 24 * 60 * 60 * 1000）
 
+# 安全配置
+security:
+  jwt:
+    enabled: false # 开发模式：禁用JWT认证
+
 # 管理端点
 management:
   endpoints:
@@ -69,3 +74,12 @@ management:
   endpoint:
     health:
       show-details: always
+
+# MinIO 配置
+minio:
+  endpoint: http://localhost:9000
+  access-key: minioadmin
+  secret-key: minioadmin
+  bucket-name: mall-avatars
+  # 文件访问基础URL（对外访问）
+  public-url: http://localhost:9000

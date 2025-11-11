@@ -76,7 +76,7 @@ public class AuthServiceImpl implements AuthService {
      * @param purpose 验证码用途（默认为register）
      * @return 验证结果
      * @author lingbai
-     * @since 2025-01-27
+     * @since 2025-10-27
      */
     private boolean verifySmsCode(String phone, String captcha, String purpose) {
         try {
@@ -90,7 +90,7 @@ public class AuthServiceImpl implements AuthService {
 
             // 调用SMS服务验证接口（直接调用SMS服务，不经过网关）
             Mono<Map> response = webClient.post()
-                    .uri(smsServiceUrl + "/sms/verify")
+                    .uri(smsServiceUrl + "/verify")
                     .bodyValue(verifyRequest)
                     .retrieve()
                     .bodyToMono(Map.class);
@@ -105,8 +105,9 @@ public class AuthServiceImpl implements AuthService {
 
                 logger.info("验证码验证结果: code={}, message={}, data={}", code, message, data);
 
-                // 验证成功的条件：code为200且data为"验证码验证成功"
-                return code != null && code == 200 && "验证码验证成功".equals(data);
+                // 验证成功的条件：code为200且data包含"验证码"和"正确/成功"
+                return code != null && code == 200 && data != null &&
+                        (data.contains("验证码正确") || data.contains("验证码验证成功"));
             }
 
             logger.warn("验证码验证失败: 响应为空");
@@ -168,11 +169,103 @@ public class AuthServiceImpl implements AuthService {
         userInfo.setPhone(user.getPhone());
         userInfo.setAvatar(user.getAvatar());
         userInfo.setGender(user.getGender());
+        userInfo.setBirthday(user.getBirthday());
+        userInfo.setBio(user.getBio());
+        userInfo.setHasSetPassword(user.getPasswordSetTime() != null);
 
         // 构建响应
         LoginResponse response = new LoginResponse(token, jwtUtils.getExpirationSeconds(), userInfo);
 
         logger.info("用户登录成功: {}", user.getUsername());
+        return response;
+    }
+
+    /**
+     * 手机号验证码登录（未注册自动注册）
+     * 实现智能登录逻辑：
+     * 1. 检查手机号是否已注册
+     * 2. 如果已注册，验证验证码后直接登录
+     * 3. 如果未注册，验证验证码后自动注册并登录
+     * 
+     * @param loginRequest 登录请求（必须包含phone和smsCode）
+     * @return 登录响应
+     */
+    @Override
+    public LoginResponse smsLogin(LoginRequest loginRequest) {
+        logger.info("手机号验证码登录: {}", loginRequest.getPhone());
+
+        // 参数校验
+        if (!StringUtils.hasText(loginRequest.getPhone())) {
+            throw new RuntimeException("手机号不能为空");
+        }
+        if (!StringUtils.hasText(loginRequest.getSmsCode())) {
+            throw new RuntimeException("验证码不能为空");
+        }
+
+        // 验证手机验证码（使用LOGIN用途）
+        boolean isValidCaptcha = verifySmsCode(loginRequest.getPhone(), loginRequest.getSmsCode(), "LOGIN");
+        if (!isValidCaptcha) {
+            logger.warn("验证码验证失败: phone={}, code={}",
+                    loginRequest.getPhone(), loginRequest.getSmsCode());
+            throw new RuntimeException("验证码错误或已过期");
+        }
+
+        // 查找用户
+        User user = userService.findByPhone(loginRequest.getPhone());
+
+        if (user == null) {
+            // 未注册，自动注册
+            logger.info("手机号未注册，自动创建账户: {}", loginRequest.getPhone());
+
+            user = new User();
+            // 用手机号作为用户名
+            user.setUsername("user_" + loginRequest.getPhone());
+            // 设置默认密码（手机号后6位）
+            user.setPassword(passwordEncoder.encode(loginRequest.getPhone().substring(
+                    loginRequest.getPhone().length() - 6)));
+            user.setPhone(loginRequest.getPhone());
+            user.setNickname("用户" + loginRequest.getPhone().substring(
+                    loginRequest.getPhone().length() - 4));
+            user.setStatus(1); // 默认启用
+            user.setGender(0); // 默认未知
+            user.setDeleted(0);
+
+            boolean result = userService.insertUser(user);
+            if (!result) {
+                throw new RuntimeException("自动注册失败");
+            }
+            logger.info("自动注册成功: {}", user.getUsername());
+        }
+
+        // 检查用户状态
+        if (user.getStatus() == null || user.getStatus() == 0) {
+            throw new RuntimeException("用户已被禁用");
+        }
+
+        // 生成JWT令牌
+        String token = jwtUtils.generateToken(user.getUsername());
+
+        // 更新登录时间
+        user.setLastLoginTime(LocalDateTime.now());
+        userService.updateById(user);
+
+        // 构建用户信息
+        LoginResponse.UserInfo userInfo = new LoginResponse.UserInfo();
+        userInfo.setId(user.getId());
+        userInfo.setUsername(user.getUsername());
+        userInfo.setNickname(user.getNickname());
+        userInfo.setEmail(user.getEmail());
+        userInfo.setPhone(user.getPhone());
+        userInfo.setAvatar(user.getAvatar());
+        userInfo.setGender(user.getGender());
+        userInfo.setBirthday(user.getBirthday());
+        userInfo.setBio(user.getBio());
+        userInfo.setHasSetPassword(user.getPasswordSetTime() != null);
+
+        // 构建响应
+        LoginResponse response = new LoginResponse(token, jwtUtils.getExpirationSeconds(), userInfo);
+
+        logger.info("手机号登录成功: {}", user.getUsername());
         return response;
     }
 
@@ -266,6 +359,8 @@ public class AuthServiceImpl implements AuthService {
         userInfo.setPhone(user.getPhone());
         userInfo.setAvatar(user.getAvatar());
         userInfo.setGender(user.getGender());
+        userInfo.setBirthday(user.getBirthday());
+        userInfo.setBio(user.getBio());
 
         // 构建登录响应
         LoginResponse response = new LoginResponse(token, jwtUtils.getExpirationSeconds(), userInfo);

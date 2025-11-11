@@ -15,18 +15,29 @@ spring:
         import-check:
           enabled: false
   datasource:
-    url: jdbc:mysql://mysql:3307/mall_order?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=UTC
+    url: jdbc:mysql://mysql:3306/mall_order?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=UTC
     username: root
     password: 123456
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
     show-sql: false
+    open-in-view: false
+    defer-datasource-initialization: false
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.MySQL8Dialect
+        dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+  sql:
+    init:
+      mode: never
   redis:
     host: redis
     port: 6379
@@ -69,15 +80,22 @@ feign:
 order:
   # 订单超时时间（分钟），超过此时间未支付的订单将自动取消
   timeout-minutes: 30
-  
+
   # 自动确认收货天数，发货后超过此天数未确认将自动确认收货
   auto-confirm-days: 7
-  
+
   # 订单号前缀，用于生成唯一订单号
   order-no-prefix: "ORD"
-  
+
   # 分布式锁超时时间（秒）
   lock-timeout-seconds: 30
+
+# 定时任务配置
+spring.task:
+  scheduling:
+    pool:
+      size: 2
+    thread-name-prefix: order-task-
 
 # 日志配置
 logging:

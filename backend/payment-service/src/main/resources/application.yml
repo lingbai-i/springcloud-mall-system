@@ -1,18 +1,18 @@
 server:
-  port: 8084
+  port: 8085
   servlet:
     context-path: /payment
 
 spring:
   application:
     name: payment-service
-  
+
   # 数据库配置 - 使用H2内存数据库进行测试
   datasource:
     driver-class-name: org.h2.Driver
     url: jdbc:h2:mem:testdb
     username: sa
-    password: 
+    password:
 
   # JPA配置
   jpa:
@@ -22,12 +22,12 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.H2Dialect
-  
+
   # H2控制台配置
   h2:
     console:
       enabled: true
-  
+
   # Redis配置 - 使用内存模式进行测试
   data:
     redis:
@@ -53,7 +53,7 @@ payment:
     format: json
     charset: UTF-8
     sign-type: RSA2
-    
+
   # 微信支付配置
   wechat:
     app-id: wx1234567890abcdef

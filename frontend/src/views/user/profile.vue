@@ -10,6 +10,37 @@
 
     <!-- 标签页 -->
     <el-tabs v-model="activeTab" class="profile-tabs">
+      <!-- 头像设置 -->
+      <el-tab-pane label="头像设置" name="avatar">
+        <div class="avatar-section">
+          <div class="avatar-preview">
+            <el-avatar :size="150" :src="previewAvatar || userForm.avatar" />
+          </div>
+          <div class="avatar-upload">
+            <input 
+              type="file" 
+              ref="fileInput" 
+              accept="image/*" 
+              style="display: none" 
+              @change="handleFileSelect"
+            />
+            <el-button type="primary" @click="selectAvatar">选择头像</el-button>
+            <el-button 
+              type="success" 
+              @click="saveAvatar" 
+              :loading="uploadLoading"
+              :disabled="!pendingFile"
+            >
+              保存头像
+            </el-button>
+            <div class="upload-tips">
+              <p>支持 JPG、PNG 格式，文件大小不超过 2MB</p>
+              <p v-if="pendingFile" class="file-info">已选择：{{ pendingFile.name }}</p>
+            </div>
+          </div>
+        </div>
+      </el-tab-pane>
+      
       <!-- 基本信息 -->
       <el-tab-pane label="基本信息" name="basic">
         <el-form
@@ -87,58 +118,6 @@
           </el-form-item>
         </el-form>
       </el-tab-pane>
-
-      <!-- 头像照片 -->
-      <el-tab-pane label="头像照片" name="avatar">
-        <div class="avatar-upload-section">
-          <div class="current-avatar">
-            <h3>当前头像</h3>
-            <el-avatar :size="120" :src="userForm.avatar">
-              {{ userForm.nickname?.charAt(0) || 'U' }}
-            </el-avatar>
-          </div>
-
-          <el-divider />
-
-          <div class="upload-area">
-            <h3>上传新头像</h3>
-            <el-upload
-              class="avatar-uploader"
-              :action="uploadUrl"
-              :show-file-list="false"
-              :on-success="handleAvatarSuccess"
-              :before-upload="beforeAvatarUpload"
-              :auto-upload="false"
-              ref="uploadRef"
-              accept="image/*"
-            >
-              <img v-if="previewAvatar" :src="previewAvatar" class="avatar-preview" />
-              <div v-else class="upload-placeholder">
-                <el-icon :size="50"><Plus /></el-icon>
-                <div class="upload-text">点击上传头像</div>
-              </div>
-            </el-upload>
-            <div class="upload-tips">
-              <p>支持 JPG、PNG 格式</p>
-              <p>文件大小不超过 2MB</p>
-            </div>
-            <!-- 保存按钮 -->
-            <div class="avatar-actions">
-              <el-button 
-                type="success" 
-                @click="saveAvatar" 
-                :loading="uploadLoading"
-                :disabled="!previewAvatar || previewAvatar === userForm.avatar"
-              >
-                保存头像
-              </el-button>
-              <el-button @click="cancelUpload">
-                取消
-              </el-button>
-            </div>
-          </div>
-        </div>
-      </el-tab-pane>
     </el-tabs>
   </div>
 </template>
@@ -150,12 +129,15 @@ import { ElMessage, type FormInstance, type UploadProps, type UploadInstance } f
 import { Plus, ArrowLeft } from '@element-plus/icons-vue'
 import { updateUserProfile, uploadAvatar } from '@/api/user'
 import { useUserStore } from '@/stores/user'
+import * as logger from '@/utils/logger'
+import axios from 'axios'
 
 const router = useRouter()
 const userStore = useUserStore()
 const formRef = ref<FormInstance>()
 const uploadRef = ref<UploadInstance>()
-const activeTab = ref('basic')
+const fileInput = ref<HTMLInputElement>()
+const activeTab = ref('avatar') // 默认显示头像标签页
 const loading = ref(false)
 const uploadLoading = ref(false)
 const previewAvatar = ref('')
@@ -199,7 +181,15 @@ const rules = {
  */
 const loadUserInfo = async () => {
   try {
-    // 从 store获取用户信息
+    // 先从后端拉取最新的用户信息
+    try {
+      await userStore.fetchUserInfo()
+      console.log('已从后端刷新用户信息')
+    } catch (err) {
+      console.warn('从后端获取用户信息失败，使用缓存数据:', err)
+    }
+    
+    // 从 store 读取用户信息
     if (userStore.userInfo) {
       Object.assign(userForm, {
         nickname: userStore.userInfo.nickname || userStore.userInfo.username || '',
@@ -211,6 +201,7 @@ const loadUserInfo = async () => {
         bio: userStore.userInfo.bio || ''
       })
       previewAvatar.value = userForm.avatar
+      console.log('用户信息已加载，头像长度:', userForm.avatar?.length || 0)
     }
   } catch (error) {
     console.error('获取用户信息失败:', error)
@@ -230,7 +221,7 @@ const updateProfile = async () => {
   
   if (!userStore.token) {
     ElMessage.error('未登录或登录已过期，请重新登录')
-    router.push('/auth/login')
+    router.push('/home')
     return
   }
   
@@ -238,11 +229,21 @@ const updateProfile = async () => {
     if (valid) {
       try {
         loading.value = true
-        const response = await updateUserProfile(userForm)
+        // 添加 username 字段
+        const response = await updateUserProfile({
+          ...userForm,
+          username: userStore.userInfo?.username
+        })
         if (response.success || response.code === 200) {
           ElMessage.success('更新成功')
           // 更新store中的用户信息
           userStore.updateUserInfo(userForm)
+          // 刷新用户信息以确保后端数据同步
+          try {
+            await userStore.fetchUserInfo()
+          } catch (err) {
+            console.warn('刷新用户信息失败:', err)
+          }
         } else {
           ElMessage.error(response.message || '更新失败')
         }
@@ -263,6 +264,48 @@ const resetForm = () => {
   if (!formRef.value) return
   formRef.value.resetFields()
   loadUserInfo()
+}
+
+/**
+ * 点击选择头像按钮
+ */
+const selectAvatar = () => {
+  fileInput.value?.click()
+}
+
+/**
+ * 文件选择回调
+ */
+const handleFileSelect = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  
+  if (!file) return
+  
+  // 验证文件类型
+  const isImage = file.type === 'image/jpeg' || file.type === 'image/png'
+  if (!isImage) {
+    ElMessage.error('头像图片只能是 JPG/PNG 格式!')
+    return
+  }
+  
+  // 验证文件大小
+  const isLt2M = file.size / 1024 / 1024 < 2
+  if (!isLt2M) {
+    ElMessage.error('头像图片大小不能超过 2MB!')
+    return
+  }
+  
+  // 保存文件
+  pendingFile.value = file
+  
+  // 生成预览图
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    previewAvatar.value = e.target?.result as string
+    console.log('已选择头像，预览图长度:', previewAvatar.value?.length)
+  }
+  reader.readAsDataURL(file)
 }
 
 /**
@@ -308,7 +351,7 @@ const beforeAvatarUpload: UploadProps['beforeUpload'] = (rawFile) => {
 }
 
 /**
- * 保存头像
+ * 保存头像（MinIO 文件上传）
  */
 const saveAvatar = async () => {
   if (!pendingFile.value) {
@@ -318,52 +361,74 @@ const saveAvatar = async () => {
 
   try {
     uploadLoading.value = true
-    console.log('开始保存头像...')
-    console.log('当前token:', userStore.token)
-    console.log('是否登录:', userStore.isLoggedIn)
+    logger.info('=== 开始上传头像到 MinIO ===')
+    logger.info('文件名:', pendingFile.value.name)
+    logger.info('文件大小:', pendingFile.value.size, 'bytes')
+    logger.info('文件类型:', pendingFile.value.type)
+    logger.info('当前用户:', userStore.userInfo?.username)
     
-    // 直接使用base64预览图作为头像
-    const avatarUrl = previewAvatar.value
+    // 使用 FormData 上传文件
+    const formData = new FormData()
+    formData.append('file', pendingFile.value)
     
-    // 通过profile接口更新用户头像
-    const response = await updateUserProfile({ 
-      nickname: userForm.nickname,
-      email: userForm.email,
-      phone: userForm.phone,
-      gender: userForm.gender,
-      birthday: userForm.birthday,
-      avatar: avatarUrl,
-      bio: userForm.bio
+    // 调用新的上传接口
+    const response = await axios.post('/api/users/upload-avatar', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        'Authorization': `Bearer ${userStore.token}`
+      }
     })
     
-    console.log('头像保存响应:', response)
+    logger.info('上传响应:', response.data)
     
-    if (response.success || response.code === 200) {
+    if (response.data.success) {
+      const avatarUrl = response.data.data
+      logger.info('✓ 头像上传成功')
+      logger.info('新头像URL:', avatarUrl)
+      
       // 更新本地数据
       userForm.avatar = avatarUrl
+      previewAvatar.value = avatarUrl
       
-      // 更新store
+      // 更新 store
       userStore.updateUserInfo({ avatar: avatarUrl })
+      logger.info('✓ 已更新 store')
       
-      ElMessage.success('头像保存成功')
+      // 强制更新 localStorage
+      const currentUserInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
+      currentUserInfo.avatar = avatarUrl
+      localStorage.setItem('userInfo', JSON.stringify(currentUserInfo))
+      logger.info('✓ 已更新 localStorage')
+      
+      // 从后端刷新
+      await userStore.fetchUserInfo()
+      logger.info('✓ 后端数据已刷新')
+      
+      ElMessage.success('头像更新成功')
+      
+      // 清空文件选择
       pendingFile.value = null
+      if (fileInput.value) {
+        fileInput.value.value = ''
+      }
+      
+      logger.info('=== 头像更新完成 ===')
     } else {
-      console.error('头像保存失败:', response.message)
-      ElMessage.error(response.message || '头像保存失败')
+      logger.error('✗ 头像上传失败:', response.data.message)
+      ElMessage.error(response.data.message || '头像上传失败')
     }
-  } catch (error) {
-    console.error('头像保存失败:', error)
+    
+  } catch (error: any) {
+    logger.error('✗ 头像上传异常:', error)
     if (error.response) {
-      console.error('错误响应:', error.response.data)
-      ElMessage.error(error.response.data.message || '头像保存失败，请重试')
-    } else {
-      ElMessage.error(error.message || '头像保存失败，请重试')
+      logger.error('响应状态:', error.response.status)
+      logger.error('响应数据:', error.response.data)
     }
+    ElMessage.error('头像上传失败，请重试')
   } finally {
     uploadLoading.value = false
   }
 }
-
 /**
  * 取消上传
  */
@@ -455,6 +520,47 @@ onMounted(() => {
 
 .profile-form :deep(.el-button) {
   min-width: 100px;
+}
+
+/* 头像设置区域 */
+.avatar-section {
+  max-width: 600px;
+  padding: 30px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
+}
+
+.avatar-preview {
+  text-align: center;
+}
+
+.avatar-upload {
+  text-align: center;
+  width: 100%;
+  max-width: 400px;
+}
+
+.avatar-upload .el-button {
+  margin: 0 5px;
+  min-width: 100px;
+}
+
+.upload-tips {
+  margin-top: 15px;
+  font-size: 12px;
+  color: #909399;
+  line-height: 1.8;
+}
+
+.upload-tips p {
+  margin: 5px 0;
+}
+
+.file-info {
+  color: #67c23a;
+  font-weight: 500;
 }
 
 /* 头像上传区域 */

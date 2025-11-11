@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mall.admin.mapper.RoleMapper">
+    
+    <!-- 根据管理员ID查询角色列表 -->
+    <select id="selectRolesByAdminId" resultType="com.mall.admin.domain.entity.Role">
+        SELECT r.*
+        FROM role r
+        INNER JOIN admin_role ar ON r.id = ar.role_id
+        WHERE ar.admin_id = #{adminId}
+          AND r.status = 1
+        ORDER BY r.created_at
+    </select>
+    
+</mapper>

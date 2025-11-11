@@ -72,8 +72,8 @@
       <div class="login-footer">
         <p class="tips">
           <el-icon><InfoFilled /></el-icon>
-          还没有商家账号？
-          <el-link type="primary" @click="handleRegister">立即注册</el-link>
+          没有店铺？
+          <el-link type="primary" @click="handleRegister">点击注册申请</el-link>
         </p>
         <div class="links">
           <el-link href="/" target="_blank">返回首页</el-link>

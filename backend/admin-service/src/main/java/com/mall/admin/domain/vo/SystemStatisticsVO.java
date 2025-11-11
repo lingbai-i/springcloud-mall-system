@@ -20,6 +20,11 @@ public class SystemStatisticsVO {
     private Long todayNewUsers;
     
     /**
+     * 活跃用户数
+     */
+    private Long activeUsers;
+    
+    /**
      * 总商家数
      */
     private Long totalMerchants;

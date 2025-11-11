@@ -166,8 +166,11 @@ const getStatusText = (status: string) => {
 const fetchOrders = async () => {
   loading.value = true
   try {
-    // 调用真实API
-    const response = await fetch('/api/orders', {
+    // 获取用户ID（从用户store或localStorage）
+    const userId = localStorage.getItem('userId') || '5' // 默认测试用户ID
+    
+    // 调用真实API，添加必需的userId参数
+    const response = await fetch(`/api/orders?userId=${userId}&page=${currentPage.value - 1}&size=${pageSize.value}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -181,9 +184,10 @@ const fetchOrders = async () => {
     
     const result = await response.json()
     
-    if (result.code === 200) {
-      orders.value = result.data.records || []
-      total.value = result.data.total || 0
+    // 后端返回的数据结构：{ success: true, data: { content: [], totalElements: 0, ... } }
+    if (result.success) {
+      orders.value = result.data.content || []
+      total.value = result.data.totalElements || 0
     } else {
       throw new Error(result.message || '获取订单失败')
     }

@@ -1,8 +1,8 @@
 package com.mall.admin.domain.dto;
 
 import lombok.Data;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Pattern;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 
 /**
  * 修改密码请求DTO

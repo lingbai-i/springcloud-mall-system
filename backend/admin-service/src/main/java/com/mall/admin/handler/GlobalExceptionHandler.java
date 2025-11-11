@@ -3,6 +3,7 @@ package com.mall.admin.handler;
 import com.mall.admin.exception.AuthenticationException;
 import com.mall.admin.exception.BusinessException;
 import com.mall.admin.exception.PermissionDeniedException;
+import com.mall.admin.exception.UnauthorizedException;
 import com.mall.common.core.domain.R;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.BindException;
@@ -23,6 +24,15 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AuthenticationException.class)
     public R<?> handleAuthenticationException(AuthenticationException e) {
         log.error("认证异常: {}", e.getMessage());
+        return R.fail(401, e.getMessage());
+    }
+
+    /**
+     * 未授权异常
+     */
+    @ExceptionHandler(UnauthorizedException.class)
+    public R<?> handleUnauthorizedException(UnauthorizedException e) {
+        log.error("未授权异常: {}", e.getMessage());
         return R.fail(401, e.getMessage());
     }
 

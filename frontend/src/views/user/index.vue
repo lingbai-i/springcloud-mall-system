@@ -131,6 +131,8 @@ import OrdersView from './orders.vue'
 import AddressesView from './addresses.vue'
 import FavoritesView from './favorites.vue'
 import SettingsView from './Settings.vue'
+import { updateUserProfile } from '@/api/user'
+import * as logger from '@/utils/logger'
 
 /**
  * 用户中心主页面组件
@@ -206,9 +208,10 @@ const menuList = reactive([
  */
 onMounted(async () => {
   // 如果用户信息为空，尝试获取
-  if (!userStore.userInfo) {
+  if (!userStore.userInfo || !userStore.userInfo.userId) {
     try {
       await userStore.fetchUserInfo()
+      logger.info('用户中心页面加载，用户信息已刷新')
     } catch (error) {
       console.error('获取用户信息失败:', error)
       ElMessage.error('获取用户信息失败')
@@ -286,6 +289,9 @@ const beforeAvatarUpload = (file) => {
 
 /**
  * 处理头像上传
+ *
+ * 修改日志：
+ * V1.1 2025-11-09T20:51:23+08:00：保留占位实现，但实际上传在 confirmAvatarUpload 中走后端更新资料接口，保证与 /users/profile 一致。
  */
 const handleAvatarUpload = async (options) => {
   // 这里暂时不实际上传，只是模拟
@@ -294,6 +300,12 @@ const handleAvatarUpload = async (options) => {
 
 /**
  * 确认头像上传
+ *
+ * 修改日志：
+ * V1.1 2025-11-09T20:51:23+08:00：接入后端 /users/profile 接口，提交 base64 头像数据至 avatar 字段；成功后刷新本地 store。
+ * V1.2 2025-11-11：添加后端数据同步，确保头像更新后立即刷新用户信息。
+ * @author lingbai
+ * @returns {Promise<void>} 无返回值
  */
 const confirmAvatarUpload = async () => {
   if (!previewAvatar.value) {
@@ -303,19 +315,29 @@ const confirmAvatarUpload = async () => {
 
   try {
     uploading.value = true
-    
-    // TODO: 实际的头像上传逻辑
-    // 这里模拟上传成功
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    
-    // 更新用户头像
-    await userStore.updateUserInfo({
-      avatar: previewAvatar.value
-    })
-    
-    ElMessage.success('头像更新成功')
-    showAvatarUpload.value = false
-    previewAvatar.value = ''
+    // 调用后端用户资料更新接口，仅更新 avatar 字段（后端会基于 token 识别用户）
+    logger.info('开始调用后端更新头像接口 /users/profile')
+    const resp = await updateUserProfile({ avatar: previewAvatar.value })
+    if (resp && (resp.success === true || resp.code === 200)) {
+      // 后端不返回最新用户对象，这里直接用本地预览值更新 store，保持 UI 同步
+      await userStore.updateUserInfo({ avatar: previewAvatar.value })
+      
+      // 刷新用户信息以确保后端数据同步
+      try {
+        await userStore.fetchUserInfo()
+        logger.info('头像更新成功，已同步到本地 store 并刷新后端数据')
+      } catch (err) {
+        logger.warn('刷新用户信息失败，但头像已更新', err)
+      }
+      
+      ElMessage.success('头像更新成功')
+      showAvatarUpload.value = false
+      previewAvatar.value = ''
+    } else {
+      const message = (resp && resp.message) || '头像更新失败'
+      logger.warn('后端返回失败，头像未更新', { message })
+      ElMessage.error(message)
+    }
   } catch (error) {
     console.error('头像上传失败:', error)
     ElMessage.error('头像上传失败')

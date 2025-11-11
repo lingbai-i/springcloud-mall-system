@@ -530,6 +530,16 @@ const routes = [
       hideLayout: true
     }
   },
+  // 商家注册页面
+  {
+    path: '/merchant/register',
+    name: 'MerchantRegister',
+    component: () => import('@/views/merchant/auth/register.vue'),
+    meta: {
+      title: '商家入驻',
+      hideLayout: true
+    }
+  },
   {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',

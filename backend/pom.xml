@@ -17,9 +17,9 @@
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         
-        <!-- Spring Boot & Cloud 版本 - 修复版本兼容性问题和安全漏洞 -->
-        <spring-boot.version>3.2.0</spring-boot.version>
-        <spring-cloud.version>2023.0.0</spring-cloud.version>
+        <!-- Spring Boot & Cloud 版本 - 修复MyBatis-Plus兼容性问题 -->
+        <spring-boot.version>3.1.12</spring-boot.version>
+        <spring-cloud.version>2022.0.4</spring-cloud.version>
         <spring-cloud-alibaba.version>2022.0.0.0</spring-cloud-alibaba.version>
         
         <!-- 国产中间件版本 -->
@@ -30,7 +30,7 @@
         
         <!-- 数据库相关 -->
         <mysql.version>8.3.0</mysql.version>
-        <mybatis-plus.version>3.5.8</mybatis-plus.version>
+        <mybatis-plus.version>3.5.7</mybatis-plus.version>
         <redis.version>3.2.0</redis.version>
         
         <!-- 其他依赖 -->
@@ -54,6 +54,8 @@
         <module>cart-service</module>
         <module>merchant-service</module>
         <module>sms-service</module>
+        <module>admin-service</module>
+        <module>order-service</module>
     </modules>
 
     <dependencyManagement>
@@ -145,6 +147,14 @@
                 <groupId>io.minio</groupId>
                 <artifactId>minio</artifactId>
                 <version>${minio.version}</version>
+            </dependency>
+            
+            <!-- Lombok -->
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>1.18.32</version>
+                <scope>provided</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>

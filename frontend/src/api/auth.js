@@ -10,7 +10,7 @@ import * as logger from '@/utils/logger'
 // 用户注册
 export const register = (data) => {
   return request({
-    url: '/users/register',
+    url: '/user-service/auth/register',
     method: 'post',
     data
   })
@@ -19,7 +19,7 @@ export const register = (data) => {
 // 用户登录
 export const login = (data) => {
   return request({
-    url: '/users/login',
+    url: '/user-service/auth/login',
     method: 'post',
     data
   })
@@ -28,7 +28,7 @@ export const login = (data) => {
 // 刷新token
 export const refreshToken = (data) => {
   return request({
-    url: '/users/auth/refresh-token',
+    url: '/user-service/auth/refresh',
     method: 'post',
     data
   })
@@ -37,16 +37,16 @@ export const refreshToken = (data) => {
 // 验证token
 export const verifyToken = (token) => {
   return request({
-    url: '/users/auth/verify-token',
-    method: 'post',
-    data: { token }
+    url: '/user-service/auth/validate',
+    method: 'get',
+    headers: { Authorization: `Bearer ${token}` }
   })
 }
 
 // 用户登出
 export const logout = () => {
   return request({
-    url: '/users/auth/logout',
+    url: '/user-service/auth/logout',
     method: 'post'
   })
 }
@@ -89,10 +89,10 @@ export function sendSmsCode(arg1, purpose = 'LOGIN') {
   })
 }
 
-// 验证码登录
+// 验证码登录（未注册自动注册）
 export function loginBySms(data) {
   return request({
-    url: '/user-service/auth/login/sms',
+    url: '/user-service/auth/sms-login',
     method: 'post',
     data
   })

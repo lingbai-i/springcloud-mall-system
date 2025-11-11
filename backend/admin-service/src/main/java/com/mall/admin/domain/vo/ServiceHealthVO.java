@@ -1,6 +1,7 @@
 package com.mall.admin.domain.vo;
 
 import lombok.Data;
+import java.util.Map;
 
 /**
  * 服务健康信息VO
@@ -22,4 +23,9 @@ public class ServiceHealthVO {
      * 响应时间(ms)
      */
     private Long responseTime;
+    
+    /**
+     * 服务列表及状态
+     */
+    private Map<String, String> services;
 }

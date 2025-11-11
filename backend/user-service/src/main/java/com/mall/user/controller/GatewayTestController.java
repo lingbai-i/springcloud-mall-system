@@ -30,7 +30,7 @@ public class GatewayTestController {
         data.put("message", "用户服务正常运行");
         data.put("timestamp", System.currentTimeMillis());
         data.put("path", "gateway-forwarded");
-        
+
         return R.ok("测试成功", data);
     }
 
@@ -45,23 +45,7 @@ public class GatewayTestController {
         data.put("message", "Gateway register test endpoint");
         data.put("service", "user-service");
         data.put("timestamp", System.currentTimeMillis());
-        
-        return R.ok("测试成功", data);
-    }
 
-    /**
-     * 用户信息测试端点 - 处理网关转发的 /users/profile 请求
-     * 原始请求: /api/users/profile -> 网关StripPrefix=1 -> /users/profile
-     */
-    @GetMapping("/profile")
-    public R<Map<String, Object>> profileTest() {
-        Map<String, Object> data = new HashMap<>();
-        data.put("success", true);
-        data.put("message", "Gateway profile test endpoint");
-        data.put("service", "user-service");
-        data.put("timestamp", System.currentTimeMillis());
-        data.put("path", "/users/profile");
-        
-        return R.ok("用户信息测试成功", data);
+        return R.ok("测试成功", data);
     }
 }

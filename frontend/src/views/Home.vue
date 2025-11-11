@@ -14,31 +14,49 @@
           <span>您好，欢迎来到在线商城！</span>
           <div class="user-links">
             <a href="#" @click="handleLogin" v-if="!isLoggedIn">请登录</a>
+            <!-- 用户欢迎下拉菜单 -->
             <div
               v-else
-              class="welcome-area"
-              @mouseenter="onWelcomeMouseEnter"
-              @mouseleave="onWelcomeMouseLeave"
-              @focus="onWelcomeFocus"
-              @blur="onWelcomeBlur"
-              tabindex="0"
+              class="welcome-dropdown"
+              @mouseenter="logoutVisible = true"
+              @mouseleave="logoutVisible = false"
             >
-              <span class="welcome-text" :class="{ hovering: logoutVisible }">欢迎，{{ userInfo.username }}</span>
+              <a href="#" class="welcome-trigger">
+                欢迎,{{ userInfo.nickname || userInfo.username }}
+                <el-icon class="arrow-icon"><ArrowDown /></el-icon>
+              </a>
               <transition name="fade-slide">
-                <button
-                  v-if="logoutVisible"
-                  class="logout-option"
-                  @click="handleLogout"
-                  aria-label="退出登录"
-                >
-                  <el-icon class="logout-icon"><SwitchButton /></el-icon>
-                  <span class="logout-text">退出登录</span>
-                </button>
+                <div v-if="logoutVisible" class="welcome-menu">
+                  <a @click="handleLogout" class="welcome-menu-item">
+                    退出登录
+                  </a>
+                </div>
               </transition>
             </div>
-            <a href="#" @click="handleRegister" v-if="!isLoggedIn">免费注册</a>
             <a href="#" @click="goToOrders">我的订单</a>
             <a href="#" @click="goToProfile">会员中心</a>
+            <!-- 商家服务下拉菜单 -->
+            <div
+              class="merchant-service-dropdown"
+              @mouseenter="showMerchantMenu = true"
+              @mouseleave="showMerchantMenu = false"
+            >
+              <a href="#" class="merchant-service-trigger">
+                <LocalIcon name="shop" :size="14" />
+                商家服务
+                <el-icon class="arrow-icon"><ArrowDown /></el-icon>
+              </a>
+              <transition name="fade-slide">
+                <div v-if="showMerchantMenu" class="merchant-menu">
+                  <a @click="goToMerchantLogin" class="merchant-menu-item">
+                    商家后台
+                  </a>
+                  <a @click="goToMerchantRegister" class="merchant-menu-item">
+                    商家入驻
+                  </a>
+                </div>
+              </transition>
+            </div>
             <!-- 购物车 -->
             <div class="cart-link" @click="goToCart">
               <LocalIcon name="gouwuche" :size="16" />
@@ -129,7 +147,6 @@
             <a href="#" class="nav-link">生鲜</a>
             <a href="#" class="nav-link">全球购</a>
             <a href="#" class="nav-link">闪购</a>
-            <a href="#" class="nav-link">拍卖</a>
           </div>
         </div>
       </div>
@@ -161,7 +178,7 @@
                 <el-avatar :size="50" :src="userInfo.avatar" />
               </div>
               <div class="user-details">
-                <p class="username">{{ userInfo.username }}</p>
+                <p class="username">{{ userInfo.nickname || userInfo.username }}</p>
                 <p class="user-level">会员等级：{{ userInfo.level }}</p>
                 <!-- 移动端补充：在用户信息卡片中提供可见的注销入口 -->
                 <button class="logout-option compact" @click="handleLogout" aria-label="退出登录">
@@ -174,7 +191,6 @@
               <p>Hi！欢迎来到在线商城</p>
               <div class="login-buttons">
                 <el-button type="danger" @click="handleLogin">登录</el-button>
-                <el-button @click="handleRegister">注册</el-button>
               </div>
             </div>
 
@@ -220,6 +236,11 @@
                 <el-progress :percentage="product.progress" :show-text="false" />
                 <span class="progress-text">已抢{{ product.progress }}%</span>
               </div>
+            </div>
+            <!-- 空数据提示 -->
+            <div v-if="seckillProducts.length === 0" class="empty-products">
+              <el-icon :size="60" color="#ccc"><Box /></el-icon>
+              <p class="empty-text">商品正在来的路上</p>
             </div>
           </div>
         </div>
@@ -267,6 +288,12 @@
                   </div>
                 </div>
               </div>
+            </div>
+            <!-- 空数据提示 -->
+            <div v-if="recommendProducts.length === 0" class="empty-products large">
+              <el-icon :size="80" color="#ccc"><Box /></el-icon>
+              <p class="empty-text">商品正在来的路上</p>
+              <p class="empty-subtext">敬请期待更多精彩商品</p>
             </div>
           </div>
         </div>
@@ -337,12 +364,12 @@
  * @author lingbai
  * @description 首页欢迎信息区域与注销逻辑的交互优化，提升安全与可用性
  */
-import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 import { logout as apiLogout } from '@/api/auth'
-import { SwitchButton } from '@element-plus/icons-vue'
+import { SwitchButton, ArrowDown, Box } from '@element-plus/icons-vue'
 import * as logger from '@/utils/logger'
 import LoginModal from '@/components/LoginModal.vue'
 import LocalIcon from '@/components/LocalIcon.vue'
@@ -354,7 +381,8 @@ const userStore = useUserStore()
 // 响应式数据
 const searchKeyword = ref('')
 const showCategories = ref(false)
-const isLoggedIn = ref(false)
+const showMerchantMenu = ref(false)
+const isLoggedIn = computed(() => userStore.isLoggedIn)
 const cartCount = ref(3)
 const activeTab = ref(1)
 // 欢迎区域注销显示状态与防抖
@@ -364,13 +392,8 @@ const loggingOut = ref(false)
 // 弹窗状态
 const showLoginModal = ref(false)
 
-// 用户信息
-const userInfo = reactive({
-  username: 'test',
-  userId: null,
-  avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-  level: 'VIP1'
-})
+// 用户信息 - 直接使用 userStore 的数据保证实时同步
+const userInfo = computed(() => userStore.userInfo)
 
 // 热门搜索关键词
 const hotKeywords = ref(['iPhone15', '笔记本电脑', '运动鞋', '连衣裙', '护肤品'])
@@ -469,41 +492,8 @@ const countdown = reactive({
   seconds: '45'
 })
 
-// 秒杀商品
-const seckillProducts = ref([
-  {
-    id: 1,
-    name: 'iPhone 15 Pro',
-    image: 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=200&h=200&fit=crop',
-    seckillPrice: 6999,
-    originalPrice: 7999,
-    progress: 65
-  },
-  {
-    id: 2,
-    name: 'MacBook Air',
-    image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=200&h=200&fit=crop',
-    seckillPrice: 7999,
-    originalPrice: 8999,
-    progress: 43
-  },
-  {
-    id: 3,
-    name: 'AirPods Pro',
-    image: 'https://images.unsplash.com/photo-1606220945770-b5b6c2c55bf1?w=200&h=200&fit=crop',
-    seckillPrice: 1599,
-    originalPrice: 1999,
-    progress: 78
-  },
-  {
-    id: 4,
-    name: 'iPad Pro',
-    image: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=200&h=200&fit=crop',
-    seckillPrice: 5999,
-    originalPrice: 6999,
-    progress: 32
-  }
-])
+// 秒杀商品（已清空虚拟数据）
+const seckillProducts = ref([])
 
 // 推荐标签
 const recommendTabs = ref([
@@ -513,138 +503,11 @@ const recommendTabs = ref([
   { id: 4, name: '时尚穿搭' }
 ])
 
-// 推荐商品
-const recommendProducts = ref([
-  {
-    id: 1,
-    name: 'Apple iPhone 15 Pro Max 256GB 深空黑色',
-    description: '钛金属设计，A17 Pro芯片，专业级摄像头系统',
-    price: 9999,
-    originalPrice: 10999,
-    image: 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=300&h=300&fit=crop',
-    tags: ['自营', '京东物流'],
-    sales: 1234,
-    rating: 4.8,
-    reviews: 2567
-  },
-  {
-    id: 2,
-    name: 'Dell XPS 13 笔记本电脑',
-    description: '13.3英寸超轻薄本，Intel i7处理器，16GB内存',
-    price: 8999,
-    originalPrice: 9999,
-    image: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=300&h=300&fit=crop',
-    tags: ['热销', '好评'],
-    sales: 856,
-    rating: 4.6,
-    reviews: 1234
-  },
-  {
-    id: 3,
-    name: 'Nike Air Max 270 运动鞋',
-    description: '经典气垫设计，舒适透气，多色可选',
-    price: 899,
-    originalPrice: 1299,
-    image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=300&h=300&fit=crop',
-    tags: ['限时特价'],
-    sales: 2341,
-    rating: 4.7,
-    reviews: 3456
-  },
-  {
-    id: 4,
-    name: 'Sony WH-1000XM4 无线降噪耳机',
-    description: '业界领先降噪技术，30小时续航，Hi-Res音质',
-    price: 1999,
-    originalPrice: 2299,
-    image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=300&h=300&fit=crop',
-    tags: ['京东自营'],
-    sales: 567,
-    rating: 4.9,
-    reviews: 890
-  },
-  {
-    id: 5,
-    name: 'Zara 女士连衣裙',
-    description: '春季新款，优雅设计，多种尺码',
-    price: 299,
-    originalPrice: 499,
-    image: 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=300&h=300&fit=crop',
-    tags: ['新品'],
-    sales: 1789,
-    rating: 4.5,
-    reviews: 2134
-  },
-  {
-    id: 6,
-    name: '小米空气净化器Pro',
-    description: '高效过滤PM2.5，智能控制，静音运行',
-    price: 1299,
-    originalPrice: 1599,
-    image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=300&h=300&fit=crop',
-    tags: ['智能家居'],
-    sales: 432,
-    rating: 4.4,
-    reviews: 678
-  },
-  {
-    id: 7,
-    name: 'Adidas Ultraboost 22 跑鞋',
-    description: '专业跑步鞋，Boost中底科技，舒适缓震',
-    price: 1299,
-    originalPrice: 1599,
-    image: 'https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=300&h=300&fit=crop',
-    tags: ['运动专业'],
-    sales: 987,
-    rating: 4.6,
-    reviews: 1456
-  },
-  {
-    id: 8,
-    name: 'Levi\'s 501 经典牛仔裤',
-    description: '经典版型，优质面料，百搭单品',
-    price: 599,
-    originalPrice: 899,
-    image: 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=300&h=300&fit=crop',
-    tags: ['经典款'],
-    sales: 2567,
-    rating: 4.3,
-    reviews: 3789
-  }
-])
+// 推荐商品（已清空虚拟数据）
+const recommendProducts = ref([])
 
 // 倒计时定时器
 let countdownTimer = null
-
-/**
- * 恢复登录状态与欢迎区交互初始化
- * @author lingbai
- * @version V1.0 2025-11-08T09:07:20+08:00
- * @description 页面加载时尝试从 localStorage 恢复用户会话（token 与 userInfo），
- * 保证“欢迎，用户名”区域可见并在悬停时弹出注销选项；未检测到会话时保持默认未登录状态。
- */
-onMounted(() => {
-  try {
-    const storedUserInfo = localStorage.getItem('userInfo')
-    const token = localStorage.getItem('token')
-    if (token || storedUserInfo) {
-      if (storedUserInfo) {
-        const parsed = JSON.parse(storedUserInfo)
-        // 防御性恢复字段，兼容不同登录返回结构
-        userInfo.username = parsed.account || parsed.phone || parsed.username || userInfo.username
-        userInfo.userId = parsed.id || parsed.userId || userInfo.userId
-        userInfo.avatar = parsed.avatar || userInfo.avatar
-      }
-      isLoggedIn.value = true
-      logger.info('检测到本地会话，启用欢迎区注销入口')
-    } else {
-      logger.debug('未发现本地会话，欢迎区注销选项默认隐藏')
-    }
-  } catch (e) {
-    // 失败不影响页面使用，维持未登录状态
-    logger.warn('恢复本地会话失败，继续默认未登录', e)
-  }
-})
 
 /**
  * 处理搜索
@@ -679,15 +542,7 @@ const handleRegister = () => {
  */
 const handleLoginSuccess = async (loginData) => {
   console.log('登录成功:', loginData)
-  isLoggedIn.value = true
-  userInfo.username = loginData.data.account || loginData.data.phone || '用户'
-  userInfo.userId = loginData.data.id || 1 // 保存用户ID
   ElMessage.success('登录成功！')
-  
-  // 保存用户信息到本地存储
-  if (loginData.rememberMe) {
-    localStorage.setItem('userInfo', JSON.stringify(userInfo))
-  }
   
   // 登录成功后获取购物车数量
   await loadCartCount()
@@ -764,6 +619,35 @@ const goToLink = (url) => {
 }
 
 /**
+ * 跳转到商家登录页面
+ */
+const goToMerchantLogin = () => {  showMerchantMenu.value = false
+  router.push('/merchant/login')
+}
+
+/**
+ * 跳转到商家注册页面
+ */
+const goToMerchantRegister = () => {
+  showMerchantMenu.value = false
+  router.push('/merchant/register')
+}
+
+/**
+ * 跳转到商家后台
+ */
+const goToMerchant = () => {
+  if (!userStore.isLoggedIn) {
+    ElMessage.warning('请先登录')
+    router.push('/auth/login')
+    return
+  }
+  
+  // 跳转到商家登录页面（如果已是商家会自动跳转到仪表板）
+  router.push('/merchant/login')
+}
+
+/**
  * 更新倒计时
  */
 const updateCountdown = () => {
@@ -790,13 +674,14 @@ const updateCountdown = () => {
 /**
  * 加载购物车数量
  */
-const loadCartCount = async () => {  if (!isLoggedIn.value || !userInfo.userId) {
+const loadCartCount = async () => {
+  if (!userStore.isLoggedIn || !userStore.userInfo?.id) {
     cartCount.value = 0
     return
   }
   
   try {
-    const response = await getCartCount(userInfo.userId)
+    const response = await getCartCount(userStore.userInfo.id)
     if (response && response.code === 200) {
       cartCount.value = response.data || 0
     } else {
@@ -804,7 +689,7 @@ const loadCartCount = async () => {  if (!isLoggedIn.value || !userInfo.userId) 
     }
   } catch (error) {
     // 购物车服务可能未启动或不可用，静默处理错误
-    // 避免因购物车API失败而触发"登录过期"弹窗
+    // 避免因购物车API失败而触发“登录过期”弹窗
     console.warn('获取购物车数量失败（购物车服务可能未启动）:', error.message)
     cartCount.value = 0
   }
@@ -817,20 +702,19 @@ onMounted(async () => {
   // 启动倒计时
   countdownTimer = setInterval(updateCountdown, 1000)
   
-  // 检查本地存储的用户信息
-  const savedUserInfo = localStorage.getItem('userInfo')
-  if (savedUserInfo) {
+  // 如果用户已登录，加载购物车数量并刷新用户信息
+  if (userStore.isLoggedIn) {
+    logger.debug('初始化本地用户会话', userStore.userInfo)
+    
+    // 刷新用户信息以确保显示最新数据
     try {
-      const userInfoData = JSON.parse(savedUserInfo)
-      Object.assign(userInfo, userInfoData)
-      isLoggedIn.value = true
-      logger.debug('初始化本地用户会话', userInfoData)
-      // 如果用户已登录，加载购物车数量
-      await loadCartCount()
+      await userStore.fetchUserInfo()
+      logger.info('用户信息已刷新', userStore.userInfo)
     } catch (error) {
-      console.error('解析用户信息失败:', error)
-      localStorage.removeItem('userInfo')
+      logger.warn('刷新用户信息失败', error)
     }
+    
+    await loadCartCount()
   }
 })
 
@@ -842,30 +726,6 @@ onUnmounted(() => {
     clearInterval(countdownTimer)
   }
 })
-
-/**
- * 欢迎区域鼠标进入
- * 为了满足“明显的悬停状态指示”，此处仅改变文本样式并显示注销选项。
- */
-const onWelcomeMouseEnter = () => {
-  logoutVisible.value = true
-  logger.debug('欢迎区域 mouseenter，显示注销选项')
-}
-
-/**
- * 欢迎区域鼠标移出
- * 保持选项可见直到移出区域，这里收起注销选项。
- */
-const onWelcomeMouseLeave = () => {
-  logoutVisible.value = false
-  logger.debug('欢迎区域 mouseleave，隐藏注销选项')
-}
-
-/**
- * 键盘可访问性支持：获得/失去焦点时同步显示/隐藏
- */
-const onWelcomeFocus = () => { logoutVisible.value = true }
-const onWelcomeBlur = () => { logoutVisible.value = false }
 
 /**
  * 执行注销流程并重定向到登录页
@@ -889,18 +749,10 @@ const handleLogout = async () => {
     logger.warn('后端登出 API 调用失败，继续本地会话清理', e)
   }
   // 统一清理会话与本地存储
-  try {
-    userStore.userLogout()
-  } catch (e) {
-    // 兼容旧页面状态
-    logger.warn('Pinia userStore 不可用或清理异常，降级清理 localStorage')
-  }
-  localStorage.removeItem('token')
-  localStorage.removeItem('userInfo')
-  isLoggedIn.value = false
-  // 反馈与重定向
+  userStore.userLogout()
+  // 反馈与重定向到主页
   ElMessage.success('您已退出登录')
-  router.replace('/auth/login')
+  router.replace('/home')
   loggingOut.value = false
 }
 </script>
@@ -963,45 +815,136 @@ const handleLogout = async () => {
   text-decoration: underline;
 }
 
-/* 欢迎区域与注销选项样式 */
-.welcome-area {
+/* 商家服务下拉菜单 */
+.merchant-service-dropdown {
+  position: relative;
   display: inline-flex;
+  align-items: center;
+}
+
+.merchant-service-trigger {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: white;
+  text-decoration: none;
+  cursor: pointer;
+  padding: 5px 8px;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+}
+
+.merchant-service-trigger:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.merchant-service-trigger .arrow-icon {
+  font-size: 12px;
+  transition: transform 0.3s;
+}
+
+.merchant-service-dropdown:hover .merchant-service-trigger .arrow-icon {
+  transform: rotate(180deg);
+}
+
+.merchant-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 8px;
+  background-color: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 1000;
+  min-width: 120px;
+  overflow: hidden;
+}
+
+.merchant-menu-item {
+  display: flex;
   align-items: center;
   gap: 8px;
+  padding: 10px 15px;
+  color: #333;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s;
+  white-space: nowrap;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 14px;
+}
+
+.merchant-menu-item:last-child {
+  border-bottom: none;
+}
+
+.merchant-menu-item:hover {
+  background-color: #f5f5f5;
+  color: #e3101e;
+}
+
+/* 用户欢迎下拉菜单 */
+.welcome-dropdown {
   position: relative;
-}
-
-.welcome-text {
-  color: #fff;
-}
-
-.welcome-text.hovering {
-  text-decoration: underline;
-  background-color: rgba(255, 255, 255, 0.08);
-  padding: 2px 4px;
-  border-radius: 3px;
-}
-
-.logout-option {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  background-color: rgba(255, 255, 255, 0.15);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  padding: 4px 8px;
-  border-radius: 4px;
+}
+
+.welcome-trigger {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: white;
+  text-decoration: none;
   cursor: pointer;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
+  padding: 5px 8px;
+  border-radius: 4px;
+  transition: background-color 0.3s;
 }
 
-.logout-option:hover {
-  background-color: rgba(255, 255, 255, 0.25);
-  border-color: rgba(255, 255, 255, 0.35);
+.welcome-trigger:hover {
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
-.logout-icon {
-  display: inline-flex;
+.welcome-trigger .arrow-icon {
+  font-size: 12px;
+  transition: transform 0.3s;
+}
+
+.welcome-dropdown:hover .welcome-trigger .arrow-icon {
+  transform: rotate(180deg);
+}
+
+.welcome-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 8px;
+  background-color: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 1000;
+  min-width: 120px;
+  overflow: hidden;
+}
+
+.welcome-menu-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 15px;
+  color: #333;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s;
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.welcome-menu-item:hover {
+  background-color: #f5f5f5;
+  color: #e3101e;
 }
 
 /* 动效：淡入 + 上下滑动 */
@@ -1206,6 +1149,20 @@ const handleLogout = async () => {
 .nav-link.active {
   color: #e3101e;
   border-bottom-color: #e3101e;
+}
+
+.nav-link.merchant-entry {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #ff6700;
+  font-weight: 600;
+}
+
+.nav-link.merchant-entry:hover {
+  color: #ff8533;
+  border-bottom-color: #ff6700;
+  transform: translateY(-2px);
 }
 
 /* 主要内容区 */
@@ -1423,6 +1380,34 @@ const handleLogout = async () => {
   font-size: 12px;
   color: #666;
   margin-top: 5px;
+}
+
+/* 空数据提示 */
+.empty-products {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: #999;
+}
+
+.empty-products.large {
+  padding: 100px 20px;
+}
+
+.empty-text {
+  margin-top: 20px;
+  font-size: 16px;
+  color: #666;
+  font-weight: 500;
+}
+
+.empty-subtext {
+  margin-top: 10px;
+  font-size: 14px;
+  color: #999;
 }
 
 /* 推荐商品 */

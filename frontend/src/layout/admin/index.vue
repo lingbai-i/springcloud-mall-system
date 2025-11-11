@@ -3,8 +3,7 @@
     <!-- 侧边栏 -->
     <el-aside :width="isCollapse ? '64px' : '240px'" class="admin-sidebar">
       <div class="logo-container">
-        <img v-if="!isCollapse" src="/logo.png" alt="Logo" class="logo" />
-        <img v-else src="/logo-mini.png" alt="Logo" class="logo-mini" />
+        <img src="/logo.png" alt="Logo" :class="isCollapse ? 'logo-mini' : 'logo'" />
         <h1 v-if="!isCollapse" class="title">管理后台</h1>
       </div>
       

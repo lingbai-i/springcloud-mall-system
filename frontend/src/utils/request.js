@@ -37,6 +37,13 @@ service.interceptors.request.use(
     const userStore = useUserStore()
     logger.debug('[HTTP] 请求拦截开始', { url: config.url, method: config.method })
     
+    // 调试：打印 token 状态
+    console.log('[HTTP] 请求拦截 - Token 状态:', {
+      hasToken: !!userStore.token,
+      tokenPreview: userStore.token ? userStore.token.substring(0, 20) + '...' : 'null',
+      isLoggedIn: userStore.isLoggedIn
+    })
+    
     // 定义不需要token的路径
     const publicPaths = [
       '/users/register',
@@ -50,6 +57,9 @@ service.interceptors.request.use(
     // 只在非公开路径且有token时添加Authorization头
     if (!isPublicPath && userStore.token) {
       config.headers.Authorization = `Bearer ${userStore.token}`
+      console.log('[HTTP] 已添加 Authorization 头')
+    } else if (!isPublicPath && !userStore.token) {
+      console.warn('[HTTP] 需要 token 但未找到，请求可能会失败', config.url)
     }
     
     // CSRF 防护：对变更类请求方法注入 CSRF 令牌头（后端建议名：X-CSRF-TOKEN 或 X-XSRF-TOKEN）
@@ -211,7 +221,7 @@ function handleTokenExpired() {
     }
   ).then(() => {
     userStore.userLogout()
-    router.push('/auth/login')
+    router.push('/home')
   }).catch(() => {
     // 用户取消，不做处理
   })

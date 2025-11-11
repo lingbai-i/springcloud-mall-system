@@ -27,6 +27,17 @@ import java.util.stream.Collectors;
 public class GlobalExceptionHandler {
     
     /**
+     * 处理 Feign 调用异常
+     */
+    @ExceptionHandler(FeignClientException.class)
+    @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
+    public R<Void> handleFeignClientException(FeignClientException e) {
+        log.error("远程服务调用失败: 服务={}, 方法={}, 错误={}", 
+                e.getServiceName(), e.getMethod(), e.getMessage());
+        return R.fail(503, e.getMessage());
+    }
+    
+    /**
      * 处理订单不存在异常
      */
     @ExceptionHandler(OrderNotFoundException.class)

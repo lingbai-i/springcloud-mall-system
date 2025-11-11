@@ -14,10 +14,13 @@
             <LocalIcon name="mima" :size="24" color="#409EFF" />
             <div class="item-detail">
               <h3>登录密码</h3>
-              <p>定期修改密码可以提高账户安全性</p>
+              <p v-if="!userInfo.hasSetPassword" class="not-set">您还未设置登录密码，设置后可使用账号密码登录</p>
+              <p v-else>定期修改密码可以提高账户安全性</p>
             </div>
           </div>
-          <el-button type="primary" @click="showPasswordDialog = true">修改密码</el-button>
+          <el-button type="primary" @click="showPasswordDialog = true">
+            {{ userInfo.hasSetPassword ? '修改密码' : '设置密码' }}
+          </el-button>
         </div>
 
         <!-- 手机绑定 -->
@@ -104,9 +107,18 @@
     </el-dialog>
 
     <!-- 修改密码对话框 -->
-    <el-dialog v-model="showPasswordDialog" title="修改密码" width="400px">
+    <el-dialog v-model="showPasswordDialog" :title="userInfo.hasSetPassword ? '修改密码' : '设置登录密码'" width="400px">
+      <el-alert 
+        v-if="!userInfo.hasSetPassword"
+        title="温馨提示"
+        type="info"
+        description="设置登录密码后，您可以使用账号密码登录系统"
+        :closable="false"
+        show-icon
+        style="margin-bottom: 20px;"
+      />
       <el-form :model="passwordForm" :rules="passwordRules" ref="passwordFormRef" label-width="100px">
-        <el-form-item label="当前密码" prop="oldPassword">
+        <el-form-item v-if="userInfo.hasSetPassword" label="当前密码" prop="oldPassword">
           <el-input
             v-model="passwordForm.oldPassword"
             type="password"
@@ -198,10 +210,11 @@ const emailRules = {
   ]
 }
 
-const passwordRules = {
-  oldPassword: [
+// 密码规则 - 根据hasSetPassword动态设置
+const passwordRules = computed(() => ({
+  oldPassword: userInfo.value.hasSetPassword ? [
     { required: true, message: '请输入当前密码', trigger: 'blur' }
-  ],
+  ] : [],
   newPassword: [
     { required: true, message: '请输入新密码', trigger: 'blur' },
     { min: 6, max: 20, message: '密码长度在 6 到 20 个字符', trigger: 'blur' }
@@ -219,7 +232,7 @@ const passwordRules = {
       trigger: 'blur'
     }
   ]
-}
+}))
 
 const formatPhone = (phone) => {
   if (!phone) return ''
@@ -307,37 +320,64 @@ const confirmChangePassword = async () => {
     if (valid) {
       changing.value = true
       try {
-        console.log('开始修改密码...')
+        console.log(userInfo.value.hasSetPassword ? '开始修改密码...' : '开始设置密码...')
         console.log('当前token:', userStore.token)
         
-        const response = await changePassword({
-          oldPassword: passwordForm.oldPassword,
-          newPassword: passwordForm.newPassword,
-          confirmPassword: passwordForm.confirmPassword  // 添加确认密码字段
-        })
+        let response
         
-        console.log('密码修改响应:', response)
+        // 根据hasSetPassword状态调用不同的API
+        if (userInfo.value.hasSetPassword) {
+          // 已设置过密码，使用修改密码API
+          response = await changePassword({
+            oldPassword: passwordForm.oldPassword,
+            newPassword: passwordForm.newPassword,
+            confirmPassword: passwordForm.confirmPassword
+          })
+        } else {
+          // 首次设置密码，使用设置密码API（不需要旧密码）
+          const { setPassword } = await import('@/api/user')
+          response = await setPassword({
+            newPassword: passwordForm.newPassword,
+            confirmPassword: passwordForm.confirmPassword
+          })
+        }
+        
+        console.log('密码操作响应:', response)
         
         if (response.success || response.code === 200) {
-          ElMessage.success('密码修改成功，请重新登录')
+          const successMsg = userInfo.value.hasSetPassword 
+            ? '密码修改成功，请重新登录' 
+            : '密码设置成功！现在可以使用账号密码登录了'
+          ElMessage.success(successMsg)
           showPasswordDialog.value = false
           passwordFormRef.value?.resetFields()
           
-          // 等待一下然后跳转到登录页
-          setTimeout(() => {
-            userStore.logout()
-            router.push('/auth/login')
-          }, 1500)
+          // 如果是修改密码，需要重新登录
+          if (userInfo.value.hasSetPassword) {
+            setTimeout(() => {
+              userStore.logout()
+              router.push('/home')
+            }, 1500)
+          } else {
+            // 首次设置密码，刷新用户信息（更新hasSetPassword状态）
+            try {
+              await userStore.fetchUserInfo()
+              console.log('用户信息已刷新，hasSetPassword:', userStore.userInfo?.hasSetPassword)
+            } catch (err) {
+              // 静默处理fetchUserInfo错误，不影响设置密码成功的提示
+              console.warn('刷新用户信息失败（不影响密码设置）:', err.message)
+            }
+          }
         } else {
-          ElMessage.error(response.message || '密码修改失败')
+          ElMessage.error(response.message || '操作失败')
         }
       } catch (error) {
-        console.error('密码修改失败:', error)
+        console.error('密码操作失败:', error)
         if (error.response) {
           console.error('错误响应:', error.response.data)
-          ElMessage.error(error.response.data.message || '密码修改失败')
+          ElMessage.error(error.response.data.message || '操作失败')
         } else {
-          ElMessage.error(error.message || '密码修改失败')
+          ElMessage.error(error.message || '操作失败')
         }
       } finally {
         changing.value = false

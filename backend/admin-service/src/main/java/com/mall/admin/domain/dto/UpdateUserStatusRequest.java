@@ -1,7 +1,7 @@
 package com.mall.admin.domain.dto;
 
 import lombok.Data;
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 /**
  * 用户状态更新请求DTO

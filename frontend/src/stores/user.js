@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { register } from '@/api/auth'
+import { getUserProfile } from '@/api/user'
+import * as logger from '@/utils/logger'
 
 /**
  * 用户状态管理
@@ -11,17 +13,25 @@ import { register } from '@/api/auth'
  * @since 2025-10-21
  */
 export const useUserStore = defineStore('user', () => {
-  // 状态
+  // 状态 - 优先从持久化存储读取，兼容旧版本的直接 localStorage 存储
   const token = ref(localStorage.getItem('token') || '')
-  const userInfo = ref(JSON.parse(localStorage.getItem('userInfo') || '{}'))
+  const userInfoStr = localStorage.getItem('userInfo')
+  const userInfo = ref(userInfoStr ? JSON.parse(userInfoStr) : {})
   
   // 计算属性
   const isLoggedIn = computed(() => !!token.value)
   const username = computed(() => userInfo.value.username || '')
   const avatar = computed(() => userInfo.value.avatar || '')
-  const userId = computed(() => userInfo.value.id || null)
-  const isAdmin = computed(() => userInfo.value.role === 'admin')
-  const isMerchant = computed(() => userInfo.value.role === 'merchant')
+  const userId = computed(() => userInfo.value.id || userInfo.value.userId || null)
+  const isAdmin = computed(() => 
+    userInfo.value.role === 'admin' || 
+    userInfo.value.username === 'admin' ||
+    userInfo.value.isAdmin === true
+  )
+  const isMerchant = computed(() => 
+    userInfo.value.role === 'merchant' ||
+    userInfo.value.isMerchant === true
+  )
   
   /**
    * 登录
@@ -121,6 +131,41 @@ export const useUserStore = defineStore('user', () => {
     userInfo.value = { ...userInfo.value, ...newUserInfo }
     localStorage.setItem('userInfo', JSON.stringify(userInfo.value))
   }
+
+  /**
+   * 获取并刷新当前登录用户信息
+   *
+   * 修改日志：
+   * V1.1 2025-11-09T20:51:07+08:00：新增 fetchUserInfo 方法，统一从后端拉取用户信息并写入本地存储；加入结构化日志与异常分支，避免会话不同步导致的 UI 偏差。
+   * @author lingbai
+   * @returns {Promise<Object>} 最新的用户信息对象
+   * @throws {Error} 当服务端返回异常或会话无效时抛出错误
+   */
+  const fetchUserInfo = async () => {
+    // 防御性：无 token 不发起网络请求，避免无效后端调用
+    if (!token.value) {
+      logger.warn('fetchUserInfo 被调用，但当前不存在有效 token，已跳过网络请求')
+      return userInfo.value
+    }
+    try {
+      logger.info('开始拉取后端用户信息 /users/profile')
+      const resp = await getUserProfile()
+      // 后端约定：{ success: boolean, data: UserInfoResponse }
+      if (resp && (resp.success === true || resp.code === 200) && resp.data) {
+        userInfo.value = { ...(userInfo.value || {}), ...(resp.data || {}) }
+        localStorage.setItem('userInfo', JSON.stringify(userInfo.value))
+        logger.info('用户信息拉取成功并写入本地存储')
+        return userInfo.value
+      }
+      const message = (resp && resp.message) || '获取用户信息失败'
+      logger.error('后端返回失败，无法刷新用户信息', { message })
+      throw new Error(message)
+    } catch (error) {
+      // 错误分支：可能为 401、网络异常或后端错误
+      logger.error('拉取用户信息过程中出现异常', error)
+      throw error
+    }
+  }
   
   /**
    * 初始化用户状态
@@ -132,16 +177,25 @@ export const useUserStore = defineStore('user', () => {
     
     if (savedToken) {
       token.value = savedToken
+      console.log('从 localStorage 恢复 token:', savedToken.substring(0, 20) + '...')
     }
     
     if (savedUserInfo) {
       try {
         userInfo.value = JSON.parse(savedUserInfo)
+        console.log('从 localStorage 恢复用户信息:', userInfo.value.username)
       } catch (error) {
         console.error('解析用户信息失败:', error)
         userInfo.value = {}
       }
     }
+    
+    // 打印当前状态用于调试
+    console.log('用户状态初始化完成:', { 
+      hasToken: !!token.value, 
+      username: userInfo.value.username,
+      isLoggedIn: isLoggedIn.value 
+    })
   }
   
   return {
@@ -163,6 +217,7 @@ export const useUserStore = defineStore('user', () => {
     logout,
     userLogout,
     updateUserInfo,
+    fetchUserInfo,
     initUserState
   }
 }, {

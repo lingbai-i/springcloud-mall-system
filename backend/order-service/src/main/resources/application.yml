@@ -1,5 +1,5 @@
 server:
-  port: 8083
+  port: 8084
 
 spring:
   application:
@@ -46,8 +46,6 @@ spring:
     password: guest
     virtual-host: /
 
-
-
 # Feign配置
 feign:
   hystrix:
@@ -71,13 +69,13 @@ feign:
 order:
   # 订单超时时间（分钟），超过此时间未支付的订单将自动取消
   timeout-minutes: 30
-  
+
   # 自动确认收货天数，发货后超过此天数未确认将自动确认收货
   auto-confirm-days: 7
-  
+
   # 订单号前缀，用于生成唯一订单号
   order-no-prefix: "ORD"
-  
+
   # 分布式锁超时时间（秒）
   lock-timeout-seconds: 30
 

@@ -8,6 +8,7 @@ import com.mall.user.domain.vo.UserInfoResponse;
 import com.mall.user.service.AuthService;
 import com.mall.user.service.UserService;
 import com.mall.user.utils.JwtUtils;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 // import io.swagger.v3.oas.annotations.Operation;
 // import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -27,18 +28,35 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
-    
+
     @Autowired
     private AuthService authService;
-    
+
     @Autowired
     private UserService userService;
-    
+
     @Autowired
     private JwtUtils jwtUtils;
-    
+
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+    /**
+     * 手机号验证码登录（未注册自动注册）
+     */
+    // @Operation(summary = "手机号验证码登录", description = "手机号+验证码登录，未注册用户自动注册")
+    @PostMapping("/sms-login")
+    public R<LoginResponse> smsLogin(@Valid @RequestBody LoginRequest loginRequest) {
+        try {
+            LoginResponse response = authService.smsLogin(loginRequest);
+            return R.ok("登录成功", response);
+        } catch (Exception e) {
+            logger.error("手机号登录失败: {}", e.getMessage());
+            return R.fail(e.getMessage());
+        }
+    }
+
     /**
      * 用户登录
      */
@@ -53,7 +71,7 @@ public class AuthController {
             return R.fail(e.getMessage());
         }
     }
-    
+
     /**
      * 用户注册
      */
@@ -68,7 +86,7 @@ public class AuthController {
             return R.fail(e.getMessage());
         }
     }
-    
+
     /**
      * 用户登出
      */
@@ -81,7 +99,7 @@ public class AuthController {
             if (authorization != null && authorization.startsWith("Bearer ")) {
                 token = authorization.substring(7);
             }
-            
+
             boolean result = authService.logout(token);
             return result ? R.<Void>ok("登出成功", null) : R.<Void>fail("登出失败");
         } catch (Exception e) {
@@ -89,7 +107,7 @@ public class AuthController {
             return R.fail(e.getMessage());
         }
     }
-    
+
     /**
      * 刷新Token
      */
@@ -102,7 +120,7 @@ public class AuthController {
             if (authorization != null && authorization.startsWith("Bearer ")) {
                 token = authorization.substring(7);
             }
-            
+
             String newToken = authService.refreshToken(token);
             return R.ok("Token刷新成功", newToken);
         } catch (Exception e) {
@@ -110,7 +128,7 @@ public class AuthController {
             return R.fail(e.getMessage());
         }
     }
-    
+
     /**
      * 验证Token
      */
@@ -123,7 +141,7 @@ public class AuthController {
             if (authorization != null && authorization.startsWith("Bearer ")) {
                 token = authorization.substring(7);
             }
-            
+
             boolean valid = authService.validateToken(token);
             return R.ok(valid ? "Token有效" : "Token无效", valid);
         } catch (Exception e) {
@@ -131,7 +149,7 @@ public class AuthController {
             return R.ok("Token验证失败", false);
         }
     }
-    
+
     /**
      * 获取当前用户信息
      */
@@ -144,31 +162,47 @@ public class AuthController {
             if (authorization != null && authorization.startsWith("Bearer ")) {
                 token = authorization.substring(7);
             }
-            
+
             if (token == null) {
                 return R.fail("Token不能为空");
             }
-            
+
             // 验证Token并获取用户名
             if (!authService.validateToken(token)) {
                 return R.fail("Token无效或已过期");
             }
-            
+
             String username = jwtUtils.getUsernameFromToken(token);
             if (username == null) {
                 return R.fail("无法从Token中获取用户信息");
             }
-            
+
             // 根据用户名获取用户信息
             UserInfoResponse userInfo = userService.getUserInfo(username);
             if (userInfo == null) {
                 return R.fail("用户不存在");
             }
-            
+
             return R.ok("获取用户信息成功", userInfo);
         } catch (Exception e) {
             logger.error("获取用户信息失败: {}", e.getMessage());
             return R.fail("获取用户信息失败");
+        }
+    }
+
+    /**
+     * 临时测试接口：生成BCrypt密码
+     * 访问: GET /user-service/auth/test-bcrypt?password=yourpassword
+     */
+    @GetMapping("/test-bcrypt")
+    public R<String> testBcrypt(@RequestParam String password) {
+        try {
+            String encoded = passwordEncoder.encode(password);
+            logger.info("生成BCrypt密码 - 明文: {}, 密文: {}", password, encoded);
+            return R.ok("BCrypt密码生成成功", encoded);
+        } catch (Exception e) {
+            logger.error("生成BCrypt密码失败: {}", e.getMessage());
+            return R.fail(e.getMessage());
         }
     }
 }

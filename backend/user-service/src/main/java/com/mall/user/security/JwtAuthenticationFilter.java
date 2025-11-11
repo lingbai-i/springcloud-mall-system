@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -30,10 +31,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Autowired
     private JwtUtils jwtUtils;
 
+    @Value("${security.jwt.enabled:true}")
+    private boolean jwtEnabled;
+
     // 定义不需要JWT认证的端点
     private static final List<String> PERMIT_ALL_PATHS = Arrays.asList(
             "/auth/**",
             "/api/auth/**",
+            "/user-service/auth/**", // 网关转发后的完整路径
+            "/api/user-service/auth/**", // 带api前缀的路径
             "/api/users/register",
             "/api/users/login",
             "/api/users/refresh-token",
@@ -54,6 +60,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
+
+        // 如果JWT认证被禁用，直接放行所有请求
+        if (!jwtEnabled) {
+            logger.debug("JWT认证已禁用，跳过所有JWT验证");
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         String requestPath = request.getRequestURI();
         logger.debug("JWT Filter - Request URI: {}", requestPath);

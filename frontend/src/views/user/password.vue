@@ -335,14 +335,14 @@ const handleReLogin = async () => {
     // 登出当前用户
     await userStore.userLogout()
     
-    // 跳转到登录页面
-    router.push('/auth/login')
+    // 跳转到主页
+    router.push('/home')
     
     ElMessage.success('请使用新密码重新登录')
   } catch (error) {
     console.error('登出失败:', error)
-    // 即使登出失败也要跳转到登录页
-    router.push('/auth/login')
+    // 即使登出失败也要跳转到主页
+    router.push('/home')
   }
 }
 </script>

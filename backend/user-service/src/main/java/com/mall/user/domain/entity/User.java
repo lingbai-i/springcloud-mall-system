@@ -34,6 +34,9 @@ public class User extends BaseEntity {
     /** 密码 */
     private String password;
     
+    /** 密码设置时间 */
+    private LocalDateTime passwordSetTime;
+    
     /** 昵称 */
     private String nickname;
     

@@ -70,6 +70,7 @@ docker/volumes/
 .env
 .env.local
 .env.*.local
+# Note: env.template 是模板文件，应该提交到Git
 
 # Test files
 test-*.json

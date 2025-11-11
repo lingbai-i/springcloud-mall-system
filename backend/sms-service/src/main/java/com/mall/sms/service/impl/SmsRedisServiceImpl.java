@@ -31,15 +31,56 @@ public class SmsRedisServiceImpl implements SmsRedisService {
     @Override
     public void cacheVerificationCode(String phoneNumber, String code, String purpose) {
         String key = buildVerificationCodeKey(phoneNumber, purpose);
-        redisTemplate.opsForValue().set(key, code, CODE_EXPIRE_SECONDS, TimeUnit.SECONDS);
-        log.debug("缓存验证码 - 手机号: {}, 用途: {}, 过期时间: {}秒", phoneNumber, purpose, CODE_EXPIRE_SECONDS);
+        
+        // 详细日志：写入前
+        log.info("=========== Redis写入开始 ===========");
+        log.info("手机号: {}, 验证码: {}, 用途: {}", phoneNumber, code, purpose);
+        log.info("Redis Key: {}", key);
+        log.info("过期时间: {}秒", CODE_EXPIRE_SECONDS);
+        
+        try {
+            // 写入Redis
+            redisTemplate.opsForValue().set(key, code, CODE_EXPIRE_SECONDS, TimeUnit.SECONDS);
+            log.info("Redis写入命令已执行");
+            
+            // 立即读取验证
+            String verifyCode = redisTemplate.opsForValue().get(key);
+            if (verifyCode != null && verifyCode.equals(code)) {
+                log.info("✅ Redis写入验证成功！读取到的验证码: {}", verifyCode);
+            } else {
+                log.error("❌ Redis写入验证失败！期望: {}, 实际: {}", code, verifyCode);
+            }
+            
+            // 检查TTL
+            Long ttl = redisTemplate.getExpire(key, TimeUnit.SECONDS);
+            log.info("验证码TTL: {}秒", ttl);
+            
+        } catch (Exception e) {
+            log.error("Redis操作异常: {}", e.getMessage(), e);
+        }
+        
+        log.info("=========== Redis写入完成 ===========");
     }
 
     @Override
     public String getVerificationCode(String phoneNumber, String purpose) {
         String key = buildVerificationCodeKey(phoneNumber, purpose);
+        
+        log.info("=========== Redis读取开始 ===========");
+        log.info("手机号: {}, 用途: {}", phoneNumber, purpose);
+        log.info("Redis Key: {}", key);
+        
         String code = redisTemplate.opsForValue().get(key);
-        log.debug("获取验证码 - 手机号: {}, 用途: {}, 结果: {}", phoneNumber, purpose, code != null ? "存在" : "不存在");
+        
+        if (code != null) {
+            log.info("✅ 验证码读取成功: {}", code);
+            Long ttl = redisTemplate.getExpire(key, TimeUnit.SECONDS);
+            log.info("剩余TTL: {}秒", ttl);
+        } else {
+            log.warn("❌ 验证码不存在或已过期");
+        }
+        
+        log.info("=========== Redis读取完成 ===========");
         return code;
     }
 

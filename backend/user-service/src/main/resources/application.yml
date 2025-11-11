@@ -67,6 +67,11 @@ jwt:
   expiration: 604800000 # 7天，单位毫秒（7 * 24 * 60 * 60 * 1000）
   issuer: mall-system
 
+# 安全配置
+security:
+  jwt:
+    enabled: false # 开发模式：禁用JWT认证，生产模式请设置为true
+
 # 日志配置
 logging:
   level:
@@ -100,3 +105,8 @@ management:
   endpoint:
     health:
       show-details: when_authorized
+
+# SMS服务配置
+sms:
+  service:
+    url: http://localhost:8089

@@ -12,7 +12,7 @@ import com.mall.user.domain.vo.LoginResponse;
  * @since 2025-01-27
  */
 public interface AuthService {
-    
+
     /**
      * 用户登录
      * 
@@ -21,7 +21,16 @@ public interface AuthService {
      * @throws Exception 登录异常
      */
     LoginResponse login(LoginRequest loginRequest) throws Exception;
-    
+
+    /**
+     * 手机号验证码登录（未注册自动注册）
+     * 
+     * @param loginRequest 登录请求（必须包含phone和smsCode）
+     * @return 登录响应
+     * @throws Exception 登录异常
+     */
+    LoginResponse smsLogin(LoginRequest loginRequest) throws Exception;
+
     /**
      * 用户注册
      * 
@@ -30,7 +39,7 @@ public interface AuthService {
      * @throws Exception 注册异常
      */
     LoginResponse register(RegisterRequest registerRequest) throws Exception;
-    
+
     /**
      * 用户登出
      * 
@@ -38,7 +47,7 @@ public interface AuthService {
      * @return 登出结果
      */
     boolean logout(String token);
-    
+
     /**
      * 刷新令牌
      * 
@@ -47,7 +56,7 @@ public interface AuthService {
      * @throws Exception 刷新异常
      */
     String refreshToken(String refreshToken) throws Exception;
-    
+
     /**
      * 验证令牌
      * 
