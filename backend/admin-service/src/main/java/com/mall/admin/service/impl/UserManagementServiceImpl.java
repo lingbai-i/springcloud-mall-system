@@ -77,11 +77,37 @@ public class UserManagementServiceImpl implements UserManagementService {
 
     @Override
     public Map<String, Object> getUserStats() {
-        R<Map<String, Object>> result = userServiceClient.getUserStatistics();
-        if (!result.isSuccess()) {
-            throw new BusinessException("获取用户统计数据失败: " + result.getMessage());
+        try {
+            log.info("开始调用用户服务获取统计数据");
+            R<Map<String, Object>> result = userServiceClient.getUserStatistics();
+            log.info("用户服务返回结果: success={}, message={}, data={}",
+                    result != null ? result.isSuccess() : null,
+                    result != null ? result.getMessage() : null,
+                    result != null ? result.getData() : null);
+
+            if (result == null || !result.isSuccess()) {
+                String errorMsg = result != null ? result.getMessage() : "服务调用返回空值";
+                log.error("获取用户统计数据失败: {}", errorMsg);
+                throw new BusinessException("获取用户统计数据失败: " + errorMsg);
+            }
+
+            Map<String, Object> data = result.getData();
+            if (data == null) {
+                log.warn("用户统计数据为空，返回默认值");
+                data = new java.util.HashMap<>();
+                data.put("total", 0);
+                data.put("active", 0);
+                data.put("pending", 0);
+                data.put("disabled", 0);
+            }
+
+            return data;
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("调用用户服务异常", e);
+            throw new BusinessException("系统异常，请联系管理员: " + e.getMessage());
         }
-        return result.getData();
     }
 
     /**

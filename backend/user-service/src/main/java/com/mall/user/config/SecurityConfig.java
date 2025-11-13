@@ -41,7 +41,7 @@ public class SecurityConfig {
     @Autowired
     private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
-    @Value("${security.jwt.enabled:true}")
+    @Value("${security.jwt.enabled:false}")
     private boolean jwtEnabled;
 
     /**
@@ -105,6 +105,9 @@ public class SecurityConfig {
                             .requestMatchers("/users/login").permitAll()
                             .requestMatchers("/api/users/register").permitAll()
                             .requestMatchers("/api/users/login").permitAll()
+                            // 内部服务调用接口放行
+                            .requestMatchers("/users/statistics").permitAll()
+                            .requestMatchers("/api/users/statistics").permitAll()
                             // 唯一性检查接口放行
                             .requestMatchers("/users/check-*").permitAll()
                             .requestMatchers("/api/users/check-*").permitAll()

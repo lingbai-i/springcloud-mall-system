@@ -68,33 +68,12 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 
 const router = useRouter()
 
-const favoritesList = ref([
-  {
-    id: 1,
-    productId: 1,
-    productName: 'Apple iPhone 15 Pro Max',
-    productDesc: '6.7英寸超视网膜XDR显示屏',
-    productImage: 'https://via.placeholder.com/150',
-    price: 9999,
-    originalPrice: 10999,
-    createTime: '2024-01-15'
-  },
-  {
-    id: 2,
-    productId: 2,
-    productName: '华为 Mate 60 Pro',
-    productDesc: '卫星通话 鸿蒙4.0',
-    productImage: 'https://via.placeholder.com/150',
-    price: 6999,
-    originalPrice: null,
-    createTime: '2024-01-16'
-  }
-])
+const favoritesList = ref([])
 
 const selectedIds = ref([])
 const currentPage = ref(1)
 const pageSize = ref(10)
-const total = ref(2)
+const total = ref(0)
 
 onMounted(() => {
   loadFavorites()

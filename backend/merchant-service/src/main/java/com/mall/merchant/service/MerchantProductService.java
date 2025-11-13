@@ -133,6 +133,14 @@ public interface MerchantProductService {
                                                  BigDecimal minPrice, BigDecimal maxPrice);
     
     /**
+     * 批量获取商品信息
+     * 
+     * @param productIds 商品ID列表
+     * @return 商品列表
+     */
+    R<List<MerchantProduct>> getProductsBatch(List<Long> productIds);
+    
+    /**
      * 获取上架商品列表
      * 
      * @param merchantId 商家ID

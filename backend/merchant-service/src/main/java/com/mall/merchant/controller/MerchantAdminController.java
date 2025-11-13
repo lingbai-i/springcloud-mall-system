@@ -3,10 +3,10 @@ package com.mall.merchant.controller;
 import com.mall.merchant.service.MerchantApplicationService;
 import com.mall.merchant.service.MerchantService;
 import com.mall.merchant.domain.vo.MerchantApplicationVO;
+import com.mall.common.core.domain.R;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -33,15 +33,13 @@ public class MerchantAdminController {
    * 获取申请列表（管理员）
    */
   @GetMapping("/applications")
-  public ResponseEntity<Map<String, Object>> getApplications(
+  public R<Map<String, Object>> getApplications(
       @RequestParam(value = "page", defaultValue = "1") Integer page,
       @RequestParam(value = "size", defaultValue = "20") Integer size,
       @RequestParam(value = "status", required = false) Integer status,
       @RequestParam(value = "keyword", required = false) String keyword) {
 
     log.info("管理员查询申请列表");
-
-    Map<String, Object> response = new HashMap<>();
 
     try {
       Page<MerchantApplicationVO> applications = applicationService.getApplicationList(page, size, status, keyword);
@@ -52,18 +50,11 @@ public class MerchantAdminController {
       data.put("size", size);
       data.put("records", applications.getContent());
 
-      response.put("code", 200);
-      response.put("success", true);
-      response.put("data", data);
-
-      return ResponseEntity.ok(response);
+      return R.ok(data);
 
     } catch (Exception e) {
       log.error("查询失败", e);
-      response.put("code", 500);
-      response.put("success", false);
-      response.put("message", e.getMessage());
-      return ResponseEntity.status(500).body(response);
+      return R.fail("查询失败: " + e.getMessage());
     }
   }
 
@@ -71,7 +62,7 @@ public class MerchantAdminController {
    * 审批申请（管理员）
    */
   @PutMapping("/applications/{id}/approve")
-  public ResponseEntity<Map<String, Object>> approveApplication(
+  public R<String> approveApplication(
       @PathVariable Long id,
       @RequestBody Map<String, String> request,
       HttpServletRequest httpRequest) {
@@ -81,25 +72,12 @@ public class MerchantAdminController {
 
     log.info("审批申请 - ID: {}, 结果: {}, 原因: {}", id, approved ? "通过" : "拒绝", reason);
 
-    Map<String, Object> response = new HashMap<>();
-
     try {
       // TODO: 实现审批逻辑
-      response.put("code", 200);
-      response.put("success", true);
-      response.put("message", approved ? "审批通过" : "已拒绝");
-      if (reason != null && !reason.isEmpty()) {
-        response.put("reason", reason);
-      }
-
-      return ResponseEntity.ok(response);
-
+      return R.ok(approved ? "审批通过" : "已拒绝");
     } catch (Exception e) {
       log.error("审批失败", e);
-      response.put("code", 500);
-      response.put("success", false);
-      response.put("message", e.getMessage());
-      return ResponseEntity.status(500).body(response);
+      return R.fail("审批失败: " + e.getMessage());
     }
   }
 
@@ -107,7 +85,7 @@ public class MerchantAdminController {
    * 获取商家列表（管理员）
    */
   @GetMapping("")
-  public ResponseEntity<Map<String, Object>> getMerchantList(
+  public R<Map<String, Object>> getMerchantList(
       @RequestParam(value = "page", defaultValue = "1") Integer page,
       @RequestParam(value = "size", defaultValue = "10") Integer size,
       @RequestParam(value = "keyword", required = false) String keyword,
@@ -115,15 +93,13 @@ public class MerchantAdminController {
 
     log.info("管理员查询商家列表 - page: {}, size: {}, keyword: {}, status: {}", page, size, keyword, status);
 
-    Map<String, Object> response = new HashMap<>();
-
     try {
       // 调用 merchantService 查询商家列表
-      com.mall.common.core.domain.R<com.mall.common.core.domain.PageResult<com.mall.merchant.domain.entity.Merchant>> listResult = merchantService
+      R<com.mall.common.core.domain.PageResult<com.mall.merchant.domain.entity.Merchant>> listResult = merchantService
           .getMerchantList(page, size, keyword, null, null, status);
 
       // 获取统计数据
-      com.mall.common.core.domain.R<Map<String, Object>> statsResult = merchantService.getMerchantStatistics();
+      R<Map<String, Object>> statsResult = merchantService.getMerchantStatistics();
 
       Map<String, Object> data = new HashMap<>();
 
@@ -144,18 +120,11 @@ public class MerchantAdminController {
         data.put("stats", stats);
       }
 
-      response.put("code", 200);
-      response.put("success", true);
-      response.put("data", data);
-
-      return ResponseEntity.ok(response);
+      return R.ok(data);
 
     } catch (Exception e) {
       log.error("查询商家列表失败", e);
-      response.put("code", 500);
-      response.put("success", false);
-      response.put("message", e.getMessage());
-      return ResponseEntity.status(500).body(response);
+      return R.fail("查询失败: " + e.getMessage());
     }
   }
 }

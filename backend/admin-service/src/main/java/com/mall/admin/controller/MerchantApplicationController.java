@@ -21,12 +21,12 @@ import java.util.Map;
  * V1.1 2025-11-12T18:56:16+08:00：修正路由前缀，与网关 StripPrefix=2 对齐，将
  * 类级映射从 "/admin/merchants/applications" 改为 "/merchants/applications"，避免 404。
  */
-@RequestMapping("/merchants/applications")
+@RequestMapping("/admin/merchants/applications")
 @RequiredArgsConstructor
 public class MerchantApplicationController {
-    
+
     private final MerchantServiceClient merchantServiceClient;
-    
+
     /**
      * 获取申请列表
      */
@@ -36,10 +36,10 @@ public class MerchantApplicationController {
             @RequestParam(value = "size", defaultValue = "20") Integer size,
             @RequestParam(value = "status", required = false) Integer status,
             @RequestParam(value = "keyword", required = false) String keyword) {
-        
-        log.info("管理员查询商家申请列表 - page: {}, size: {}, status: {}, keyword: {}", 
+
+        log.info("管理员查询商家申请列表 - page: {}, size: {}, status: {}, keyword: {}",
                 page, size, status, keyword);
-        
+
         try {
             R<Map<String, Object>> result = merchantServiceClient.getApplicationList(page, size, status, keyword);
             return result;
@@ -48,14 +48,14 @@ public class MerchantApplicationController {
             return R.fail("查询失败: " + e.getMessage());
         }
     }
-    
+
     /**
      * 获取申请详情
      */
     @GetMapping("/{id}")
     public R<Map<String, Object>> getApplicationDetail(@PathVariable("id") Long id) {
         log.info("管理员查询申请详情 - id: {}", id);
-        
+
         try {
             R<Map<String, Object>> result = merchantServiceClient.getApplicationDetail(id);
             return result;
@@ -64,7 +64,7 @@ public class MerchantApplicationController {
             return R.fail("查询失败: " + e.getMessage());
         }
     }
-    
+
     /**
      * 审批申请
      */
@@ -72,14 +72,14 @@ public class MerchantApplicationController {
     public R<Void> approveApplication(
             @PathVariable("id") Long id,
             @RequestBody Map<String, Object> data) {
-        
+
         Boolean approved = (Boolean) data.get("approved");
         String reason = (String) data.get("reason");
         Long adminId = 1L; // TODO: 从当前登录用户获取
         String adminName = "管理员"; // TODO: 从当前登录用户获取
-        
+
         log.info("管理员审批申请 - id: {}, approved: {}, adminId: {}", id, approved, adminId);
-        
+
         try {
             R<Void> result = merchantServiceClient.auditApplication(id, approved, reason, adminId, adminName);
             return result;
@@ -88,14 +88,14 @@ public class MerchantApplicationController {
             return R.fail("审批失败: " + e.getMessage());
         }
     }
-    
+
     /**
      * 获取申请统计
      */
     @GetMapping("/stats")
     public R<Map<String, Object>> getApplicationStats() {
         log.info("管理员查询申请统计");
-        
+
         try {
             R<Map<String, Object>> result = merchantServiceClient.getApplicationStats();
             return result;
@@ -105,11 +105,4 @@ public class MerchantApplicationController {
         }
     }
 }
-
-
-
-
-
-
-
 

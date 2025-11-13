@@ -8,20 +8,21 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 /**
  * 商品服务客户端
+ * TODO: 临时调用merchant-service,后续统一迁移到product-service
  * 
  * @author lingbai
  * @version 1.0
  * @since 2025-01-21
  */
-@FeignClient(name = "product-service", path = "/api/products")
+@FeignClient(name = "merchant-service", path = "/merchant/products")
 public interface ProductClient {
-    
+
     /**
      * 根据商品ID查询商品信息
      * 
      * @param productId 商品ID
      * @return 商品信息
      */
-    @GetMapping("/{id}")
-    R<ProductDTO> getProductById(@PathVariable("id") Long productId);
+    @GetMapping("/{productId}")
+    R<ProductDTO> getProductById(@PathVariable("productId") Long productId);
 }

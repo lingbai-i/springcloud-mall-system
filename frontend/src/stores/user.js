@@ -60,15 +60,15 @@ export const useUserStore = defineStore('user', () => {
         result = await userLogin(loginData)
       }
       
-      // 后端返回格式: {success: true, data: {accessToken/token, expiresIn, userInfo}}
-      if (!result.success && result.code !== 200) {
-        throw { code: result.code, message: result.message }
+      // 后端返回格式: {code: 200, success: true, message: '', data: {accessToken/token, userInfo, ...}}
+      if (!result.success || (result.code !== 200 && result.code !== undefined)) {
+        throw { code: result.code, message: result.message || '登录失败' }
       }
       
       // 从 data 中提取 token 和 userInfo
-      // 兼容不同的字段名：accessToken/token
+      // 兼容不同的字段名：accessToken/token，adminInfo/userInfo
       const tokenValue = result.data.accessToken || result.data.token
-      const userData = result.data.userInfo || result.data
+      const userData = result.data.adminInfo || result.data.userInfo || result.data
       
       // 如果是商家登录，确保 userInfo 中包含商家标识
       if (loginData.type === 'merchant') {

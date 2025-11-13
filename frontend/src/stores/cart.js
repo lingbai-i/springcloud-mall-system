@@ -21,6 +21,11 @@ export const useCartStore = defineStore('cart', () => {
     }, 0)
   })
 
+  // 获取选中的商品列表
+  const selectedItems = computed(() => {
+    return cartItems.value.filter(item => item.selected)
+  })
+
   // 获取购物车列表
   async function fetchCartItems() {
     try {
@@ -84,7 +89,7 @@ export const useCartStore = defineStore('cart', () => {
   // 选中/取消选中商品
   async function toggleSelect(productId, selected) {
     try {
-      const response = await cartApi.selectCartItem({ productId, selected })
+      const response = await cartApi.toggleCartItemSelect(productId, selected)
       if (response.success) {
         await fetchCartItems()
         return true
@@ -111,16 +116,66 @@ export const useCartStore = defineStore('cart', () => {
     }
   }
 
+  // 切换单个商品选中状态
+  async function toggleItemSelected(productId) {
+    const item = cartItems.value.find(i => i.productId === productId)
+    if (item) {
+      return await toggleSelect(productId, !item.selected)
+    }
+    return false
+  }
+
+  // 批量切换选中状态
+  async function toggleAllSelected(selected) {
+    try {
+      // 批量更新所有商品的选中状态
+      const promises = cartItems.value.map(item => 
+        toggleSelect(item.productId, selected)
+      )
+      await Promise.all(promises)
+      return true
+    } catch (error) {
+      console.error('批量选中失败:', error)
+      return false
+    }
+  }
+
+  // 删除购物车商品
+  async function removeItem(productId) {
+    return await removeFromCart(productId)
+  }
+
+  // 清空选中的商品(结算后调用)
+  async function clearSelected() {
+    try {
+      const selectedProductIds = selectedItems.value.map(item => item.productId)
+      const promises = selectedProductIds.map(productId => removeFromCart(productId))
+      await Promise.all(promises)
+      return true
+    } catch (error) {
+      console.error('清空选中商品失败:', error)
+      return false
+    }
+  }
+
   return {
     cartItems,
+    items: cartItems, // 别名,兼容旧代码
     loading,
     totalCount,
     totalPrice,
+    selectedItems,
     fetchCartItems,
+    loadCartItems: fetchCartItems, // 别名,兼容旧代码
     addToCart,
+    addItem: addToCart, // 别名,兼容旧代码
     updateQuantity,
     removeFromCart,
+    removeItem,
     toggleSelect,
-    clearCart
+    toggleItemSelected,
+    toggleAllSelected,
+    clearCart,
+    clearSelected
   }
 })

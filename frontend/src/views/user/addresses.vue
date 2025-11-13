@@ -98,35 +98,15 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus'
+// @ts-ignore
 import LocalIcon from '@/components/LocalIcon.vue'
 
 const addressFormRef = ref<FormInstance>()
 const showAddDialog = ref(false)
-const editingAddress = ref(null)
+const editingAddress = ref<any>(null)
 
 // 地址列表
-const addresses = ref([
-  {
-    id: 1,
-    recipient: '张三',
-    phone: '13800138000',
-    province: '北京市',
-    city: '北京市',
-    district: '朝阳区',
-    detail: '三里屯街道工体北路8号院',
-    isDefault: true
-  },
-  {
-    id: 2,
-    recipient: '李四',
-    phone: '13900139000',
-    province: '上海市',
-    city: '上海市',
-    district: '浦东新区',
-    detail: '陆家嘴金融贸易区世纪大道100号',
-    isDefault: false
-  }
-])
+const addresses = ref<any[]>([])
 
 // 地址表单
 const addressForm = reactive({
@@ -216,7 +196,7 @@ const saveAddress = async () => {
         
         if (editingAddress.value) {
           // 编辑模式
-          const index = addresses.value.findIndex(addr => addr.id === editingAddress.value.id)
+          const index = addresses.value.findIndex((addr: any) => addr.id === editingAddress.value?.id)
           if (index > -1) {
             addresses.value[index] = {
               ...addresses.value[index],

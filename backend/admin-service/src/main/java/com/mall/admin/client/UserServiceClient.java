@@ -15,14 +15,14 @@ import java.util.Map;
  */
 @FeignClient(name = "user-service", path = "/users")
 public interface UserServiceClient {
-    
+
     /**
      * 查询用户列表
      * 
-     * @param page 页码
-     * @param size 每页大小
+     * @param page    页码
+     * @param size    每页大小
      * @param keyword 关键词
-     * @param status 状态
+     * @param status  状态
      * @return 用户列表
      */
     @GetMapping("")
@@ -30,9 +30,8 @@ public interface UserServiceClient {
             @RequestParam(value = "page", defaultValue = "1") Integer page,
             @RequestParam(value = "size", defaultValue = "10") Integer size,
             @RequestParam(value = "keyword", required = false) String keyword,
-            @RequestParam(value = "status", required = false) Integer status
-    );
-    
+            @RequestParam(value = "status", required = false) Integer status);
+
     /**
      * 获取用户详情
      * 
@@ -41,7 +40,7 @@ public interface UserServiceClient {
      */
     @GetMapping("/{id}")
     R<Map<String, Object>> getUserDetail(@PathVariable("id") Long userId);
-    
+
     /**
      * 禁用用户
      * 
@@ -50,7 +49,7 @@ public interface UserServiceClient {
      */
     @PutMapping("/{id}/disable")
     R<Void> disableUser(@PathVariable("id") Long userId);
-    
+
     /**
      * 启用用户
      * 
@@ -59,7 +58,7 @@ public interface UserServiceClient {
      */
     @PutMapping("/{id}/enable")
     R<Void> enableUser(@PathVariable("id") Long userId);
-    
+
     /**
      * 获取用户统计数据
      * 

@@ -79,10 +79,10 @@ SELECT
 FROM `permission`
 WHERE action = 'view';
 
--- 创建超级管理员账号 (密码: Admin@123, BCrypt加密后的hash)
--- $2a$10$rqVRyN5xL.xZqvKo5G5l6.1ZqU2XvH9l4p9ZnGKqWKzXVqJFG9G1a
+-- 创建超级管理员账号 (密码: admin123, BCrypt加密后的hash)
+-- $2a$10$iXNc/Y/3w0dqWslabSZt5.Op7sGly9TD8TatZ0ITvahge2I774w2q
 INSERT INTO `admin` (`username`, `password`, `real_name`, `email`, `phone`, `status`) VALUES
-('admin', '$2a$10$rqVRyN5xL.xZqvKo5G5l6.1ZqU2XvH9l4p9ZnGKqWKzXVqJFG9G1a', '超级管理员', 'admin@mall.com', '13800138000', 1);
+('admin', '$2a$10$iXNc/Y/3w0dqWslabSZt5.Op7sGly9TD8TatZ0ITvahge2I774w2q', '超级管理员', 'admin@mall.com', '13800138000', 1);
 
 -- 为超级管理员分配角色
 INSERT INTO `admin_role` (`admin_id`, `role_id`)

@@ -6,8 +6,6 @@ spring:
     name: gateway-service
   profiles:
     active: simple
-  config:
-    import: optional:nacos:gateway-service.yml
   main:
     web-application-type: reactive
   cloud:
@@ -64,7 +62,16 @@ spring:
           predicates:
             - Path=/api/cart/**
           filters:
-            - StripPrefix=2
+            - StripPrefix=1
+        # 购物车服务兼容路由（支持前端/api/cart-service/**路径）
+        - id: cart-service-compat
+          uri: lb://cart-service
+          predicates:
+            - Path=/api/cart-service/**
+          filters:
+            - name: StripPrefix
+              args:
+                parts: 2
         # 订单服务
         - id: order-service
           uri: lb://order-service
@@ -72,6 +79,15 @@ spring:
             - Path=/api/order/**
           filters:
             - StripPrefix=2
+        # 订单服务兼容路由（支持前端/api/order-service/**路径）
+        - id: order-service-compat
+          uri: lb://order-service
+          predicates:
+            - Path=/api/order-service/**
+          filters:
+            - name: StripPrefix
+              args:
+                parts: 2
         # 支付服务
         - id: payment-service
           uri: lb://payment-service
@@ -99,7 +115,7 @@ spring:
           predicates:
             - Path=/api/admin/**
           filters:
-            - StripPrefix=2
+            - StripPrefix=1
         # SMS服务
         - id: sms-service
           uri: lb://sms-service

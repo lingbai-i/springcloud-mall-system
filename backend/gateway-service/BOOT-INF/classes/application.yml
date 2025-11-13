@@ -1,0 +1,168 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway-service
+  profiles:
+    active: simple
+  config:
+    import: optional:nacos:gateway-service.yml
+  main:
+    web-application-type: reactive
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+        namespace: ${spring.profiles.active}
+      config:
+        server-addr: localhost:8848
+        namespace: ${spring.profiles.active}
+        file-extension: yml
+        group: DEFAULT_GROUP
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        # 用户服务
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/users/**
+          filters:
+            - StripPrefix=1
+        # 用户服务兼容路由（支持前端/api/user-service/**路径）
+        - id: user-service-compat
+          uri: lb://user-service
+          predicates:
+            - Path=/api/user-service/**
+          filters:
+            - name: StripPrefix
+              args:
+                parts: 2
+        # 商品服务
+        - id: product-service
+          uri: lb://product-service
+          predicates:
+            - Path=/api/product/**
+          filters:
+            - StripPrefix=2
+        # 商品服务兼容路由（支持前端/api/product-service/**路径）
+        - id: product-service-compat
+          uri: lb://product-service
+          predicates:
+            - Path=/api/product-service/**
+          filters:
+            - name: StripPrefix
+              args:
+                parts: 2
+        # 购物车服务
+        - id: cart-service
+          uri: lb://cart-service
+          predicates:
+            - Path=/api/cart/**
+          filters:
+            - StripPrefix=1
+        # 购物车服务兼容路由（支持前端/api/cart-service/**路径）
+        - id: cart-service-compat
+          uri: lb://cart-service
+          predicates:
+            - Path=/api/cart-service/**
+          filters:
+            - name: StripPrefix
+              args:
+                parts: 2
+        # 订单服务
+        - id: order-service
+          uri: lb://order-service
+          predicates:
+            - Path=/api/order/**
+          filters:
+            - StripPrefix=2
+        # 订单服务兼容路由（支持前端/api/order-service/**路径）
+        - id: order-service-compat
+          uri: lb://order-service
+          predicates:
+            - Path=/api/order-service/**
+          filters:
+            - name: StripPrefix
+              args:
+                parts: 2
+        # 支付服务
+        - id: payment-service
+          uri: lb://payment-service
+          predicates:
+            - Path=/api/payment/**
+          filters:
+            - StripPrefix=2
+        # 商家服务（单数）
+        - id: merchant-service
+          uri: lb://merchant-service
+          predicates:
+            - Path=/api/merchant/**
+          filters:
+            - StripPrefix=1
+        # 商家服务（复数）
+        - id: merchant-service-plural
+          uri: lb://merchant-service
+          predicates:
+            - Path=/api/merchants/**
+          filters:
+            - StripPrefix=1
+        # 管理服务
+        - id: admin-service
+          uri: lb://admin-service
+          predicates:
+            - Path=/api/admin/**
+          filters:
+            - StripPrefix=1
+        # SMS服务
+        - id: sms-service
+          uri: lb://sms-service
+          predicates:
+            - Path=/api/sms/**
+          filters:
+            - name: StripPrefix
+              args:
+                parts: 2
+      globalcors:
+        cors-configurations:
+          "[/**]":
+            allowedOriginPatterns: "*"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+            allowCredentials: true
+            exposedHeaders: "Content-Disposition,Content-Type,Cache-Control"
+
+# Sentinel配置
+spring.cloud.sentinel:
+  transport:
+    dashboard: 127.0.0.1:8858
+    port: 8719
+  datasource:
+    ds1:
+      nacos:
+        server-addr: localhost:8848
+        dataId: gateway-flow-rules
+        groupId: SENTINEL_GROUP
+        rule-type: flow
+
+# 日志配置
+logging:
+  level:
+    com.mall.gateway: debug
+    org.springframework.cloud.gateway: debug
+  pattern:
+    console: "%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"
+
+# 管理端点
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always

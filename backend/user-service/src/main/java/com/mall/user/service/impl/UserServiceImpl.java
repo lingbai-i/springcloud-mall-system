@@ -291,4 +291,60 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             return stats;
         }
     }
+
+    /**
+     * 获取用户列表（分页查询）
+     *
+     * @param page    页码
+     * @param size    每页大小
+     * @param keyword 关键词（搜索用户名、手机号、邮箱）
+     * @param status  状态（0-禁用, 1-正常）
+     * @return 分页结果
+     */
+    public com.mall.common.core.domain.PageResult<User> getUserList(Integer page, Integer size, String keyword,
+            Integer status) {
+        try {
+            // 构建查询条件
+            LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
+
+            // 关键词搜索：用户名、手机号、邮箱
+            if (StrUtil.isNotBlank(keyword)) {
+                queryWrapper.and(wrapper -> wrapper
+                        .like(User::getUsername, keyword)
+                        .or().like(User::getPhone, keyword)
+                        .or().like(User::getEmail, keyword)
+                        .or().like(User::getNickname, keyword));
+            }
+
+            // 状态筛选
+            if (status != null) {
+                queryWrapper.eq(User::getStatus, status);
+            }
+
+            // 按创建时间降序
+            queryWrapper.orderByDesc(User::getCreateTime);
+
+            // 分页查询
+            com.baomidou.mybatisplus.extension.plugins.pagination.Page<User> mybatisPlusPage = new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(
+                    page, size);
+
+            com.baomidou.mybatisplus.extension.plugins.pagination.Page<User> resultPage = userMapper
+                    .selectPage(mybatisPlusPage, queryWrapper);
+
+            // 转换为通用 PageResult
+            com.mall.common.core.domain.PageResult<User> pageResult = new com.mall.common.core.domain.PageResult<>();
+            pageResult.setRecords(resultPage.getRecords());
+            pageResult.setTotal(resultPage.getTotal());
+            pageResult.setCurrent(resultPage.getCurrent());
+            pageResult.setSize(resultPage.getSize());
+            pageResult.setPages(resultPage.getPages());
+
+            return pageResult;
+
+        } catch (Exception e) {
+            System.err.println("获取用户列表异常: " + e.getMessage());
+            e.printStackTrace();
+            throw new BusinessException("获取用户列表失败: " + e.getMessage());
+        }
+    }
 }

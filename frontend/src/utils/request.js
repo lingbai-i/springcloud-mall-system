@@ -127,27 +127,28 @@ service.interceptors.response.use(
     }
     
     // 统一处理响应
-    // 处理标准格式 {code: 200, data: ...}
-    if (data.code === 200) {
-      logger.info('[HTTP] 标准响应成功 code=200', { url: response.config?.url })
-      return data
+    // 处理标准格式 {code: 200, success: true, data: ...}
+    if (data.code === 200 || data.success === true) {
+      logger.info('[HTTP] 标准响应成功', { url: response.config?.url, code: data.code, success: data.success })
+      // 返回包含完整信息的对象，包括 code, message, data, success
+      return {
+        code: data.code || 200,
+        message: data.message || '请求成功',
+        data: data.data,
+        success: data.success !== false
+      }
     } else if (data.code === 401) {
       // token过期或无效
       handleTokenExpired()
       return Promise.reject(new Error(data.message || '登录已过期'))
-    } 
-    // 处理后端success格式 {success: true/false, message: ...}
-    else if (data.hasOwnProperty('success')) {
-      if (data.success === true) {
-        logger.info('[HTTP] success=true 响应成功', { url: response.config?.url })
-        return data
-      } else {
-        // success为false时显示错误消息
-        ElMessage.error(data.message || '请求失败')
-        return Promise.reject(new Error(data.message || '请求失败'))
-      }
-    } 
-    // 处理特殊格式：{code: undefined, message: '成功消息'}
+    }
+    // 处理业务错误：success === false 或 code !== 200
+    else if (data.success === false || (data.code && data.code !== 200)) {
+      logger.warn('[HTTP] 响应失败', { url: response.config?.url, code: data.code, success: data.success, message: data.message })
+      ElMessage.error(data.message || '请求失败')
+      return Promise.reject(new Error(data.message || '请求失败'))
+    }
+    // 处理特殊格式：{message: '成功消息'}（无code和success字段）
     else if (data.message && typeof data.message === 'string') {
       const successKeywords = ['成功', '完成', 'success', 'Success', 'SUCCESS']
       const isSuccess = successKeywords.some(keyword => data.message.includes(keyword))

@@ -58,11 +58,15 @@ public class CartController {
     @Operation(summary = "添加商品到购物车")
     @PostMapping("/add")
     public R<Void> addToCart(
+            @Parameter(description = "用户ID") @RequestParam(required = false) Long userId,
             @Parameter(description = "商品ID") @RequestParam @NotNull Long productId,
             @Parameter(description = "数量") @RequestParam @NotNull @Min(1) Integer quantity,
             @Parameter(description = "规格") @RequestParam(required = false) String specifications) {
 
-        Long userId = getCurrentUserId();
+        // 开发模式：使用参数传入的userId
+        if (userId == null) {
+            userId = getCurrentUserId();
+        }
         log.info("添加商品到购物车请求: userId={}, productId={}, quantity={}", userId, productId, quantity);
         return cartService.addToCart(userId, productId, quantity, specifications);
     }
@@ -73,10 +77,14 @@ public class CartController {
     @Operation(summary = "更新购物车商品数量")
     @PutMapping("/update")
     public R<Void> updateQuantity(
+            @Parameter(description = "用户ID") @RequestParam(required = false) Long userId,
             @Parameter(description = "商品ID") @RequestParam @NotNull Long productId,
             @Parameter(description = "新数量") @RequestParam @NotNull @Min(0) Integer quantity) {
 
-        Long userId = getCurrentUserId();
+        // 开发模式：使用参数传入的userId
+        if (userId == null) {
+            userId = getCurrentUserId();
+        }
         log.info("更新购物车商品数量请求: userId={}, productId={}, quantity={}", userId, productId, quantity);
         return cartService.updateQuantity(userId, productId, quantity);
     }
@@ -87,9 +95,13 @@ public class CartController {
     @Operation(summary = "从购物车删除商品")
     @DeleteMapping("/remove")
     public R<Void> removeFromCart(
+            @Parameter(description = "用户ID") @RequestParam(required = false) Long userId,
             @Parameter(description = "商品ID") @RequestParam @NotNull Long productId) {
 
-        Long userId = getCurrentUserId();
+        // 开发模式：使用参数传入的userId
+        if (userId == null) {
+            userId = getCurrentUserId();
+        }
         log.info("从购物车删除商品请求: userId={}, productId={}", userId, productId);
         return cartService.removeFromCart(userId, productId);
     }
@@ -99,9 +111,13 @@ public class CartController {
      */
     @Operation(summary = "获取用户购物车列表")
     @GetMapping("/list")
-    public R<List<CartItem>> getCartItems() {
+    public R<List<CartItem>> getCartItems(
+            @Parameter(description = "用户ID") @RequestParam(required = false) Long userId) {
 
-        Long userId = getCurrentUserId();
+        // 开发模式：使用参数传入的userId
+        if (userId == null) {
+            userId = getCurrentUserId();
+        }
         log.info("获取购物车列表请求: userId={}", userId);
         return cartService.getCartItems(userId);
     }
@@ -111,9 +127,13 @@ public class CartController {
      */
     @Operation(summary = "清空购物车")
     @DeleteMapping("/clear")
-    public R<Void> clearCart() {
+    public R<Void> clearCart(
+            @Parameter(description = "用户ID") @RequestParam(required = false) Long userId) {
 
-        Long userId = getCurrentUserId();
+        // 开发模式：使用参数传入的userId
+        if (userId == null) {
+            userId = getCurrentUserId();
+        }
         log.info("清空购物车请求: userId={}", userId);
         return cartService.clearCart(userId);
     }
@@ -124,10 +144,14 @@ public class CartController {
     @Operation(summary = "选中/取消选中购物车商品")
     @PutMapping("/select")
     public R<Void> selectItem(
+            @Parameter(description = "用户ID") @RequestParam(required = false) Long userId,
             @Parameter(description = "商品ID") @RequestParam @NotNull Long productId,
             @Parameter(description = "是否选中") @RequestParam @NotNull Boolean selected) {
 
-        Long userId = getCurrentUserId();
+        // 开发模式：使用参数传入的userId
+        if (userId == null) {
+            userId = getCurrentUserId();
+        }
         log.info("选中购物车商品请求: userId={}, productId={}, selected={}", userId, productId, selected);
         return cartService.selectItem(userId, productId, selected);
     }

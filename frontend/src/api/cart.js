@@ -1,18 +1,20 @@
 import request from '@/utils/request'
+import { useUserStore } from '@/stores/user'
 
 /**
- * 购物车相关API
- * 
- * @author lingbai
- * @version 1.0
- * @since 2025-01-27
+ * 获取当前用户ID
  */
+const getUserId = () => {
+  const userStore = useUserStore()
+  return userStore.userId || 1  // 开发模式默认使用 userId=1
+}
 
 // 获取购物车列表
 export function getCartList() {
   return request({
-    url: '/cart-service/cart',
-    method: 'get'
+    url: '/cart-service/cart/list',
+    method: 'get',
+    params: { userId: getUserId() }
   })
 }
 
@@ -21,7 +23,12 @@ export function addToCart(data) {
   return request({
     url: '/cart-service/cart/add',
     method: 'post',
-    data
+    params: {
+      userId: getUserId(),
+      productId: data.productId,
+      quantity: data.quantity,
+      specifications: data.specifications
+    }
   })
 }
 
@@ -30,15 +37,23 @@ export function updateCartItem(data) {
   return request({
     url: '/cart-service/cart/update',
     method: 'put',
-    data
+    params: {
+      userId: getUserId(),
+      productId: data.productId,
+      quantity: data.quantity
+    }
   })
 }
 
 // 删除购物车商品
 export function removeCartItem(productId) {
   return request({
-    url: `/cart-service/cart/remove/${productId}`,
-    method: 'delete'
+    url: '/cart-service/cart/remove',
+    method: 'delete',
+    params: { 
+      userId: getUserId(),
+      productId 
+    }
   })
 }
 
@@ -46,7 +61,8 @@ export function removeCartItem(productId) {
 export function clearCart() {
   return request({
     url: '/cart-service/cart/clear',
-    method: 'delete'
+    method: 'delete',
+    params: { userId: getUserId() }
   })
 }
 
@@ -71,9 +87,13 @@ export function batchRemoveCartItems(productIds) {
 // 选中/取消选中购物车商品
 export function toggleCartItemSelect(productId, selected) {
   return request({
-    url: `/cart-service/cart/select/${productId}`,
+    url: '/cart-service/cart/select',
     method: 'put',
-    data: { selected }
+    params: { 
+      userId: getUserId(),
+      productId, 
+      selected 
+    }
   })
 }
 

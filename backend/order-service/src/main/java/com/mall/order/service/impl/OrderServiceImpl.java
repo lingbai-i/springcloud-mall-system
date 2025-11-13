@@ -2,6 +2,7 @@ package com.mall.order.service.impl;
 
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
+import com.mall.common.core.domain.R;
 import com.mall.order.client.CartClient;
 import com.mall.order.client.PaymentClient;
 import com.mall.order.client.ProductClient;
@@ -107,7 +108,11 @@ public class OrderServiceImpl implements OrderService {
                     .map(CreateOrderRequest.OrderItemRequest::getProductId)
                     .toList();
 
-            List<Map<String, Object>> products = productClient.getProductsBatch(productIds);
+            R<List<Map<String, Object>>> productsResponse = productClient.getProductsBatch(productIds);
+            if (!productsResponse.isSuccess() || productsResponse.getData() == null) {
+                throw new IllegalArgumentException("获取商品信息失败: " + productsResponse.getMessage());
+            }
+            List<Map<String, Object>> products = productsResponse.getData();
             if (products.size() != productIds.size()) {
                 throw new IllegalArgumentException("部分商品不存在");
             }

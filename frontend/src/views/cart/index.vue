@@ -1,5 +1,23 @@
 <template>
   <div class="cart-container">
+    <!-- 返回导航 -->
+    <div class="page-navigation">
+      <el-button 
+        type="text" 
+        @click="goBack"
+        class="back-btn">
+        <el-icon><ArrowLeft /></el-icon>
+        <span>返回</span>
+      </el-button>
+      <el-button 
+        type="text" 
+        @click="goHome"
+        class="home-btn">
+        <el-icon><House /></el-icon>
+        <span>首页</span>
+      </el-button>
+    </div>
+
     <!-- 页面标题 -->
     <div class="page-header">
       <h2>购物车</h2>
@@ -113,6 +131,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { ArrowLeft, House } from '@element-plus/icons-vue'
 import { useCartStore } from '@/stores/cart'
 import { useRouter } from 'vue-router'
 
@@ -143,12 +162,13 @@ const isIndeterminate = computed(() => {
 const loadCartItems = async () => {
   try {
     // 使用购物车store加载数据
-    await cartStore.loadCartItems()
-    cartItems.value = cartStore.items
+    await cartStore.fetchCartItems()
+    cartItems.value = cartStore.cartItems
     
     // 更新全选状态
     updateSelectAllStatus()
   } catch (error) {
+    console.error('加载购物车失败:', error)
     ElMessage.error('加载购物车失败')
   }
 }
@@ -249,6 +269,16 @@ const handleCheckout = () => {
   router.push('/checkout')
 }
 
+// 返回上一页
+const goBack = () => {
+  router.back()
+}
+
+// 返回首页
+const goHome = () => {
+  router.push('/')
+}
+
 // 生命周期
 onMounted(() => {
   loadCartItems()
@@ -260,6 +290,32 @@ onMounted(() => {
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
+}
+
+/* 页面导航 */
+.page-navigation {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.back-btn,
+.home-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 16px;
+  color: #606266;
+  font-size: 14px;
+  transition: all 0.3s;
+}
+
+.back-btn:hover,
+.home-btn:hover {
+  color: #409eff;
+  background-color: #ecf5ff;
 }
 
 .page-header {

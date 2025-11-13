@@ -60,7 +60,7 @@ spring:
           predicates:
             - Path=/api/cart/**
           filters:
-            - StripPrefix=2
+            - StripPrefix=1
         # 购物车服务兼容路由（支持/api/cart-service/**）
         - id: cart-service-compat
           uri: lb://cart-service
@@ -77,13 +77,15 @@ spring:
             - Path=/api/order/**
           filters:
             - StripPrefix=2
-        # 订单服务兼容路由（支持/api/orders/**）
+        # 订单服务兼容路由（支持前端/api/order-service/**路径）
         - id: order-service-compat
           uri: lb://order-service
           predicates:
-            - Path=/api/orders/**
+            - Path=/api/order-service/**
           filters:
-            - StripPrefix=1
+            - name: StripPrefix
+              args:
+                parts: 2
         # 支付服务
         - id: payment-service
           uri: lb://payment-service

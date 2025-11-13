@@ -1,5 +1,23 @@
 <template>
   <div class="product-detail-container">
+    <!-- 返回导航 -->
+    <div class="page-navigation">
+      <el-button 
+        type="text" 
+        @click="goBack"
+        class="back-btn">
+        <LocalIcon name="fanhui" :size="16" />
+        <span>返回</span>
+      </el-button>
+      <el-button 
+        type="text" 
+        @click="goHome"
+        class="home-btn">
+        <LocalIcon name="shouye" :size="16" />
+        <span>首页</span>
+      </el-button>
+    </div>
+
     <div class="product-detail" v-if="product">
       <!-- 商品图片区域 -->
       <div class="product-images">
@@ -447,6 +465,16 @@ const formatDate = (date) => {
   return new Date(date).toLocaleDateString('zh-CN')
 }
 
+// 返回上一页
+const goBack = () => {
+  router.back()
+}
+
+// 返回首页
+const goHome = () => {
+  router.push('/')
+}
+
 // 监听规格变化，重置数量
 watch(selectedSpec, () => {
   quantity.value = 1
@@ -463,6 +491,32 @@ onMounted(() => {
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
+}
+
+/* 页面导航 */
+.page-navigation {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.back-btn,
+.home-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 16px;
+  color: #606266;
+  font-size: 14px;
+  transition: all 0.3s;
+}
+
+.back-btn:hover,
+.home-btn:hover {
+  color: #409eff;
+  background-color: #ecf5ff;
 }
 
 .product-detail {

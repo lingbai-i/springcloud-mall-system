@@ -269,6 +269,25 @@ public class MerchantProductServiceImpl implements MerchantProductService {
     }
 
     /**
+     * 批量获取商品信息
+     * 
+     * @param productIds 商品ID列表
+     * @return 商品列表
+     */
+    @Override
+    public R<List<MerchantProduct>> getProductsBatch(List<Long> productIds) {
+        log.debug("批量获取商品信息，商品数量：{}", productIds.size());
+        
+        try {
+            List<MerchantProduct> products = productRepository.findAllById(productIds);
+            return R.ok(products);
+        } catch (Exception e) {
+            log.error("批量获取商品信息失败，错误信息：{}", e.getMessage(), e);
+            return R.fail("获取商品信息失败");
+        }
+    }
+
+    /**
      * 上架商品
      * 
      * @param productId  商品ID

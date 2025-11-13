@@ -172,6 +172,20 @@ public class MerchantProductController {
     }
 
     /**
+     * 批量获取商品信息
+     * 根据商品ID列表批量查询商品详情
+     * 
+     * @param productIds 商品ID列表
+     * @return 商品列表
+     */
+    @PostMapping("/batch")
+    @Operation(summary = "批量获取商品信息", description = "根据商品ID列表批量查询商品详情")
+    public R<List<MerchantProduct>> getProductsBatch(@RequestBody List<Long> productIds) {
+        log.debug("批量获取商品信息请求，商品数量：{}", productIds.size());
+        return productService.getProductsBatch(productIds);
+    }
+
+    /**
      * 商品上架
      * 将商品状态设置为上架
      * 

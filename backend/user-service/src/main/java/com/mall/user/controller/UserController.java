@@ -823,16 +823,187 @@ public class UserController {
         try {
             Map<String, Object> stats = userService.getUserStatistics();
 
-            response.put("success", true);
+            // 返回符合Feign预期的格式：包含code字段
+            response.put("code", 200);
             response.put("message", "获取统计数据成功");
             response.put("data", stats);
+            response.put("timestamp", System.currentTimeMillis());
 
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
             logger.error("获取用户统计数据失败", e);
-            response.put("success", false);
+            response.put("code", 500);
             response.put("message", "获取统计数据失败: " + e.getMessage());
+            response.put("timestamp", System.currentTimeMillis());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+
+    /**
+     * 获取用户列表（管理员接口）
+     *
+     * @param page    页码
+     * @param size    每页大小
+     * @param keyword 关键词
+     * @param status  状态
+     * @return 用户列表
+     */
+    @GetMapping("")
+    @Operation(summary = "获取用户列表", description = "管理员获取用户列表")
+    public ResponseEntity<Map<String, Object>> getUserList(
+            @RequestParam(value = "page", defaultValue = "1") Integer page,
+            @RequestParam(value = "size", defaultValue = "10") Integer size,
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "status", required = false) Integer status) {
+
+        logger.info("管理员查询用户列表 - page: {}, size: {}, keyword: {}, status: {}", page, size, keyword, status);
+
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            // 调用 service 获取用户列表
+            com.mall.common.core.domain.PageResult<User> pageResult = ((UserServiceImpl) userService).getUserList(page,
+                    size, keyword, status);
+
+            response.put("code", 200);
+            response.put("success", true);
+            response.put("message", "获取用户列表成功");
+            response.put("data", pageResult);
+            response.put("timestamp", System.currentTimeMillis());
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            logger.error("获取用户列表失败", e);
+            response.put("code", 500);
+            response.put("success", false);
+            response.put("message", "获取用户列表失败: " + e.getMessage());
+            response.put("timestamp", System.currentTimeMillis());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+
+    /**
+     * 获取用户详情（管理员接口）
+     *
+     * @param id 用户ID
+     * @return 用户详情
+     */
+    @GetMapping("/{id}")
+    @Operation(summary = "获取用户详情", description = "管理员获取用户详情")
+    public ResponseEntity<Map<String, Object>> getUserDetail(@PathVariable("id") Long id) {
+        logger.info("管理员查询用户详情 - id: {}", id);
+
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            User user = ((UserServiceImpl) userService).getById(id);
+
+            if (user == null) {
+                response.put("code", 404);
+                response.put("success", false);
+                response.put("message", "用户不存在");
+                response.put("timestamp", System.currentTimeMillis());
+                return ResponseEntity.status(404).body(response);
+            }
+
+            response.put("code", 200);
+            response.put("success", true);
+            response.put("message", "获取用户详情成功");
+            response.put("data", user);
+            response.put("timestamp", System.currentTimeMillis());
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            logger.error("获取用户详情失败", e);
+            response.put("code", 500);
+            response.put("success", false);
+            response.put("message", "获取用户详情失败: " + e.getMessage());
+            response.put("timestamp", System.currentTimeMillis());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+
+    /**
+     * 禁用用户（管理员接口）
+     *
+     * @param id 用户ID
+     * @return 操作结果
+     */
+    @PutMapping("/{id}/disable")
+    @Operation(summary = "禁用用户", description = "管理员禁用用户")
+    public ResponseEntity<Map<String, Object>> disableUser(@PathVariable("id") Long id) {
+        logger.info("管理员禁用用户 - id: {}", id);
+
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            User user = ((UserServiceImpl) userService).getById(id);
+            if (user == null) {
+                response.put("code", 404);
+                response.put("success", false);
+                response.put("message", "用户不存在");
+                return ResponseEntity.status(404).body(response);
+            }
+
+            user.setStatus(0); // 0 = 禁用
+            ((UserServiceImpl) userService).updateById(user);
+
+            response.put("code", 200);
+            response.put("success", true);
+            response.put("message", "禁用用户成功");
+            response.put("timestamp", System.currentTimeMillis());
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            logger.error("禁用用户失败", e);
+            response.put("code", 500);
+            response.put("success", false);
+            response.put("message", "禁用用户失败: " + e.getMessage());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+
+    /**
+     * 启用用户（管理员接口）
+     *
+     * @param id 用户ID
+     * @return 操作结果
+     */
+    @PutMapping("/{id}/enable")
+    @Operation(summary = "启用用户", description = "管理员启用用户")
+    public ResponseEntity<Map<String, Object>> enableUser(@PathVariable("id") Long id) {
+        logger.info("管理员启用用户 - id: {}", id);
+
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            User user = ((UserServiceImpl) userService).getById(id);
+            if (user == null) {
+                response.put("code", 404);
+                response.put("success", false);
+                response.put("message", "用户不存在");
+                return ResponseEntity.status(404).body(response);
+            }
+
+            user.setStatus(1); // 1 = 启用
+            ((UserServiceImpl) userService).updateById(user);
+
+            response.put("code", 200);
+            response.put("success", true);
+            response.put("message", "启用用户成功");
+            response.put("timestamp", System.currentTimeMillis());
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            logger.error("启用用户失败", e);
+            response.put("code", 500);
+            response.put("success", false);
+            response.put("message", "启用用户失败: " + e.getMessage());
             return ResponseEntity.status(500).body(response);
         }
     }

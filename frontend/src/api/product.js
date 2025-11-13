@@ -18,6 +18,7 @@ export function getProductList(params) {
 }
 
 // 获取商品详情
+// TODO: 后续优化 - 统一迁移到product-service
 export function getProductDetail(id) {
   return request({
     url: `/merchant/products/${id}`,
@@ -63,34 +64,51 @@ export function getProductAttributes(categoryId) {
 }
 
 // 搜索商品
+// TODO: 后续优化 - 统一迁移到product-service
 export function searchProducts(params) {
-  return request({    url: '/merchant/products/list',
+  return request({
+    url: '/merchant/products/list',
     method: 'get',
     params: {
       keyword: params.keyword,
-      page: params.current || params.page || 1,
-      size: params.size || 12,
-      status: 1  // 只搜索上架商品
+      current: params.current || params.page || 1,
+      size: params.size || 12
     }
   })
 }
 
 // 获取商品评价
+// TODO: 临时返回空数据,后续product-service实现评论功能后再调用真实接口
 export function getProductReviews(productId, params) {
-  return request({
-    url: `/product-service/products/${productId}/reviews`,
-    method: 'get',
-    params
+  // 临时返回空数据
+  return Promise.resolve({
+    code: 200,
+    message: '操作成功',
+    data: {
+      total: 0,
+      list: []
+    }
   })
+  // return request({
+  //   url: `/product-service/products/${productId}/reviews`,
+  //   method: 'get',
+  //   params
+  // })
 }
 
 // 添加商品评价
+// TODO: 临时返回成功,后续product-service实现评论功能后再调用真实接口
 export function addProductReview(productId, data) {
-  return request({
-    url: `/product-service/products/${productId}/reviews`,
-    method: 'post',
-    data
+  // 临时返回成功
+  return Promise.resolve({
+    code: 200,
+    message: '评价成功'
   })
+  // return request({
+  //   url: `/product-service/products/${productId}/reviews`,
+  //   method: 'post',
+  //   data
+  // })
 }
 
 // 收藏商品
@@ -119,8 +137,10 @@ export function getFavoriteProducts(params) {
 }
 
 // 获取热门商品
+// TODO: 后续优化 - 统一迁移到product-service
 export function getHotProducts(params) {
-  return request({    url: '/merchant/products/hot-selling',
+  return request({
+    url: '/merchant/products/hot-selling',
     method: 'get',
     params: {
       limit: params?.limit || 12
@@ -129,13 +149,13 @@ export function getHotProducts(params) {
 }
 
 // 获取推荐商品
+// TODO: 后续优化 - 统一迁移到product-service
 export function getRecommendProducts(params) {
   return request({
     url: '/merchant/products/recommended',
     method: 'get',
     params: {
-      page: 1,
-      size: params?.limit || 12
+      limit: params?.limit || 12
     }
   })
 }
