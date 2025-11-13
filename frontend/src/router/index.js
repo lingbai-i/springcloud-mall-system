@@ -255,11 +255,21 @@ const routes = [
         }
       },
       {
-        path: 'merchants/audit',
-        name: 'AdminMerchantAudit',
-        component: () => import('@/views/admin/merchants/audit.vue'),
+        path: 'merchants/applications',
+        name: 'AdminMerchantApplications',
+        component: () => import('@/views/admin/merchants/applications.vue'),
         meta: {
-          title: '商家审核',
+          title: '商家入驻申请',
+          requiresAuth: true,
+          requiresAdmin: true
+        }
+      },
+      {
+        path: 'merchants/history',
+        name: 'AdminMerchantHistory',
+        component: () => import('@/views/admin/merchants/history.vue'),
+        meta: {
+          title: '审核历史',
           requiresAuth: true,
           requiresAdmin: true
         }
@@ -379,31 +389,21 @@ const routes = [
         }
       },
       {
-        path: 'products/add',
-        name: 'MerchantProductAdd',
-        component: () => import('@/views/merchant/products/add.vue'),
+        path: 'products/form',
+        name: 'MerchantProductForm',
+        component: () => import('@/views/merchant/products/form.vue'),
         meta: {
-          title: '添加商品',
+          title: '商品表单',
           requiresAuth: true,
           requiresMerchant: true
         }
       },
       {
-        path: 'products/edit/:id',
-        name: 'MerchantProductEdit',
-        component: () => import('@/views/merchant/products/edit.vue'),
+        path: 'products/form/:id',
+        name: 'MerchantProductFormEdit',
+        component: () => import('@/views/merchant/products/form.vue'),
         meta: {
           title: '编辑商品',
-          requiresAuth: true,
-          requiresMerchant: true
-        }
-      },
-      {
-        path: 'products/inventory',
-        name: 'MerchantProductInventory',
-        component: () => import('@/views/merchant/products/inventory.vue'),
-        meta: {
-          title: '库存管理',
           requiresAuth: true,
           requiresMerchant: true
         }

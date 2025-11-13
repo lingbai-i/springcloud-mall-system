@@ -165,7 +165,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed, nextTick } from 'vue'
+import { ref, reactive, onMounted, computed, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
@@ -180,6 +180,7 @@ import {
   Bell
 } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
+import { getDashboardStats, getSalesTrend, getUserDistribution } from '@/api/admin'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -191,6 +192,11 @@ const userChartRef = ref()
 // 销售趋势周期
 const salesPeriod = ref('30d')
 
+// 监听周期变化，重新加载数据
+watch(salesPeriod, () => {
+  loadSalesTrend()
+})
+
 // 当前日期
 const currentDate = computed(() => {
   return new Date().toLocaleDateString('zh-CN', {
@@ -201,113 +207,47 @@ const currentDate = computed(() => {
   })
 })
 
-// 统计数据
+// 统计数据 - 虚拟数据已移除，待接入真实API
 const statsData = reactive([
   {
     key: 'users',
     label: '总用户数',
-    value: '12,345',
-    trend: 12.5,
+    value: '0',
+    trend: 0,
     color: '#1890ff',
     icon: User
   },
   {
     key: 'merchants',
     label: '商家数量',
-    value: '1,234',
-    trend: 8.2,
+    value: '0',
+    trend: 0,
     color: '#52c41a',
     icon: Shop
   },
   {
     key: 'orders',
     label: '总订单数',
-    value: '45,678',
-    trend: 15.3,
+    value: '0',
+    trend: 0,
     color: '#faad14',
     icon: Document
   },
   {
     key: 'revenue',
     label: '总收入',
-    value: '¥2,345,678',
-    trend: 23.1,
+    value: '¥0',
+    trend: 0,
     color: '#f5222d',
     icon: Money
   }
 ])
 
-// 最新订单数据
-const recentOrders = reactive([
-  {
-    orderNo: 'ORD001',
-    userName: '张三',
-    amount: '299.00',
-    status: 'paid',
-    createTime: '2024-01-15 10:30'
-  },
-  {
-    orderNo: 'ORD002',
-    userName: '李四',
-    amount: '599.00',
-    status: 'pending',
-    createTime: '2024-01-15 09:45'
-  },
-  {
-    orderNo: 'ORD003',
-    userName: '王五',
-    amount: '199.00',
-    status: 'shipped',
-    createTime: '2024-01-15 08:20'
-  },
-  {
-    orderNo: 'ORD004',
-    userName: '赵六',
-    amount: '899.00',
-    status: 'completed',
-    createTime: '2024-01-14 16:15'
-  }
-])
+// 最新订单数据 - 虚拟数据已移除，待接入真实API
+const recentOrders = reactive([])
 
-// 待处理事项
-const pendingItems = reactive([
-  {
-    id: 1,
-    title: '商家审核',
-    description: '有新的商家申请待审核',
-    count: 5,
-    color: '#1890ff',
-    icon: Shop,
-    action: 'merchant-audit'
-  },
-  {
-    id: 2,
-    title: '商品审核',
-    description: '有商品待审核上架',
-    count: 12,
-    color: '#52c41a',
-    icon: Document,
-    action: 'product-audit'
-  },
-  {
-    id: 3,
-    title: '退款处理',
-    description: '有退款申请待处理',
-    count: 3,
-    color: '#faad14',
-    icon: Money,
-    action: 'refund-process'
-  },
-  {
-    id: 4,
-    title: '用户举报',
-    description: '有用户举报待处理',
-    count: 2,
-    color: '#f5222d',
-    icon: User,
-    action: 'user-report'
-  }
-])
+// 待处理事项 - 虚拟数据已移除，待接入真实API
+const pendingItems = reactive([])
 
 // 待处理事项总数
 const pendingCount = computed(() => {
@@ -420,7 +360,7 @@ const initSalesChart = () => {
     },
     xAxis: {
       type: 'category',
-      data: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
+      data: []
     },
     yAxis: [
       {
@@ -439,7 +379,7 @@ const initSalesChart = () => {
         name: '销售额',
         type: 'line',
         smooth: true,
-        data: [120, 132, 101, 134, 90, 230, 210, 182, 191, 234, 290, 330],
+        data: [],
         itemStyle: {
           color: '#1890ff'
         }
@@ -448,7 +388,7 @@ const initSalesChart = () => {
         name: '订单数',
         type: 'bar',
         yAxisIndex: 1,
-        data: [2200, 1800, 1900, 2100, 1500, 2800, 2600, 2400, 2300, 2900, 3200, 3500],
+        data: [],
         itemStyle: {
           color: '#52c41a'
         }
@@ -462,6 +402,8 @@ const initSalesChart = () => {
   window.addEventListener('resize', () => {
     chart.resize()
   })
+  
+  return chart
 }
 
 // 初始化用户分布图
@@ -476,7 +418,7 @@ const initUserChart = () => {
     legend: {
       orient: 'vertical',
       left: 10,
-      data: ['新用户', '活跃用户', '沉睡用户', '流失用户']
+      data: []
     },
     series: [
       {
@@ -498,12 +440,7 @@ const initUserChart = () => {
         labelLine: {
           show: false
         },
-        data: [
-          { value: 335, name: '新用户', itemStyle: { color: '#1890ff' } },
-          { value: 310, name: '活跃用户', itemStyle: { color: '#52c41a' } },
-          { value: 234, name: '沉睡用户', itemStyle: { color: '#faad14' } },
-          { value: 135, name: '流失用户', itemStyle: { color: '#f5222d' } }
-        ]
+        data: []
       }
     ]
   }
@@ -514,13 +451,94 @@ const initUserChart = () => {
   window.addEventListener('resize', () => {
     chart.resize()
   })
+  
+  return chart
+}
+
+// 图表实例
+let salesChart = null
+let userChart = null
+
+// 加载Dashboard统计数据
+const loadDashboardStats = async () => {
+  try {
+    const response = await getDashboardStats()
+    if (response.data) {
+      statsData[0].value = response.data.totalUsers || 0
+      statsData[0].trend = response.data.usersTrend || 0
+      statsData[1].value = response.data.totalMerchants || 0
+      statsData[1].trend = response.data.merchantsTrend || 0
+      statsData[2].value = response.data.totalOrders || 0
+      statsData[2].trend = response.data.ordersTrend || 0
+      statsData[3].value = `¥${response.data.totalRevenue || 0}`
+      statsData[3].trend = response.data.revenueTrend || 0
+    }
+  } catch (error) {
+    console.error('Load dashboard stats error:', error)
+  }
+}
+
+// 加载销售趋势数据
+const loadSalesTrend = async () => {
+  try {
+    const response = await getSalesTrend({ period: salesPeriod.value })
+    if (response.data && salesChart) {
+      salesChart.setOption({
+        xAxis: {
+          data: response.data.dates || []
+        },
+        series: [
+          {
+            data: response.data.sales || []
+          },
+          {
+            data: response.data.orders || []
+          }
+        ]
+      })
+    }
+  } catch (error) {
+    console.error('Load sales trend error:', error)
+  }
+}
+
+// 加载用户分布数据
+const loadUserDistribution = async () => {
+  try {
+    const response = await getUserDistribution()
+    if (response.data && userChart) {
+      const data = response.data.distribution || []
+      userChart.setOption({
+        legend: {
+          data: data.map(item => item.name)
+        },
+        series: [
+          {
+            data: data.map(item => ({
+              value: item.value,
+              name: item.name,
+              itemStyle: { color: item.color || '#1890ff' }
+            }))
+          }
+        ]
+      })
+    }
+  } catch (error) {
+    console.error('Load user distribution error:', error)
+  }
 }
 
 // 组件挂载后初始化
 onMounted(async () => {
   await nextTick()
-  initSalesChart()
-  initUserChart()
+  // 初始化图表
+  salesChart = initSalesChart()
+  userChart = initUserChart()
+  
+  // 加载数据
+  loadDashboardStats()
+  loadSalesTrend()
+  loadUserDistribution()
 })
 </script>
 

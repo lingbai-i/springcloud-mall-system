@@ -293,20 +293,6 @@
         />
       </div>
     </el-card>
-
-    <!-- 订单详情对话框 -->
-    <OrderDetail
-      v-model="showOrderDetail"
-      :order-id="currentOrderId"
-      @refresh="loadOrderList"
-    />
-
-    <!-- 发货对话框 -->
-    <ShipmentDialog
-      v-model="showShipmentDialog"
-      :order-id="currentOrderId"
-      @success="handleShipmentSuccess"
-    />
   </div>
 </template>
 
@@ -315,10 +301,8 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Download, Operation, Search, Refresh, ArrowDown,
-  ShoppingBag, Clock, Truck, CheckCircle, XCircle, RefreshRight, Money
+  ShoppingBag, Clock, Van, CheckCircle, XCircle, RefreshRight, Money
 } from '@element-plus/icons-vue'
-import OrderDetail from './components/OrderDetail.vue'
-import ShipmentDialog from './components/ShipmentDialog.vue'
 
 // 响应式数据
 const loading = ref(false)
@@ -350,7 +334,7 @@ const orderStats = reactive([
   {
     key: 'pending_payment',
     label: '待付款',
-    value: '23',
+    value: '0',
     icon: 'Clock',
     color: '#faad14',
     status: 'pending_payment'
@@ -358,7 +342,7 @@ const orderStats = reactive([
   {
     key: 'pending_shipment',
     label: '待发货',
-    value: '156',
+    value: '0',
     icon: 'ShoppingBag',
     color: '#1890ff',
     status: 'pending_shipment'
@@ -366,15 +350,15 @@ const orderStats = reactive([
   {
     key: 'shipped',
     label: '已发货',
-    value: '89',
-    icon: 'Truck',
+    value: '0',
+    icon: 'Van',
     color: '#52c41a',
     status: 'shipped'
   },
   {
     key: 'completed',
     label: '已完成',
-    value: '1,234',
+    value: '0',
     icon: 'CheckCircle',
     color: '#13c2c2',
     status: 'completed'
@@ -382,135 +366,7 @@ const orderStats = reactive([
 ])
 
 // 订单列表
-const orderList = ref([
-  {
-    id: 1,
-    orderNo: 'ORD202401150001',
-    status: 'pending_shipment',
-    totalAmount: '12999.00',
-    paymentMethod: 'wechat',
-    buyerName: '张三',
-    buyerPhone: '138****5678',
-    receiverName: '张三',
-    receiverPhone: '138****5678',
-    shippingAddress: '北京市朝阳区三里屯街道工体北路8号院',
-    trackingNo: '',
-    logisticsCompany: '',
-    createTime: '2024-01-15 14:30:00',
-    items: [
-      {
-        name: 'iPhone 15 Pro Max 256GB 深空黑色',
-        spec: '深空黑色 256GB',
-        price: '9999.00',
-        quantity: 1,
-        image: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=iPhone%2015%20Pro%20Max%20black%20smartphone%20product%20photo&image_size=square'
-      },
-      {
-        name: 'AirPods Pro 第三代',
-        spec: '白色',
-        price: '1899.00',
-        quantity: 1,
-        image: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=AirPods%20Pro%20white%20wireless%20earbuds%20product%20photo&image_size=square'
-      }
-    ]
-  },
-  {
-    id: 2,
-    orderNo: 'ORD202401140002',
-    status: 'shipped',
-    totalAmount: '4399.00',
-    paymentMethod: 'alipay',
-    buyerName: '李四',
-    buyerPhone: '139****1234',
-    receiverName: '李四',
-    receiverPhone: '139****1234',
-    shippingAddress: '上海市浦东新区陆家嘴街道世纪大道100号',
-    trackingNo: 'SF1234567890',
-    logisticsCompany: '顺丰速运',
-    createTime: '2024-01-14 10:20:00',
-    items: [
-      {
-        name: 'iPad Air 第五代 64GB WiFi版',
-        spec: '蓝色 64GB WiFi',
-        price: '4399.00',
-        quantity: 1,
-        image: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=iPad%20Air%20blue%20tablet%20product%20photo&image_size=square'
-      }
-    ]
-  },
-  {
-    id: 3,
-    orderNo: 'ORD202401130003',
-    status: 'completed',
-    totalAmount: '3199.00',
-    paymentMethod: 'wechat',
-    buyerName: '王五',
-    buyerPhone: '137****9876',
-    receiverName: '王五',
-    receiverPhone: '137****9876',
-    shippingAddress: '广州市天河区珠江新城花城大道85号',
-    trackingNo: 'YTO9876543210',
-    logisticsCompany: '圆通速递',
-    createTime: '2024-01-13 16:45:00',
-    items: [
-      {
-        name: 'Apple Watch Series 9 GPS 45mm',
-        spec: '午夜色 45mm GPS',
-        price: '3199.00',
-        quantity: 1,
-        image: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=Apple%20Watch%20Series%209%20midnight%20smartwatch%20product%20photo&image_size=square'
-      }
-    ]
-  },
-  {
-    id: 4,
-    orderNo: 'ORD202401120004',
-    status: 'pending_payment',
-    totalAmount: '14999.00',
-    paymentMethod: 'bank_card',
-    buyerName: '赵六',
-    buyerPhone: '136****5432',
-    receiverName: '赵六',
-    receiverPhone: '136****5432',
-    shippingAddress: '深圳市南山区科技园南区深南大道9988号',
-    trackingNo: '',
-    logisticsCompany: '',
-    createTime: '2024-01-12 09:15:00',
-    items: [
-      {
-        name: 'MacBook Pro 14英寸 M3芯片',
-        spec: '银色 512GB',
-        price: '14999.00',
-        quantity: 1,
-        image: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=MacBook%20Pro%2014%20inch%20silver%20laptop%20product%20photo&image_size=square'
-      }
-    ]
-  },
-  {
-    id: 5,
-    orderNo: 'ORD202401110005',
-    status: 'cancelled',
-    totalAmount: '1899.00',
-    paymentMethod: 'wechat',
-    buyerName: '孙七',
-    buyerPhone: '135****7890',
-    receiverName: '孙七',
-    receiverPhone: '135****7890',
-    shippingAddress: '杭州市西湖区文三路259号',
-    trackingNo: '',
-    logisticsCompany: '',
-    createTime: '2024-01-11 11:30:00',
-    items: [
-      {
-        name: 'AirPods Pro 第三代',
-        spec: '白色',
-        price: '1899.00',
-        quantity: 1,
-        image: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=AirPods%20Pro%20white%20wireless%20earbuds%20product%20photo&image_size=square'
-      }
-    ]
-  }
-])
+const orderList = ref([])
 
 // 方法
 const getStatusType = (status) => {
@@ -590,25 +446,19 @@ const handleCurrentChange = (page) => {
 const loadOrderList = async () => {
   loading.value = true
   try {
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-    // 这里应该调用真实的API
+    // TODO: 调用真实的API
     // const response = await orderApi.getOrderList({
     //   ...searchForm,
     //   page: pagination.currentPage,
     //   pageSize: pagination.pageSize
     // })
+    // orderList.value = response.data.list || []
+    // pagination.total = response.data.total || 0
     
-    // 调用真实的API
-    const response = await orderApi.getOrderList({
-      ...searchForm,
-      page: pagination.currentPage,
-      pageSize: pagination.pageSize
-    })
-    
-    orderList.value = response.data.list || []
-    pagination.total = response.data.total || 0
+    // 模拟API调用
+    await new Promise(resolve => setTimeout(resolve, 500))
+    orderList.value = []
+    pagination.total = 0
     
   } catch (error) {
     ElMessage.error('加载订单列表失败')
@@ -618,13 +468,13 @@ const loadOrderList = async () => {
 }
 
 const viewOrder = (orderId) => {
-  currentOrderId.value = orderId
-  showOrderDetail.value = true
+  ElMessage.info('订单详情功能开发中...')
+  console.log('查看订单:', orderId)
 }
 
 const shipOrder = (orderId) => {
-  currentOrderId.value = orderId
-  showShipmentDialog.value = true
+  ElMessage.info('发货功能开发中...')
+  console.log('发货订单:', orderId)
 }
 
 const cancelOrder = async (orderId) => {
@@ -639,16 +489,11 @@ const cancelOrder = async (orderId) => {
       }
     )
     
-    // 调用API
-    // await orderApi.cancelOrder(orderId)
-    
-    ElMessage.success('订单取消成功')
-    loadOrderList()
+    ElMessage.info('取消订单功能开发中...')
+    console.log('取消订单:', orderId)
     
   } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('取消订单失败')
-    }
+    // 用户取消操作
   }
 }
 

@@ -52,6 +52,14 @@ merchant:
   commission:
     rate: 0.05 # 佣金比例 5%
 
+# MinIO配置
+minio:
+  endpoint: http://localhost:9000
+  access-key: minioadmin
+  secret-key: minioadmin
+  bucket-name: mall-products
+  public-url: http://localhost:9000
+
 # 日志配置
 logging:
   level:

@@ -14,7 +14,7 @@ import com.mall.user.domain.vo.UserInfoResponse;
  * @since 2025-01-27
  */
 public interface UserService /* extends IService<User> */ {
-    
+
     /**
      * 根据用户名查询用户
      * 
@@ -22,7 +22,7 @@ public interface UserService /* extends IService<User> */ {
      * @return 用户信息
      */
     User findByUsername(String username);
-    
+
     /**
      * 根据邮箱查询用户
      * 
@@ -30,7 +30,7 @@ public interface UserService /* extends IService<User> */ {
      * @return 用户信息
      */
     User findByEmail(String email);
-    
+
     /**
      * 根据手机号查询用户
      * 
@@ -38,7 +38,7 @@ public interface UserService /* extends IService<User> */ {
      * @return 用户信息
      */
     User findByPhone(String phone);
-    
+
     /**
      * 获取用户信息
      * 
@@ -46,7 +46,7 @@ public interface UserService /* extends IService<User> */ {
      * @return 用户信息响应
      */
     UserInfoResponse getUserInfo(Long userId);
-    
+
     /**
      * 根据用户名获取用户信息
      * 
@@ -54,7 +54,7 @@ public interface UserService /* extends IService<User> */ {
      * @return 用户信息响应
      */
     UserInfoResponse getUserInfo(String username);
-    
+
     /**
      * 更新用户信息
      * 
@@ -62,7 +62,7 @@ public interface UserService /* extends IService<User> */ {
      * @return 更新结果
      */
     boolean updateUserInfo(UpdateUserRequest updateRequest);
-    
+
     /**
      * 修改密码
      * 
@@ -70,7 +70,7 @@ public interface UserService /* extends IService<User> */ {
      * @return 修改结果
      */
     boolean changePassword(ChangePasswordRequest changePasswordRequest);
-    
+
     /**
      * 检查用户名是否唯一
      * 
@@ -78,7 +78,7 @@ public interface UserService /* extends IService<User> */ {
      * @return 是否唯一
      */
     boolean isUsernameUnique(String username);
-    
+
     /**
      * 检查邮箱是否唯一
      * 
@@ -86,7 +86,7 @@ public interface UserService /* extends IService<User> */ {
      * @return 是否唯一
      */
     boolean isEmailUnique(String email);
-    
+
     /**
      * 检查手机号是否唯一
      * 
@@ -94,7 +94,7 @@ public interface UserService /* extends IService<User> */ {
      * @return 是否唯一
      */
     boolean isPhoneUnique(String phone);
-    
+
     /**
      * 检查用户名是否可用
      * 
@@ -102,7 +102,7 @@ public interface UserService /* extends IService<User> */ {
      * @return true-可用，false-不可用
      */
     boolean isUsernameAvailable(String username);
-    
+
     /**
      * 检查邮箱是否可用
      * 
@@ -110,7 +110,7 @@ public interface UserService /* extends IService<User> */ {
      * @return true-可用，false-不可用
      */
     boolean isEmailAvailable(String email);
-    
+
     /**
      * 检查手机号是否可用
      * 
@@ -118,7 +118,7 @@ public interface UserService /* extends IService<User> */ {
      * @return true-可用，false-不可用
      */
     boolean isPhoneAvailable(String phone);
-    
+
     /**
      * 插入用户
      * 
@@ -126,7 +126,7 @@ public interface UserService /* extends IService<User> */ {
      * @return true-成功，false-失败
      */
     boolean insertUser(User user);
-    
+
     /**
      * 更新用户信息
      * 
@@ -134,4 +134,11 @@ public interface UserService /* extends IService<User> */ {
      * @return true-成功，false-失败
      */
     boolean updateById(User user);
+
+    /**
+     * 获取用户统计数据
+     * 
+     * @return 统计数据（总数、活跃用户、禁用用户、待验证用户）
+     */
+    java.util.Map<String, Object> getUserStatistics();
 }

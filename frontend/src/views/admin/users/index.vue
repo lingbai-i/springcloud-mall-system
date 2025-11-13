@@ -299,6 +299,7 @@ import {
   Warning,
   CircleCheck
 } from '@element-plus/icons-vue'
+import { getUserList, getUserStats } from '@/api/admin'
 import UserDetail from './components/UserDetail.vue'
 import UserEdit from './components/UserEdit.vue'
 import UserAdd from './components/UserAdd.vue'
@@ -332,33 +333,33 @@ const pagination = reactive({
   total: 0
 })
 
-// 用户统计数据
+// 用户统计数据 - 虚拟数据已移除，待接入真实API
 const userStats = reactive([
   {
     key: 'total',
     label: '总用户数',
-    value: '12,345',
+    value: '0',
     color: '#1890ff',
     icon: UserFilled
   },
   {
     key: 'active',
     label: '活跃用户',
-    value: '10,234',
+    value: '0',
     color: '#52c41a',
     icon: CircleCheck
   },
   {
     key: 'disabled',
     label: '禁用用户',
-    value: '234',
+    value: '0',
     color: '#faad14',
     icon: Warning
   },
   {
     key: 'pending',
     label: '待验证',
-    value: '1,877',
+    value: '0',
     color: '#f5222d',
     icon: User
   }
@@ -425,6 +426,21 @@ const loadUserList = async () => {
     console.error('Load user list error:', error)
   } finally {
     loading.value = false
+  }
+}
+
+// 加载用户统计数据
+const loadUserStats = async () => {
+  try {
+    const response = await getUserStats()
+    if (response.data) {
+      userStats[0].value = response.data.total || 0
+      userStats[1].value = response.data.active || 0
+      userStats[2].value = response.data.disabled || 0
+      userStats[3].value = response.data.pending || 0
+    }
+  } catch (error) {
+    console.error('Load user stats error:', error)
   }
 }
 
@@ -715,6 +731,7 @@ const handleAddSuccess = () => {
 // 组件挂载时加载数据
 onMounted(() => {
   loadUserList()
+  loadUserStats()
 })
 </script>
 

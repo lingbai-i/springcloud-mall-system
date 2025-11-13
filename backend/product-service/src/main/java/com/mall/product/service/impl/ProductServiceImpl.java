@@ -1,5 +1,7 @@
 package com.mall.product.service.impl;
 
+import com.mall.common.core.domain.PageResult;
+import com.mall.common.core.domain.R;
 import com.mall.product.domain.entity.Product;
 import com.mall.product.domain.entity.ProductSku;
 import com.mall.product.domain.entity.PriceHistory;
@@ -7,8 +9,10 @@ import com.mall.product.domain.entity.StockLog;
 import com.mall.product.domain.dto.ProductDetailDto;
 import com.mall.product.domain.dto.ProductQueryDto;
 import com.mall.product.service.ProductService;
+import com.mall.product.feign.MerchantProductClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -31,15 +35,170 @@ public class ProductServiceImpl implements ProductService {
 
     private static final Logger logger = LoggerFactory.getLogger(ProductServiceImpl.class);
 
+    @Autowired(required = false)
+    private MerchantProductClient merchantProductClient;
+
     // 模拟数据存储
     private static final Map<Long, Product> PRODUCT_CACHE = new HashMap<>();
     private static final Map<Long, List<ProductSku>> SKU_CACHE = new HashMap<>();
     private static final List<PriceHistory> PRICE_HISTORY_CACHE = new ArrayList<>();
     private static final List<StockLog> STOCK_LOG_CACHE = new ArrayList<>();
 
+    // 默认商家ID，用于获取商家商品数据
+    private static final Long DEFAULT_MERCHANT_ID = 1L;
+
     static {
         // 初始化模拟数据
         initMockData();
+    }
+
+    // ==================== 辅助方法 ====================
+
+    /**
+     * 将merchant-service返回的商品数据转换为Product对象列表
+     */
+    private List<Product> convertMerchantProductsToProducts(List<Map<String, Object>> merchantProducts) {
+        if (merchantProducts == null || merchantProducts.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        return merchantProducts.stream()
+                .map(this::convertMerchantProductToProduct)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 将单个merchant商品转换为Product对象
+     */
+    private Product convertMerchantProductToProduct(Map<String, Object> merchantProduct) {
+        try {
+            Product product = new Product();
+                
+            // 基本信息
+            product.setId(getLongValue(merchantProduct, "id"));
+            product.setName(getStringValue(merchantProduct, "productName"));
+            product.setDescription(getStringValue(merchantProduct, "description"));
+                
+            // 价格信息
+            product.setPrice(getDoubleValue(merchantProduct, "price"));
+            product.setOriginalPrice(getDoubleValue(merchantProduct, "marketPrice"));
+                
+            // 库存信息
+            product.setStock(getIntegerValue(merchantProduct, "stockQuantity"));
+            product.setStockWarning(getIntegerValue(merchantProduct, "warningStock"));
+                
+            // 销售信息
+            product.setSales(getIntegerValue(merchantProduct, "salesCount"));
+                
+            // 状态信息
+            product.setStatus(getIntegerValue(merchantProduct, "status"));
+                
+            // 图片信息
+            product.setMainImage(getStringValue(merchantProduct, "mainImage"));
+            String images = getStringValue(merchantProduct, "images");
+            if (images != null && !images.trim().isEmpty()) {
+                product.setDetailImages(images);
+            }
+                
+            // 分类和品牌
+            product.setCategoryId(getLongValue(merchantProduct, "categoryId"));
+            product.setBrandName(getStringValue(merchantProduct, "brand"));
+                
+            // 时间信息 - 安全处理
+            Object createTimeObj = merchantProduct.get("createTime");
+            if (createTimeObj != null) {
+                if (createTimeObj instanceof LocalDateTime) {
+                    product.setCreateTime((LocalDateTime) createTimeObj);
+                } else if (createTimeObj instanceof String) {
+                    try {
+                        product.setCreateTime(LocalDateTime.parse((String) createTimeObj));
+                    } catch (Exception e) {
+                        product.setCreateTime(LocalDateTime.now());
+                    }
+                }
+            }
+                
+            Object updateTimeObj = merchantProduct.get("updateTime");
+            if (updateTimeObj != null) {
+                if (updateTimeObj instanceof LocalDateTime) {
+                    product.setUpdateTime((LocalDateTime) updateTimeObj);
+                } else if (updateTimeObj instanceof String) {
+                    try {
+                        product.setUpdateTime(LocalDateTime.parse((String) updateTimeObj));
+                    } catch (Exception e) {
+                        product.setUpdateTime(LocalDateTime.now());
+                    }
+                }
+            }
+                
+            // 设置默认评分
+            product.setRating(4.5);
+            product.setReviewCount(0);
+                
+            return product;
+        } catch (Exception e) {
+            logger.error("转换merchant商品数据失败", e);
+            return null;
+        }
+    }
+
+    /**
+     * 安全获取Map中的String值
+     */
+    private String getStringValue(Map<String, Object> map, String key) {
+        Object value = map.get(key);
+        return value != null ? String.valueOf(value) : null;
+    }
+
+    /**
+     * 安全获取Map中的Long值
+     */
+    private Long getLongValue(Map<String, Object> map, String key) {
+        Object value = map.get(key);
+        if (value == null)
+            return null;
+        if (value instanceof Number)
+            return ((Number) value).longValue();
+        try {
+            return Long.parseLong(String.valueOf(value));
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    /**
+     * 安全获取Map中的Integer值
+     */
+    private Integer getIntegerValue(Map<String, Object> map, String key) {
+        Object value = map.get(key);
+        if (value == null)
+            return 0;
+        if (value instanceof Number)
+            return ((Number) value).intValue();
+        try {
+            return Integer.parseInt(String.valueOf(value));
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    /**
+     * 安全获取Map中的Double值
+     */
+    private Double getDoubleValue(Map<String, Object> map, String key) {
+        Object value = map.get(key);
+        if (value == null)
+            return 0.0;
+        if (value instanceof Number)
+            return ((Number) value).doubleValue();
+        if (value instanceof BigDecimal)
+            return ((BigDecimal) value).doubleValue();
+        try {
+            return Double.parseDouble(String.valueOf(value));
+        } catch (NumberFormatException e) {
+            return 0.0;
+        }
     }
 
     // ==================== 商品基础查询 ====================
@@ -134,6 +293,21 @@ public class ProductServiceImpl implements ProductService {
                 limit = 10;
             }
 
+            // 尝试从 merchant-service 获取真实数据
+            if (merchantProductClient != null) {
+                try {
+                    R<List<Map<String, Object>>> result = merchantProductClient
+                            .getHotSellingProducts(DEFAULT_MERCHANT_ID, limit);
+                    if (result != null && result.isSuccess() && result.getData() != null
+                            && !result.getData().isEmpty()) {
+                        return convertMerchantProductsToProducts(result.getData());
+                    }
+                } catch (Exception e) {
+                    logger.warn("从 merchant-service 获取热销商品失败，使用模拟数据", e);
+                }
+            }
+
+            // 如果 Feign 调用失败或没有数据，使用模拟数据
             return PRODUCT_CACHE.values().stream()
                     .sorted((p1, p2) -> Integer.compare(p2.getSales(), p1.getSales()))
                     .limit(limit)
@@ -160,6 +334,21 @@ public class ProductServiceImpl implements ProductService {
                 limit = 10;
             }
 
+            // 尝试从 merchant-service 获取真实数据
+            if (merchantProductClient != null) {
+                try {
+                    R<PageResult<Map<String, Object>>> result = merchantProductClient.getRecommendedProducts(
+                            DEFAULT_MERCHANT_ID, 1, limit);
+                    if (result != null && result.isSuccess() && result.getData() != null &&
+                            result.getData().getRecords() != null && !result.getData().getRecords().isEmpty()) {
+                        return convertMerchantProductsToProducts(result.getData().getRecords());
+                    }
+                } catch (Exception e) {
+                    logger.warn("从 merchant-service 获取推荐商品失败，使用模拟数据", e);
+                }
+            }
+
+            // 如果 Feign 调用失败或没有数据，使用模拟数据
             return PRODUCT_CACHE.values().stream()
                     .filter(p -> p.getStatus() == 1) // 只推荐上架商品
                     .sorted((p1, p2) -> Double.compare(p2.getRating() != null ? p2.getRating() : 0.0,
@@ -1124,4 +1313,6 @@ public class ProductServiceImpl implements ProductService {
     private Map<String, Object> createEmptyPageData(Long current, Long size) {
         return createPageData(new ArrayList<>(), 0, current, size);
     }
+
+    // 注：辅助方法已在文件前面定义，此处不再重复
 }

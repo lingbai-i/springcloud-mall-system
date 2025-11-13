@@ -17,9 +17,41 @@
 
 ## 🎯 快速启动（推荐）
 
-### 方式一：一键启动（自动化）
+### 方式一：智能后台启动（全自动 ⭐推荐）
+
+**新版智能化启动脚本** - 自动检测所有服务并后台启动！
 
 **Windows用户**：
+
+```bash
+# 双击运行或在命令行执行
+start-dev-silent.bat
+```
+
+**特性**：
+- ✨ **自动服务发现**: 无需手动配置，自动扫描所有微服务
+- 🔄 **智能依赖管理**: 按照服务依赖关系有序启动
+- 📊 **实时状态反馈**: 显示启动进度和服务统计
+- 🎯 **后台静默运行**: 所有服务后台运行，无弹窗干扰
+- 📝 **完整日志记录**: 所有日志自动保存到 `logs/` 目录
+
+**启动时间**：
+- 基础设施初始化：20秒
+- 微服务自动启动：约60秒（按依赖顺序）
+- 前端开发服务器：10秒
+- **总计**: 约90秒完全启动
+
+**启动后验证**：
+```bash
+# 检查所有服务状态
+pwsh -File check-services-silent.ps1
+```
+
+---
+
+### 方式二：交互式启动（可选）
+
+**适合需要选择性启动服务的场景**：
 
 ```bash
 # 双击运行或在命令行执行
@@ -139,6 +171,104 @@ npm run dev
 - 自动生成默认邮箱：`手机号@mall.com`
 
 **测试提示**：验证码会通过第三方推送服务发送，请查看SMS服务日志获取验证码
+
+---
+
+## 🔧 服务管理（新功能）
+
+### 检查服务状态
+
+```bash
+# 智能检测并显示所有服务状态
+pwsh -File check-services-silent.ps1
+```
+
+输出示例：
+```
+========================================
+在线商城服务状态检查
+========================================
+检查时间: 2025-11-11 14:30:00
+
+Docker 基础设施:
+----------------------------------------
+  MySQL [运行中] (健康) - 端口 3307
+  Redis [运行中] (健康) - 端口 6379
+  Nacos [运行中] (健康) - 端口 8848
+
+后端微服务:
+----------------------------------------
+  Gateway Service [运行中] - 端口 8080 - 日志 2.5 MB
+  Auth Service [运行中] - 端口 8081 - 日志 1.8 MB
+  User Service [运行中] - 端口 8082 - 日志 1.2 MB
+  Product Service [运行中] - 端口 8083 - 日志 980 KB
+  ... (自动检测所有服务)
+
+📊 统计信息:
+  运行中: 13 / 13 服务 (100%)
+```
+
+### 查看实时日志
+
+```bash
+# 查看所有服务日志
+pwsh -File tail-logs.ps1
+
+# 查看特定服务日志（例如网关服务）
+pwsh -File tail-logs.ps1 gateway-service
+
+# 查看用户服务日志
+pwsh -File tail-logs.ps1 user-service
+```
+
+### 重启单个服务
+
+```bash
+# 重启指定服务
+pwsh -File restart-service.ps1 user-service
+
+# 重启网关服务
+pwsh -File restart-service.ps1 gateway-service
+```
+
+### 服务列表
+
+当前系统支持的所有微服务（自动检测）：
+
+| 服务名 | 端口 | 说明 | 日志文件 |
+|--------|------|------|----------|
+| gateway-service | 8080 | API网关 | logs/gateway-service.log |
+| auth-service | 8081 | 认证服务 | logs/auth-service.log |
+| user-service | 8082 | 用户服务 | logs/user-service.log |
+| product-service | 8083 | 商品服务 | logs/product-service.log |
+| order-service | 8084 | 订单服务 | logs/order-service.log |
+| payment-service | 8085 | 支付服务 | logs/payment-service.log |
+| admin-service | 8086 | 管理服务 | logs/admin-service.log |
+| merchant-service | 8087 | 商家服务 | logs/merchant-service.log |
+| cart-service | 8088 | 购物车服务 | logs/cart-service.log |
+| sms-service | 8089 | 短信服务 | logs/sms-service.log |
+
+> 💡 **提示**: 新增的服务会被自动检测并启动，无需修改启动脚本！
+
+### 添加新服务
+
+要添加新的微服务：
+
+1. 在 `backend/` 目录下创建新服务目录
+2. 添加标准的 `pom.xml` 文件
+3. 配置 `src/main/resources/application.yml` 中的端口
+4. 运行 `start-dev-silent.bat` - 新服务会被自动检测并启动！
+
+示例：
+```yaml
+# application.yml
+server:
+  port: 8090  # 配置服务端口
+
+spring:
+  application:
+    name: notification-service  # 服务名称
+```
 
 ---
 

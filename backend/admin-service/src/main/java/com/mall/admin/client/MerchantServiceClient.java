@@ -64,4 +64,57 @@ public interface MerchantServiceClient {
      */
     @GetMapping("/statistics")
     R<Map<String, Object>> getMerchantStatistics();
+    
+    /**
+     * 获取商家申请列表
+     * 
+     * @param page 页码
+     * @param size 每页大小
+     * @param status 审批状态
+     * @param keyword 关键词
+     * @return 申请列表
+     */
+    @GetMapping("/applications")
+    R<Map<String, Object>> getApplicationList(
+            @RequestParam(value = "page", defaultValue = "1") Integer page,
+            @RequestParam(value = "size", defaultValue = "20") Integer size,
+            @RequestParam(value = "status", required = false) Integer status,
+            @RequestParam(value = "keyword", required = false) String keyword
+    );
+    
+    /**
+     * 获取申请详情
+     * 
+     * @param id 申请ID
+     * @return 申请详情
+     */
+    @GetMapping("/applications/{id}")
+    R<Map<String, Object>> getApplicationDetail(@PathVariable("id") Long id);
+    
+    /**
+     * 审核申请
+     * 
+     * @param id 申请ID
+     * @param approved 是否通过
+     * @param reason 审核原因
+     * @param adminId 管理员ID
+     * @param adminName 管理员名称
+     * @return 操作结果
+     */
+    @PutMapping("/applications/{id}/audit")
+    R<Void> auditApplication(
+            @PathVariable("id") Long id,
+            @RequestParam("approved") Boolean approved,
+            @RequestParam(value = "reason", required = false) String reason,
+            @RequestParam("adminId") Long adminId,
+            @RequestParam("adminName") String adminName
+    );
+    
+    /**
+     * 获取申请统计
+     * 
+     * @return 统计数据
+     */
+    @GetMapping("/applications/stats")
+    R<Map<String, Object>> getApplicationStats();
 }

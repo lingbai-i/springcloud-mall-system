@@ -1,9 +1,17 @@
 server:
-  port: 8084
+  port: 8085
 
 spring:
   application:
     name: payment-service
+
+  # Nacos服务注册与发现
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+        namespace: simple
+        group: DEFAULT_GROUP
   
   # 数据库配置
   datasource:

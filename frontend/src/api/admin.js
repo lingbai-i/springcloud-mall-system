@@ -56,6 +56,42 @@ export const getSystemStats = () => {
 }
 
 /**
+ * 获取Dashboard统计数据
+ * @returns {Promise} 统计数据
+ */
+export const getDashboardStats = () => {
+  return request({
+    url: '/admin/dashboard/stats',
+    method: 'get'
+  })
+}
+
+/**
+ * 获取销售趋势数据
+ * @param {Object} params 查询参数
+ * @param {string} params.period 周期 7d/30d/90d
+ * @returns {Promise} 销售趋势数据
+ */
+export const getSalesTrend = (params) => {
+  return request({
+    url: '/admin/dashboard/sales-trend',
+    method: 'get',
+    params
+  })
+}
+
+/**
+ * 获取用户分布数据
+ * @returns {Promise} 用户分布数据
+ */
+export const getUserDistribution = () => {
+  return request({
+    url: '/admin/dashboard/user-distribution',
+    method: 'get'
+  })
+}
+
+/**
  * 获取用户列表
  * @param {Object} params 查询参数
  * @param {number} params.page 页码

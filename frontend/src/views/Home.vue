@@ -42,7 +42,6 @@
               @mouseleave="showMerchantMenu = false"
             >
               <a href="#" class="merchant-service-trigger">
-                <LocalIcon name="shop" :size="14" />
                 商家服务
                 <el-icon class="arrow-icon"><ArrowDown /></el-icon>
               </a>
@@ -374,6 +373,7 @@ import * as logger from '@/utils/logger'
 import LoginModal from '@/components/LoginModal.vue'
 import LocalIcon from '@/components/LocalIcon.vue'
 import { getCartCount } from '@/api/cart'
+import { getHotProducts, searchProducts } from '@/api/product'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -452,30 +452,8 @@ const categories = ref([
   }
 ])
 
-// 轮播图数据
-const banners = ref([
-  {
-    id: 1,
-    title: '双11狂欢节',
-    subtitle: '全场5折起，限时抢购',
-    image: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=800&h=400&fit=crop',
-    link: '/promotion/double11'
-  },
-  {
-    id: 2,
-    title: '新品首发',
-    subtitle: '最新科技产品，抢先体验',
-    image: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=800&h=400&fit=crop',
-    link: '/products/new'
-  },
-  {
-    id: 3,
-    title: '品质生活',
-    subtitle: '精选好物，品质保证',
-    image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&h=400&fit=crop',
-    link: '/products/quality'
-  }
-])
+// 轮播图数据 - 虚拟图片已移除
+const banners = ref([])
 
 // 快捷入口
 const quickLinks = ref([
@@ -512,14 +490,18 @@ let countdownTimer = null
 /**
  * 处理搜索
  */
-const handleSearch = () => {
+const handleSearch = async () => {
   if (!searchKeyword.value.trim()) {
     ElMessage.warning('请输入搜索关键词')
     return
   }
-  ElMessage.info(`搜索: ${searchKeyword.value}`)
-  // 这里可以跳转到搜索结果页面
-  // router.push(`/search?q=${encodeURIComponent(searchKeyword.value)}`)
+  
+  // 直接跳转到搜索结果页面，带上搜索关键词
+  // 搜索页面会自行调用搜索API获取结果
+  router.push({
+    path: '/search',
+    query: { q: searchKeyword.value }
+  })
 }
 
 /**
@@ -598,8 +580,7 @@ const goToCategory = (categoryId) => {
  * 跳转到商品详情
  */
 const goToProduct = (productId) => {
-  ElMessage.info(`跳转到商品详情: ${productId}`)
-  // router.push(`/product/${productId}`)
+  router.push(`/product/${productId}`)
 }
 
 /**
@@ -696,11 +677,67 @@ const loadCartCount = async () => {
 }
 
 /**
+ * 加载首页推荐商品
+ */
+const loadRecommendProducts = async () => {
+  try {
+    const response = await getHotProducts({ limit: 12 })
+    
+    if (response.code === 200 && response.data) {
+      // 将后端数据转换为前端需要的格式
+      recommendProducts.value = response.data.map(product => ({
+        id: product.id,
+        name: product.name || product.productName,
+        image: product.mainImage || product.imageUrl || '/images/placeholder.png',
+        description: product.description?.substring(0, 50) || '暂无描述',
+        price: product.price || 0,
+        originalPrice: product.marketPrice || product.originalPrice,
+        sales: product.salesCount || product.sales || 0,
+        rating: product.rating || 5,
+        reviews: product.reviewCount || product.reviews || 0,
+        tags: product.isNew ? ['新品'] : []
+      }))
+    }
+  } catch (error) {
+    console.error('加载推荐商品失败:', error)
+    // 静默失败，不打断用户体验
+  }
+}
+
+/**
+ * 加载秒杀商品（使用热销商品代替）
+ */
+const loadSeckillProducts = async () => {
+  try {
+    const response = await getHotProducts({ limit: 5 })
+    
+    if (response.code === 200 && response.data) {
+      seckillProducts.value = response.data.map(product => ({
+        id: product.id,
+        name: product.name || product.productName,
+        image: product.mainImage || product.imageUrl || '/images/placeholder.png',
+        seckillPrice: (product.price * 0.8).toFixed(2), // 假设秒杀价是原价的8折
+        originalPrice: product.price || 0,
+        progress: Math.floor(Math.random() * 50) + 30 // 随机进度30-80%
+      }))
+    }
+  } catch (error) {
+    console.error('加载秒杀商品失败:', error)
+  }
+}
+
+/**
  * 组件挂载时的初始化
  */
 onMounted(async () => {
   // 启动倒计时
   countdownTimer = setInterval(updateCountdown, 1000)
+  
+  // 加载首页商品数据
+  await Promise.all([
+    loadRecommendProducts(),
+    loadSeckillProducts()
+  ])
   
   // 如果用户已登录，加载购物车数量并刷新用户信息
   if (userStore.isLoggedIn) {
@@ -852,7 +889,7 @@ const handleLogout = async () => {
   top: 100%;
   left: 0;
   margin-top: 8px;
-  background-color: white;
+  background-color: #ffffff !important;
   border: 1px solid #e0e0e0;
   border-radius: 4px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
@@ -866,7 +903,8 @@ const handleLogout = async () => {
   align-items: center;
   gap: 8px;
   padding: 10px 15px;
-  color: #333;
+  color: #333333 !important;
+  background-color: #ffffff;
   text-decoration: none;
   cursor: pointer;
   transition: background-color 0.3s, color 0.3s;
@@ -880,8 +918,8 @@ const handleLogout = async () => {
 }
 
 .merchant-menu-item:hover {
-  background-color: #f5f5f5;
-  color: #e3101e;
+  background-color: #f5f5f5 !important;
+  color: #e3101e !important;
 }
 
 /* 用户欢迎下拉菜单 */
@@ -921,7 +959,7 @@ const handleLogout = async () => {
   top: 100%;
   left: 0;
   margin-top: 8px;
-  background-color: white;
+  background-color: #ffffff !important;
   border: 1px solid #e0e0e0;
   border-radius: 4px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
@@ -934,7 +972,8 @@ const handleLogout = async () => {
   display: flex;
   align-items: center;
   padding: 10px 15px;
-  color: #333;
+  color: #333333 !important;
+  background-color: #ffffff;
   text-decoration: none;
   cursor: pointer;
   transition: background-color 0.3s, color 0.3s;
@@ -943,8 +982,8 @@ const handleLogout = async () => {
 }
 
 .welcome-menu-item:hover {
-  background-color: #f5f5f5;
-  color: #e3101e;
+  background-color: #f5f5f5 !important;
+  color: #e3101e !important;
 }
 
 /* 动效：淡入 + 上下滑动 */

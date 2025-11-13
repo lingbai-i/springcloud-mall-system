@@ -6,6 +6,10 @@ spring:
     name: user-service
   cloud:
     nacos:
+      discovery:
+        server-addr: localhost:8848
+        namespace: simple
+        group: DEFAULT_GROUP
       config:
         import-check:
           enabled: false

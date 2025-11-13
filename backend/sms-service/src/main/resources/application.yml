@@ -11,9 +11,10 @@ spring:
   cloud:
     nacos:
       discovery:
-        enabled: false # 本地开发禁用Nacos服务发现
-        server-addr: 127.0.0.1:8848
+        enabled: true # 启用Nacos服务发现
+        server-addr: localhost:8848
         namespace: simple
+        group: DEFAULT_GROUP
       config:
         enabled: false # 本地开发禁用Nacos配置中心
         import-check:

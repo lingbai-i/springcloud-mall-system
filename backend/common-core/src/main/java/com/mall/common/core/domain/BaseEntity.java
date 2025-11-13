@@ -6,10 +6,12 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import lombok.Data;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.*;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedBy;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -33,6 +35,7 @@ import java.time.LocalDateTime;
  */
 @Data
 @MappedSuperclass
+@EntityListeners(AuditingEntityListener.class)
 public class BaseEntity implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -44,18 +47,26 @@ public class BaseEntity implements Serializable {
     private Long id;
 
     /** 创建时间 */
+    @CreatedDate
+    @Column(name = "create_time", updatable = false)
     @TableField(value = "created_time", fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
     /** 更新时间 */
+    @LastModifiedDate
+    @Column(name = "update_time")
     @TableField(value = "updated_time", fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
 
     /** 创建者 */
+    @CreatedBy
+    @Column(name = "create_by", updatable = false)
     @TableField(fill = FieldFill.INSERT)
     private String createBy;
 
     /** 更新者 */
+    @LastModifiedBy
+    @Column(name = "update_by")
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private String updateBy;
 

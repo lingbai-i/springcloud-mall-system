@@ -3,7 +3,7 @@
 # 版本: 1.0
 
 param(
-  [ValidateSet('docker','local','hybrid')]
+  [ValidateSet('docker', 'local', 'hybrid')]
   [string]$Mode = 'hybrid',
   [switch]$StartFrontend = $true,
   [switch]$StartSmsLocal = $false,
@@ -26,7 +26,8 @@ function Write-Log {
   if ($Meta) {
     Write-Host "[$ts] [$Level] $Message" -ForegroundColor Cyan
     Write-Host (ConvertTo-Json $Meta -Depth 3) -ForegroundColor DarkCyan
-  } else {
+  }
+  else {
     Write-Host "[$ts] [$Level] $Message" -ForegroundColor Cyan
   }
 }
@@ -43,7 +44,7 @@ function Ensure-Command {
 # 端口健康检查
 function Wait-Port {
   param(
-    [string]$Host,
+    [string]$HostName,
     [int]$Port,
     [int]$TimeoutSec = 60
   )
@@ -51,19 +52,20 @@ function Wait-Port {
   while ((Get-Date) -lt $deadline) {
     try {
       $tcpClient = New-Object System.Net.Sockets.TcpClient
-      $async = $tcpClient.BeginConnect($Host, $Port, $null, $null)
+      $async = $tcpClient.BeginConnect($HostName, $Port, $null, $null)
       $connected = $async.AsyncWaitHandle.WaitOne(1000)
       if ($connected -and $tcpClient.Connected) {
         $tcpClient.Close()
-        Write-Log -Level 'INFO' -Message "端口可用：$Host:$Port"
+        Write-Log -Level 'INFO' -Message "端口可用：${HostName}:${Port}"
         return $true
       }
       $tcpClient.Close()
-    } catch {
+    }
+    catch {
       Start-Sleep -Milliseconds 500
     }
   }
-  Write-Log -Level 'WARN' -Message "端口等待超时：$Host:$Port"
+  Write-Log -Level 'WARN' -Message "端口等待超时：${HostName}:${Port}"
   return $false
 }
 
@@ -73,9 +75,9 @@ function Start-Infrastructure {
   Ensure-Command -Name 'docker-compose'
   & docker-compose -f docker-compose-dev.yml up -d mysql redis nacos | Out-Null
   Write-Log -Message '基础设施已发起启动，等待端口可用'
-  Wait-Port -Host 'localhost' -Port 3307 -TimeoutSec 60 | Out-Null
-  Wait-Port -Host 'localhost' -Port 6379 -TimeoutSec 60 | Out-Null
-  Wait-Port -Host 'localhost' -Port 8848 -TimeoutSec 60 | Out-Null
+  Wait-Port -HostName 'localhost' -Port 3307 -TimeoutSec 60 | Out-Null
+  Wait-Port -HostName 'localhost' -Port 6379 -TimeoutSec 60 | Out-Null
+  Wait-Port -HostName 'localhost' -Port 8848 -TimeoutSec 60 | Out-Null
 }
 
 # 启动 SMS 服务（docker 或本地）
@@ -88,15 +90,17 @@ function Start-SmsService {
     if (Test-Path $svcPath) {
       Start-Process -FilePath 'cmd.exe' -ArgumentList "/k cd /d `"$svcPath`" && mvn spring-boot:run" -WorkingDirectory $svcPath
       Start-Sleep -Seconds 2
-      Wait-Port -Host 'localhost' -Port 8083 -TimeoutSec 60 | Out-Null
-    } else {
+      Wait-Port -HostName 'localhost' -Port 8083 -TimeoutSec 60 | Out-Null
+    }
+    else {
       Write-Log -Level 'WARN' -Message '未找到 backend/sms-service 目录，跳过本地启动'
     }
-  } else {
+  }
+  else {
     Write-Log -Message '以 Docker 模式启动 sms-service（容器端口 8083）'
     Ensure-Command -Name 'docker-compose'
     & docker-compose -f docker-compose-dev.yml up -d sms-service | Out-Null
-    Wait-Port -Host 'localhost' -Port 8083 -TimeoutSec 60 | Out-Null
+    Wait-Port -HostName 'localhost' -Port 8083 -TimeoutSec 60 | Out-Null
   }
 }
 
@@ -111,7 +115,8 @@ function Start-JavaService {
   if (Test-Path $svcPath) {
     Write-Log -Message "启动本地服务：$Name ($RelPath)"
     Start-Process -FilePath 'cmd.exe' -ArgumentList "/k cd /d `"$svcPath`" && mvn spring-boot:run" -WorkingDirectory $svcPath
-  } else {
+  }
+  else {
     Write-Log -Level 'WARN' -Message "服务目录缺失，跳过：$Name ($RelPath)"
   }
 }
@@ -171,7 +176,8 @@ try {
   Write-Host '  启动流程已完成（进程在独立窗口中运行）'
   Write-Host '  如需停止服务，请在各窗口中 Ctrl+C 或关闭窗口'
   Write-Host '========================================='
-} catch {
+}
+catch {
   Write-Log -Level 'ERROR' -Message '启动过程中出现异常' -Meta @{ error = $_.Exception.Message; stack = $_.Exception.StackTrace }
   throw
 }

@@ -1,8 +1,21 @@
 # 基于 SpringCloud 的微服务在线商城系统
 
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Java](https://img.shields.io/badge/Java-22-orange.svg)](https://www.oracle.com/java/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-brightgreen.svg)](https://spring.io/projects/spring-boot)
+[![Vue](https://img.shields.io/badge/Vue-3.x-green.svg)](https://vuejs.org/)
+
 ## 项目简介
 
-本项目是一个基于 SpringCloud Alibaba 的微服务架构在线商城系统，采用前后端分离的设计模式，前端使用 Vue3+Element Plus，后端使用 Spring Boot + Spring Cloud Alibaba 技术栈，严格遵循国产中间件要求。
+本项目是一个基于 SpringCloud Alibaba 的**智能化微服务架构**在线商城系统，采用前后端分离的设计模式。项目集成了**自动服务发现与启动**功能，支持动态服务管理，大幅简化开发和部署流程。
+
+### 🚀 核心特性
+
+- ✅ **自动服务发现**: 智能扫描并启动所有微服务，无需手动配置
+- ✅ **依赖关系管理**: 按照服务依赖顺序智能启动
+- ✅ **实时状态监控**: 一键检查所有服务运行状态
+- ✅ **灵活扩展**: 新增服务自动识别，零配置集成
+- ✅ **完整日志系统**: 统一日志管理和实时查看
 
 ## 技术架构
 
@@ -104,6 +117,13 @@
 - **Docker**: 20+ & Docker Compose
 - **MySQL**: 8.0+
 - **Redis**: 6.0+
+
+### ⚠️ 遇到启动问题？
+
+如果启动脚本闪退或遇到错误，请查看:
+- 📖 **[故障排查指南](TROUBLESHOOTING.md)** - 详细的问题诊断和解决方案
+- 🔧 使用 `start-dev-debug.bat` 调试模式启动，获取详细错误信息
+- 📋 查看 [常见问题 FAQ](#常见问题-faq)
 
 ## 🎯 本地开发（推荐）
 
@@ -463,6 +483,147 @@ A: 在 Nacos 中创建不同的命名空间，对应 dev/test/prod 环境。
 ### Q: 如何扩展新的微服务？
 
 A: 参考现有服务结构，创建新的服务模块，注册到 Nacos。
+
+## 🔧 常见问题 FAQ
+
+### Q1: 启动脚本闪退怎么办？
+
+**A**: 这是最常见的问题，通常由以下原因引起:
+
+1. **Docker Desktop 未运行** (90%的情况)
+   ```bash
+   # 检查 Docker 是否运行
+   docker ps
+   ```
+   解决: 启动 Docker Desktop，等待完全启动后重试
+
+2. **使用调试模式定位问题**
+   ```bash
+   # 运行调试版本，查看详细错误信息
+   start-dev-debug.bat
+   ```
+
+3. **查看完整排查指南**
+   - 📖 [故障排查指南](TROUBLESHOOTING.md)
+
+---
+
+### Q2: 端口被占用怎么办？
+
+**A**: 检查并释放被占用的端口
+
+```powershell
+# 查看端口占用
+netstat -ano | findstr :8080
+
+# 结束占用进程 (PID 从上一命令获取)
+taskkill /PID <进程ID> /F
+```
+
+常用端口: `3307, 6379, 8848, 8080-8089, 5173`
+
+---
+
+### Q3: 服务启动失败怎么办?
+
+**A**: 按以下步骤排查:
+
+1. **查看服务日志**
+   ```bash
+   # 查看特定服务日志
+   pwsh -File tail-logs.ps1 gateway-service
+   
+   # 或直接打开日志文件
+   notepad logs\gateway-service.log
+   ```
+
+2. **检查服务状态**
+   ```bash
+   pwsh -File check-services-silent.ps1
+   ```
+
+3. **重启单个服务**
+   ```bash
+   pwsh -File restart-service.ps1 gateway-service
+   ```
+
+---
+
+### Q4: Maven 下载依赖很慢?
+
+**A**: 配置国内镜像源
+
+编辑 `~/.m2/settings.xml`:
+```xml
+<mirrors>
+  <mirror>
+    <id>aliyun</id>
+    <mirrorOf>central</mirrorOf>
+    <url>https://maven.aliyun.com/repository/public</url>
+  </mirror>
+</mirrors>
+```
+
+---
+
+### Q5: 如何只启动部分服务?
+
+**A**: 编辑 `start-dev-silent.bat`，注释掉不需要的服务:
+
+```batch
+REM set "SERVICES_CONFIG=!SERVICES_CONFIG!payment-service:8085::3;"
+REM set "SERVICES_CONFIG=!SERVICES_CONFIG!sms-service:8089::3;"
+```
+
+---
+
+### Q6: 新增服务后如何启动?
+
+**A**: 无需修改脚本！
+
+1. 在 `backend/` 下创建新服务目录
+2. 添加 `pom.xml` 和源代码
+3. 配置 `application.yml` 中的端口
+4. 运行 `start-dev-silent.bat` - 新服务会自动被检测并启动
+
+---
+
+### Q7: 如何查看所有服务的API文档?
+
+**A**: 各服务的 Swagger 文档地址:
+
+- 网关: http://localhost:8080/doc.html
+- 用户服务: http://localhost:8082/doc.html
+- 商品服务: http://localhost:8083/doc.html
+- ... (其他服务类似)
+
+---
+
+### Q8: Docker 容器无法启动?
+
+**A**: 尝试以下方法:
+
+```bash
+# 1. 停止并删除所有容器
+docker-compose -f docker-compose-dev.yml down -v
+
+# 2. 清理 Docker 缓存
+docker system prune -a
+
+# 3. 重新启动
+start-dev-silent.bat
+```
+
+---
+
+### 获取更多帮助
+
+- 📖 [快速启动指南](QUICK_START.md)
+- 📖 [故障排查指南](TROUBLESHOOTING.md)
+- 📖 [服务管理指南](QUICK_REFERENCE.md)
+- 📖 [自动服务检测说明](docs/AUTO_SERVICE_DETECTION.md)
+
+---
 
 ## 贡献指南
 

@@ -10,7 +10,7 @@ spring:
     nacos:
       discovery:
         server-addr: localhost:8848
-        namespace: public
+        namespace: simple
         enabled: true
       config:
         enabled: false
@@ -45,6 +45,15 @@ spring:
             - Path=/api/product/**
           filters:
             - StripPrefix=2
+        # 商品服务兼容路由（支持前端/api/product-service/**路径）
+        - id: product-service-compat
+          uri: lb://product-service
+          predicates:
+            - Path=/api/product-service/**
+          filters:
+            - name: StripPrefix
+              args:
+                parts: 2
         # 购物车服务
         - id: cart-service
           uri: lb://cart-service
@@ -82,23 +91,37 @@ spring:
             - Path=/api/payment/**
           filters:
             - StripPrefix=2
-        # 商家服务
+        # 商家服务（单数）
         - id: merchant-service
           uri: lb://merchant-service
           predicates:
             - Path=/api/merchant/**
           filters:
-            - StripPrefix=2
+            - StripPrefix=1
+        # 商家服务（复数）- 支持 /api/merchants/** 路径
+        - id: merchant-service-plural
+          uri: lb://merchant-service
+          predicates:
+            - Path=/api/merchants/**
+          filters:
+            - StripPrefix=1
         # 管理服务
         - id: admin-service
           uri: lb://admin-service
           predicates:
             - Path=/api/admin/**
           filters:
-            - StripPrefix=2
-        # SMS服务（本地开发直连端口）
+            - StripPrefix=1
+        # 管理员-商家管理服务（直接路由到merchant-service）
+        - id: admin-merchants
+          uri: lb://merchant-service
+          predicates:
+            - Path=/api/admin/merchants/**
+          filters:
+            - StripPrefix=1
+        # SMS服务
         - id: sms-service
-          uri: http://localhost:8089
+          uri: lb://sms-service
           predicates:
             - Path=/api/sms/**
           filters:

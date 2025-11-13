@@ -137,31 +137,37 @@
           <div class="detail-content" v-html="product?.description || '暂无详细描述'"></div>
         </el-tab-pane>
         <el-tab-pane label="规格参数" name="params">
-          <div class="params-content">
+          <div class="params-content" v-if="product && product.parameters && product.parameters.length > 0">
             <el-descriptions :column="2" border>
               <el-descriptions-item 
-                v-for="param in product?.parameters" 
+                v-for="param in product.parameters" 
                 :key="param.name"
                 :label="param.name">
                 {{ param.value }}
               </el-descriptions-item>
             </el-descriptions>
           </div>
+          <div v-else-if="product" class="no-params">
+            <el-empty description="暂无规格参数"></el-empty>
+          </div>
+          <div v-else class="loading-state">
+            <el-skeleton :rows="5" animated />
+          </div>
         </el-tab-pane>
         <el-tab-pane label="用户评价" name="reviews">
-          <div class="reviews-content">
+          <div class="reviews-content" v-if="product">
             <div class="reviews-summary">
               <div class="rating-overview">
                 <div class="rating-score">
-                  <span class="score">{{ product?.rating || 5.0 }}</span>
+                  <span class="score">{{ product.rating || 5.0 }}</span>
                   <el-rate 
-                    v-model="product.rating" 
+                    :model-value="product.rating || 5.0" 
                     disabled 
                     show-score
                     text-color="#ff9900">
                   </el-rate>
                 </div>
-                <div class="rating-count">共 {{ product?.reviewCount || 0 }} 条评价</div>
+                <div class="rating-count">共 {{ product.reviewCount || 0 }} 条评价</div>
               </div>
             </div>
             
@@ -193,6 +199,9 @@
             <div v-else class="no-reviews">
               <el-empty description="暂无评价"></el-empty>
             </div>
+          </div>
+          <div v-else class="loading-state">
+            <el-skeleton :rows="5" animated />
           </div>
         </el-tab-pane>
       </el-tabs>
@@ -261,14 +270,62 @@ const loadProductDetail = async () => {
   try {
     const productId = route.params.id
     
-    // 优先使用真实API
+    // 使用merchant-service的真实API
     try {
       const response = await getProductDetail(productId)
-      product.value = response.data
+      
+      // 数据映射：将后端字段名映射为前端期待的字段名
+      const productData = response.data
+      
+      // 安全解析JSON字段
+      let specifications = []
+      try {
+        if (productData.specifications && typeof productData.specifications === 'string') {
+          specifications = JSON.parse(productData.specifications)
+        } else if (Array.isArray(productData.specifications)) {
+          specifications = productData.specifications
+        }
+      } catch (e) {
+        console.warn('解析商品规格失败:', e)
+      }
+      
+      let parameters = []
+      try {
+        if (productData.attributes && typeof productData.attributes === 'string') {
+          const attrs = JSON.parse(productData.attributes)
+          // 将对象转换为数组格式
+          if (typeof attrs === 'object' && !Array.isArray(attrs)) {
+            parameters = Object.entries(attrs).map(([name, value]) => ({ name, value }))
+          } else if (Array.isArray(attrs)) {
+            parameters = attrs
+          }
+        }
+      } catch (e) {
+        console.warn('解析商品属性失败:', e)
+      }
+      
+      product.value = {
+        id: productData.id,
+        name: productData.productName,
+        subtitle: productData.seoDescription || '',
+        price: productData.price,
+        originalPrice: productData.marketPrice,
+        stock: productData.stockQuantity || 0,
+        image: productData.mainImage,
+        images: productData.images ? productData.images.split(',').filter(img => img) : [productData.mainImage],
+        description: productData.description || '暂无详细描述',
+        tags: [],
+        specifications: specifications,
+        parameters: parameters,
+        rating: productData.rating ? parseFloat(productData.rating) : 5.0,
+        reviewCount: productData.reviewCount || 0,
+        sales: productData.salesCount || 0,
+        status: productData.status
+      }
     } catch (apiError) {
       console.error('商品详情API调用失败:', apiError)
       ElMessage.error('商品详情加载失败')
-      router.push('/404')
+      // 不要直接跳转404，因为可能是网络问题
       return
     }
     
@@ -299,11 +356,10 @@ const loadReviews = async () => {
       const response = await getProductReviews(productId)
       reviews.value = response.data
     } catch (apiError) {
-      console.error('评价API调用失败:', apiError)
+      // 评价接口不存在时静默处理，不输出错误
       reviews.value = []
     }
   } catch (error) {
-    console.error('加载评价失败:', error)
     reviews.value = []
   }
 }
@@ -716,6 +772,15 @@ onMounted(() => {
 .no-reviews {
   text-align: center;
   padding: 40px 0;
+}
+
+.no-params {
+  text-align: center;
+  padding: 40px 0;
+}
+
+.loading-state {
+  padding: 20px;
 }
 
 /* 本地图标样式 */

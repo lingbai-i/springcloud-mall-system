@@ -8,10 +8,10 @@ spring:
     nacos:
       discovery:
         server-addr: localhost:8848
-        namespace: public
+        namespace: simple
       config:
         server-addr: localhost:8848
-        namespace: public
+        namespace: simple
         import-check:
           enabled: false
   datasource:

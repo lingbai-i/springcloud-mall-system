@@ -239,40 +239,34 @@
         />
       </div>
     </el-card>
-
-    <!-- 商品详情对话框 -->
-    <ProductDetail
-      v-model="showProductDetail"
-      :product-id="currentProductId"
-      @refresh="loadProductList"
-    />
-
-    <!-- 商品表单对话框 -->
-    <ProductForm
-      v-model="showProductForm"
-      :product-id="editingProductId"
-      @success="handleFormSuccess"
-    />
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useUserStore } from '@/stores/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Plus, Upload, Download, Search, Refresh, ArrowDown,
   ShoppingBag, TrendCharts, Warning, Star
 } from '@element-plus/icons-vue'
-import ProductDetail from './components/ProductDetail.vue'
-import ProductForm from './components/ProductForm.vue'
+import {
+  getProductList,
+  deleteProduct,
+  batchDelete,
+  productOnShelf,
+  productOffShelf,
+  batchOnShelf,
+  batchOffShelf
+} from '@/api/merchant/product'
+
+const router = useRouter()
+const userStore = useUserStore()
 
 // 响应式数据
 const loading = ref(false)
 const selectedProducts = ref([])
-const showProductDetail = ref(false)
-const currentProductId = ref(null)
-const showProductForm = ref(false)
-const editingProductId = ref(null)
 
 // 搜索表单
 const searchForm = reactive({
@@ -296,108 +290,47 @@ const productStats = reactive([
   {
     key: 'total',
     label: '商品总数',
-    value: '1,248',
+    value: '0',
     icon: 'ShoppingBag',
     color: '#1890ff'
   },
   {
     key: 'on_sale',
     label: '在售商品',
-    value: '1,156',
+    value: '0',
     icon: 'TrendCharts',
     color: '#52c41a'
   },
   {
     key: 'low_stock',
     label: '库存预警',
-    value: '23',
+    value: '0',
     icon: 'Warning',
     color: '#faad14'
   },
   {
     key: 'hot_sale',
     label: '热销商品',
-    value: '89',
+    value: '0',
     icon: 'Star',
     color: '#f5222d'
   }
 ])
 
 // 商品列表
-const productList = ref([
-  {
-    id: 1,
-    name: 'iPhone 15 Pro Max 256GB 深空黑色',
-    sku: 'IP15PM256BK',
-    category: 'electronics',
-    price: '9999.00',
-    stock: 156,
-    sales: 2580,
-    status: 'on_sale',
-    image: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=iPhone%2015%20Pro%20Max%20black%20smartphone%20product%20photo&image_size=square',
-    createTime: '2024-01-10 10:30:00'
-  },
-  {
-    id: 2,
-    name: 'MacBook Pro 14英寸 M3芯片',
-    sku: 'MBP14M3SL',
-    category: 'electronics',
-    price: '14999.00',
-    stock: 8,
-    sales: 456,
-    status: 'on_sale',
-    image: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=MacBook%20Pro%2014%20inch%20silver%20laptop%20product%20photo&image_size=square',
-    createTime: '2024-01-08 14:20:00'
-  },
-  {
-    id: 3,
-    name: 'AirPods Pro 第三代 无线耳机',
-    sku: 'APP3WH',
-    category: 'electronics',
-    price: '1899.00',
-    stock: 234,
-    sales: 1890,
-    status: 'on_sale',
-    image: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=AirPods%20Pro%20white%20wireless%20earbuds%20product%20photo&image_size=square',
-    createTime: '2024-01-05 09:15:00'
-  },
-  {
-    id: 4,
-    name: 'iPad Air 第五代 64GB WiFi版',
-    sku: 'IPA5W64BL',
-    category: 'electronics',
-    price: '4399.00',
-    stock: 0,
-    sales: 678,
-    status: 'sold_out',
-    image: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=iPad%20Air%20blue%20tablet%20product%20photo&image_size=square',
-    createTime: '2024-01-03 16:45:00'
-  },
-  {
-    id: 5,
-    name: 'Apple Watch Series 9 GPS 45mm',
-    sku: 'AWS9G45MN',
-    category: 'electronics',
-    price: '3199.00',
-    stock: 89,
-    sales: 1234,
-    status: 'pending',
-    image: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=Apple%20Watch%20Series%209%20midnight%20smartwatch%20product%20photo&image_size=square',
-    createTime: '2024-01-01 11:30:00'
-  }
-])
+const productList = ref([])
 
 // 方法
-const getCategoryName = (category) => {
+const getCategoryName = (categoryId) => {
   const categoryMap = {
-    'electronics': '数码电子',
-    'clothing': '服装鞋帽',
-    'home': '家居用品',
-    'beauty': '美妆护肤',
-    'food': '食品饮料',
-    'sports': '运动户外'
+    1: '数码电子',
+    2: '服装鞋帽',
+    3: '家居用品',
+    4: '美妆护肤',
+    5: '食品饮料',
+    6: '运动户外'
   }
-  return categoryMap[category] || '未知分类'
+  return categoryMap[categoryId] || `分类${categoryId}`
 }
 
 const getStatusType = (status) => {
@@ -457,36 +390,94 @@ const handleCurrentChange = (page) => {
 const loadProductList = async () => {
   loading.value = true
   try {
-    // 调用真实的API
-    const response = await productApi.getProductList({
-      ...searchForm,
+    // 调用真实API
+    const params = {
+      merchantId: userStore.merchantId,
       page: pagination.currentPage,
-      pageSize: pagination.pageSize
-    })
+      size: pagination.pageSize,
+      keyword: searchForm.keyword || undefined,
+      category: searchForm.category || undefined,
+      status: searchForm.status ? getStatusCode(searchForm.status) : undefined,
+      minPrice: searchForm.minPrice || undefined,
+      maxPrice: searchForm.maxPrice || undefined
+    }
     
-    productList.value = response.data.list || []
-    pagination.total = response.data.total || 0
+    const response = await getProductList(params)
+    
+    if (response.code === 200 && response.data) {
+      // 后端返回的字段是 records，需要进行字段映射
+      const rawList = response.data.records || []
+      
+      // 映射后端字段到前端字段
+      productList.value = rawList.map(item => ({
+        id: item.id,
+        name: item.productName || '未命名商品',
+        sku: item.sku || `PROD-${item.id}`,
+        category: item.categoryId,
+        price: item.price || 0,
+        stock: item.stockQuantity || 0,
+        sales: item.salesCount || 0,
+        status: item.status === 1 ? 'on_sale' : 'off_sale',
+        image: item.mainImage || 'https://cube.elemecdn.com/e/fd/0fc7d20532fdaf769a25683617711png.png',
+        createTime: item.createTime || new Date().toISOString()
+      }))
+      
+      pagination.total = response.data.total || 0
+      
+      console.log('商品列表加载成功:', {
+        total: pagination.total,
+        count: productList.value.length,
+        sample: productList.value[0]
+      })
+      
+      // 更新统计数据
+      updateProductStats()
+    }
     
   } catch (error) {
+    console.error('加载商品列表失败:', error)
     ElMessage.error('加载商品列表失败')
   } finally {
     loading.value = false
   }
 }
 
+// 状态映射
+const getStatusCode = (status) => {
+  const statusMap = {
+    'on_sale': 1,
+    'off_sale': 2,
+    'sold_out': 3,
+    'pending': 0
+  }
+  return statusMap[status]
+}
+
+// 更新商品统计数据
+const updateProductStats = () => {
+  const total = productList.value.length
+  const onSale = productList.value.filter(p => p.status === 'on_sale').length
+  const lowStock = productList.value.filter(p => p.stock <= 10).length
+  const hotSale = productList.value.filter(p => p.sales > 100).length
+  
+  productStats[0].value = String(total)
+  productStats[1].value = String(onSale)
+  productStats[2].value = String(lowStock)
+  productStats[3].value = String(hotSale)
+  
+  console.log('统计数据已更新:', { total, onSale, lowStock, hotSale })
+}
+
 const viewProduct = (productId) => {
-  currentProductId.value = productId
-  showProductDetail.value = true
+  router.push(`/merchant/products/form/${productId}`)
 }
 
 const addProduct = () => {
-  editingProductId.value = null
-  showProductForm.value = true
+  router.push('/merchant/products/form')
 }
 
 const editProduct = (productId) => {
-  editingProductId.value = productId
-  showProductForm.value = true
+  router.push(`/merchant/products/form/${productId}`)
 }
 
 const handleProductAction = async (command, row) => {
@@ -522,13 +513,18 @@ const handleToggleStatus = async (productId, status) => {
     )
     
     // 调用API
-    // await productApi.updateProductStatus(productId, status)
+    if (status === 'on_sale') {
+      await productOnShelf(productId, userStore.merchantId)
+    } else {
+      await productOffShelf(productId, userStore.merchantId)
+    }
     
     ElMessage.success(`商品${status === 'on_sale' ? '上架' : '下架'}成功`)
     loadProductList()
     
   } catch (error) {
     if (error !== 'cancel') {
+      console.error('操作失败:', error)
       ElMessage.error('操作失败')
     }
   }
@@ -565,13 +561,14 @@ const handleDeleteProduct = async (productId) => {
     )
     
     // 调用API
-    // await productApi.deleteProduct(productId)
+    await deleteProduct(productId, userStore.merchantId)
     
     ElMessage.success('商品删除成功')
     loadProductList()
     
   } catch (error) {
     if (error !== 'cancel') {
+      console.error('删除商品失败:', error)
       ElMessage.error('删除商品失败')
     }
   }
@@ -590,7 +587,7 @@ const handleBatchDelete = async () => {
     )
     
     const productIds = selectedProducts.value.map(item => item.id)
-    // await productApi.batchDeleteProducts(productIds)
+    await batchDelete(userStore.merchantId, productIds)
     
     ElMessage.success('批量删除成功')
     selectedProducts.value = []
@@ -598,6 +595,7 @@ const handleBatchDelete = async () => {
     
   } catch (error) {
     if (error !== 'cancel') {
+      console.error('批量删除失败:', error)
       ElMessage.error('批量删除失败')
     }
   }
@@ -606,13 +604,14 @@ const handleBatchDelete = async () => {
 const handleBatchOnSale = async () => {
   try {
     const productIds = selectedProducts.value.map(item => item.id)
-    // await productApi.batchUpdateStatus(productIds, 'on_sale')
+    await batchOnShelf(userStore.merchantId, productIds)
     
     ElMessage.success('批量上架成功')
     selectedProducts.value = []
     loadProductList()
     
   } catch (error) {
+    console.error('批量上架失败:', error)
     ElMessage.error('批量上架失败')
   }
 }
@@ -620,13 +619,14 @@ const handleBatchOnSale = async () => {
 const handleBatchOffSale = async () => {
   try {
     const productIds = selectedProducts.value.map(item => item.id)
-    // await productApi.batchUpdateStatus(productIds, 'off_sale')
+    await batchOffShelf(userStore.merchantId, productIds)
     
     ElMessage.success('批量下架成功')
     selectedProducts.value = []
     loadProductList()
     
   } catch (error) {
+    console.error('批量下架失败:', error)
     ElMessage.error('批量下架失败')
   }
 }
@@ -637,10 +637,6 @@ const handleBatchImport = () => {
 
 const handleExport = () => {
   ElMessage.info('导出功能开发中...')
-}
-
-const handleFormSuccess = () => {
-  loadProductList()
 }
 
 // 生命周期

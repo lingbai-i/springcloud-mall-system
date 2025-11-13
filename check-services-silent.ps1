@@ -1,33 +1,87 @@
-# 检查在线商城所有服务的运行状态
+# 检查在线商城所有服务的运行状态（智能自动检测版）
 # 作者: lingbai
-# 版本: 1.0
+# 版本: 2.0
+# 更新日期: 2025-11-11
 
 # 设置UTF-8编码
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $OutputEncoding = [System.Text.Encoding]::UTF8
 
-# 服务配置
+# 动态服务配置（自动检测）
 $services = @{
   '基础设施' = @(
     @{ Name = 'MySQL'; Port = 3307; Container = 'mall-mysql-dev' }
     @{ Name = 'Redis'; Port = 6379; Container = 'mall-redis-dev' }
     @{ Name = 'Nacos'; Port = 8848; Container = 'mall-nacos-dev' }
   )
-  '微服务'  = @(
-    @{ Name = 'Gateway Service'; Port = 8080; LogFile = 'logs\gateway.log' }
-    @{ Name = 'User Service'; Port = 8082; LogFile = 'logs\user.log' }
-    @{ Name = 'Product Service'; Port = 8083; LogFile = 'logs\product.log' }
-    @{ Name = 'Order Service'; Port = 8084; LogFile = 'logs\order.log' }
-    @{ Name = 'Payment Service'; Port = 8085; LogFile = 'logs\payment.log' }
-    @{ Name = 'Admin Service'; Port = 8086; LogFile = 'logs\admin.log' }
-    @{ Name = 'Merchant Service'; Port = 8087; LogFile = 'logs\merchant.log' }
-    @{ Name = 'Cart Service'; Port = 8088; LogFile = 'logs\cart.log' }
-    @{ Name = 'SMS Service'; Port = 8089; LogFile = 'logs\sms.log' }
-  )
+  '微服务'  = @()
   '前端'   = @(
     @{ Name = 'Frontend'; Port = 5173; LogFile = 'logs\frontend.log' }
   )
 }
+
+# 微服务端口映射（从配置文件中读取）
+$servicePortMap = @{
+  'gateway-service' = 8080
+  'auth-service' = 8081
+  'user-service' = 8082
+  'product-service' = 8083
+  'order-service' = 8084
+  'payment-service' = 8085
+  'admin-service' = 8086
+  'merchant-service' = 8087
+  'cart-service' = 8088
+  'sms-service' = 8089
+}
+
+# 排除的目录（非服务模块）
+$excludeDirs = @('common-bom', 'common-core', 'simple-test')
+
+# 动态扫描后端服务
+$backendDir = Join-Path $PSScriptRoot 'backend'
+if (Test-Path $backendDir) {
+  Get-ChildItem -Path $backendDir -Directory | ForEach-Object {
+    $serviceName = $_.Name
+    
+    # 检查是否在排除列表中
+    if ($excludeDirs -notcontains $serviceName) {
+      # 检查是否存在 pom.xml（Maven 项目标识）
+      $pomPath = Join-Path $_.FullName 'pom.xml'
+      if (Test-Path $pomPath) {
+        # 获取服务端口（从映射表或尝试读取配置文件）
+        $port = $servicePortMap[$serviceName]
+        
+        if (-not $port) {
+          # 尝试从 application.yml 读取端口
+          $appYml = Join-Path $_.FullName 'src\main
+esources\application.yml'
+          if (Test-Path $appYml) {
+            $content = Get-Content $appYml -Raw
+            if ($content -match 'port:\s*(\d+)') {
+              $port = [int]$matches[1]
+            }
+          }
+        }
+        
+        # 如果找到端口，添加到服务列表
+        if ($port) {
+          $displayName = ($serviceName -replace '-', ' ') -replace '(\w+)', { $_.Groups[1].Value.Substring(0,1).ToUpper() + $_.Groups[1].Value.Substring(1) }
+          $logFile = "logs\$serviceName.log"
+          
+          $services['微服务'] += @{
+            Name = $displayName
+            Port = $port
+            LogFile = $logFile
+            ServiceDir = $serviceName
+          }
+        }
+      }
+    }
+  }
+}
+
+# 按端口号排序微服务
+$services['微服务'] = $services['微服务'] | Sort-Object -Property Port
 
 # 辅助函数：检查端口
 function Test-Port {

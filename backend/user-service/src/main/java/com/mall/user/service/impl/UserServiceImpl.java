@@ -253,4 +253,42 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             return false;
         }
     }
+
+    @Override
+    public Map<String, Object> getUserStatistics() {
+        Map<String, Object> stats = new HashMap<>();
+
+        try {
+            // 统计总用户数
+            Long total = userMapper.selectCount(null);
+            stats.put("total", total != null ? total : 0);
+
+            // 统计活跃用户数（状态为1）
+            LambdaQueryWrapper<User> activeWrapper = new LambdaQueryWrapper<>();
+            activeWrapper.eq(User::getStatus, 1);
+            Long active = userMapper.selectCount(activeWrapper);
+            stats.put("active", active != null ? active : 0);
+
+            // 统计禁用用户数（状态为0）
+            LambdaQueryWrapper<User> disabledWrapper = new LambdaQueryWrapper<>();
+            disabledWrapper.eq(User::getStatus, 0);
+            Long disabled = userMapper.selectCount(disabledWrapper);
+            stats.put("disabled", disabled != null ? disabled : 0);
+
+            // 统计待验证用户数（暂时设置为0，后续根据实际业务调整）
+            stats.put("pending", 0);
+
+            return stats;
+
+        } catch (Exception e) {
+            System.err.println("获取用户统计数据异常: " + e.getMessage());
+            e.printStackTrace();
+            // 返回默认值
+            stats.put("total", 0);
+            stats.put("active", 0);
+            stats.put("disabled", 0);
+            stats.put("pending", 0);
+            return stats;
+        }
+    }
 }

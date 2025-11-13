@@ -4,7 +4,7 @@
     <el-aside :width="isCollapse ? '64px' : '240px'" class="merchant-sidebar">
       <div class="logo-container">
         <img v-if="!isCollapse" src="/logo.png" alt="Logo" class="logo" />
-        <img v-else src="/logo-mini.png" alt="Logo" class="logo-mini" />
+        <img v-else src="/logo.png" alt="Logo" class="logo-mini" />
         <h1 v-if="!isCollapse" class="title">商家中心</h1>
       </div>
       
@@ -29,8 +29,6 @@
             <span>商品管理</span>
           </template>
           <el-menu-item index="/merchant/products">商品列表</el-menu-item>
-          <el-menu-item index="/merchant/products/add">添加商品</el-menu-item>
-          <el-menu-item index="/merchant/products/inventory">库存管理</el-menu-item>
         </el-sub-menu>
         
         <el-sub-menu index="orders">
@@ -171,7 +169,7 @@ const userStore = useUserStore()
 const isCollapse = ref(false)
 
 // 消息通知数量
-const notificationCount = ref(3)
+const notificationCount = ref(0)
 
 // 当前激活的菜单
 const activeMenu = computed(() => route.path)

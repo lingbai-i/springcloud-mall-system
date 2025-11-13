@@ -20,7 +20,7 @@ export function getProductList(params) {
 // 获取商品详情
 export function getProductDetail(id) {
   return request({
-    url: `/product-service/products/${id}`,
+    url: `/merchant/products/${id}`,
     method: 'get'
   })
 }
@@ -64,10 +64,14 @@ export function getProductAttributes(categoryId) {
 
 // 搜索商品
 export function searchProducts(params) {
-  return request({
-    url: '/product-service/products/search',
+  return request({    url: '/merchant/products/list',
     method: 'get',
-    params
+    params: {
+      keyword: params.keyword,
+      page: params.current || params.page || 1,
+      size: params.size || 12,
+      status: 1  // 只搜索上架商品
+    }
   })
 }
 
@@ -116,19 +120,23 @@ export function getFavoriteProducts(params) {
 
 // 获取热门商品
 export function getHotProducts(params) {
-  return request({
-    url: '/product-service/products/hot',
+  return request({    url: '/merchant/products/hot-selling',
     method: 'get',
-    params
+    params: {
+      limit: params?.limit || 12
+    }
   })
 }
 
 // 获取推荐商品
 export function getRecommendProducts(params) {
   return request({
-    url: '/product-service/products/recommend',
+    url: '/merchant/products/recommended',
     method: 'get',
-    params
+    params: {
+      page: 1,
+      size: params?.limit || 12
+    }
   })
 }
 

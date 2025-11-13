@@ -50,6 +50,8 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
  * V1.0 2024-12-01：初始版本，基础支付服务启动类
  */
 @SpringBootApplication
+@EnableDiscoveryClient
+@EnableFeignClients
 @EnableJpaAuditing
 @EnableTransactionManagement
 @EnableScheduling

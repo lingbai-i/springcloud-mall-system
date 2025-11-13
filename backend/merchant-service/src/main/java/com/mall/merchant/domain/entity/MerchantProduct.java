@@ -20,177 +20,183 @@ import java.math.BigDecimal;
 @Entity
 @Table(name = "merchant_product")
 public class MerchantProduct extends BaseEntity {
-    
+
     /**
      * 商家ID
      */
     @Column(name = "merchant_id", nullable = false)
     private Long merchantId;
-    
+
     /**
      * 商品名称
      */
     @Column(name = "product_name", nullable = false, length = 200)
     private String productName;
-    
+
+    /**
+     * 商品SKU编码
+     */
+    @Column(name = "sku", length = 100)
+    private String sku;
+
     /**
      * 商品分类ID
      */
     @Column(name = "category_id", nullable = false)
     private Long categoryId;
-    
+
     /**
      * 商品品牌
      */
     @Column(name = "brand", length = 100)
     private String brand;
-    
+
     /**
      * 商品价格
      */
     @Column(name = "price", nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
-    
+
     /**
      * 市场价格
      */
     @Column(name = "market_price", precision = 10, scale = 2)
     private BigDecimal marketPrice;
-    
+
     /**
      * 成本价格
      */
     @Column(name = "cost_price", precision = 10, scale = 2)
     private BigDecimal costPrice;
-    
+
     /**
      * 库存数量
      */
     @Column(name = "stock_quantity", nullable = false)
     private Integer stockQuantity = 0;
-    
+
     /**
      * 预警库存
      */
     @Column(name = "warning_stock", nullable = false)
     private Integer warningStock = 10;
-    
+
     /**
      * 商品主图
      */
     @Column(name = "main_image", length = 200)
     private String mainImage;
-    
+
     /**
      * 商品图片（多张，逗号分隔）
      */
     @Column(name = "images", length = 1000)
     private String images;
-    
+
     /**
      * 商品详情
      */
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
-    
+
     /**
      * 商品规格参数（JSON格式）
      */
     @Column(name = "specifications", columnDefinition = "TEXT")
     private String specifications;
-    
+
     /**
      * 商品属性（JSON格式）
      */
     @Column(name = "attributes", columnDefinition = "TEXT")
     private String attributes;
-    
+
     /**
      * 商品重量（克）
      */
     @Column(name = "weight")
     private Integer weight;
-    
+
     /**
      * 商品尺寸（长x宽x高，单位：厘米）
      */
     @Column(name = "dimensions", length = 50)
     private String dimensions;
-    
+
     /**
      * 商品状态：0-下架，1-上架，2-草稿
      */
     @Column(name = "status", nullable = false)
     private Integer status = 2;
-    
+
     /**
      * 是否推荐：0-否，1-是
      */
     @Column(name = "is_recommended", nullable = false)
     private Integer isRecommended = 0;
-    
+
     /**
      * 是否新品：0-否，1-是
      */
     @Column(name = "is_new", nullable = false)
     private Integer isNew = 0;
-    
+
     /**
      * 是否热销：0-否，1-是
      */
     @Column(name = "is_hot", nullable = false)
     private Integer isHot = 0;
-    
+
     /**
      * 销售数量
      */
     @Column(name = "sales_count", nullable = false)
     private Integer salesCount = 0;
-    
+
     /**
      * 浏览次数
      */
     @Column(name = "view_count", nullable = false)
     private Integer viewCount = 0;
-    
+
     /**
      * 收藏次数
      */
     @Column(name = "favorite_count", nullable = false)
     private Integer favoriteCount = 0;
-    
+
     /**
      * 评分（1-5分）
      */
     @Column(name = "rating", precision = 3, scale = 2)
     private BigDecimal rating;
-    
+
     /**
      * 评价数量
      */
     @Column(name = "review_count", nullable = false)
     private Integer reviewCount = 0;
-    
+
     /**
      * 排序值
      */
     @Column(name = "sort_order", nullable = false)
     private Integer sortOrder = 0;
-    
+
     /**
      * SEO关键词
      */
     @Column(name = "seo_keywords", length = 200)
     private String seoKeywords;
-    
+
     /**
      * SEO描述
      */
     @Column(name = "seo_description", length = 500)
     private String seoDescription;
-    
+
     // 业务方法
-    
+
     /**
      * 获取商品状态文本
      * 
@@ -208,7 +214,7 @@ public class MerchantProduct extends BaseEntity {
                 return "未知";
         }
     }
-    
+
     /**
      * 判断是否上架
      * 
@@ -217,7 +223,7 @@ public class MerchantProduct extends BaseEntity {
     public boolean isOnSale() {
         return status != null && status == 1;
     }
-    
+
     /**
      * 判断是否有库存
      * 
@@ -226,7 +232,7 @@ public class MerchantProduct extends BaseEntity {
     public boolean hasStock() {
         return stockQuantity != null && stockQuantity > 0;
     }
-    
+
     /**
      * 判断是否库存不足
      * 
@@ -235,7 +241,7 @@ public class MerchantProduct extends BaseEntity {
     public boolean isLowStock() {
         return stockQuantity != null && warningStock != null && stockQuantity <= warningStock;
     }
-    
+
     /**
      * 增加销售数量
      * 
@@ -246,7 +252,7 @@ public class MerchantProduct extends BaseEntity {
             this.salesCount = (this.salesCount == null ? 0 : this.salesCount) + quantity;
         }
     }
-    
+
     /**
      * 减少库存
      * 
@@ -260,7 +266,7 @@ public class MerchantProduct extends BaseEntity {
         }
         return false;
     }
-    
+
     /**
      * 增加库存
      * 
@@ -271,7 +277,7 @@ public class MerchantProduct extends BaseEntity {
             this.stockQuantity += quantity;
         }
     }
-    
+
     /**
      * 设置评分
      * 
@@ -280,7 +286,7 @@ public class MerchantProduct extends BaseEntity {
     public void setRating(BigDecimal rating) {
         this.rating = rating;
     }
-    
+
     /**
      * 设置是否推荐
      * 
@@ -289,7 +295,7 @@ public class MerchantProduct extends BaseEntity {
     public void setIsRecommended(Integer isRecommended) {
         this.isRecommended = isRecommended;
     }
-    
+
     /**
      * 设置是否新品
      * 
@@ -298,7 +304,7 @@ public class MerchantProduct extends BaseEntity {
     public void setIsNew(Integer isNew) {
         this.isNew = isNew;
     }
-    
+
     /**
      * 设置是否热销
      * 
@@ -307,7 +313,7 @@ public class MerchantProduct extends BaseEntity {
     public void setIsHot(Integer isHot) {
         this.isHot = isHot;
     }
-    
+
     /**
      * 设置排序值
      * 
@@ -316,7 +322,7 @@ public class MerchantProduct extends BaseEntity {
     public void setSortOrder(Integer sortOrder) {
         this.sortOrder = sortOrder;
     }
-    
+
     /**
      * 获取商家ID
      * 
@@ -325,7 +331,7 @@ public class MerchantProduct extends BaseEntity {
     public Long getMerchantId() {
         return this.merchantId;
     }
-    
+
     /**
      * 获取商品名称
      * 
@@ -334,7 +340,7 @@ public class MerchantProduct extends BaseEntity {
     public String getProductName() {
         return this.productName;
     }
-    
+
     /**
      * 获取分类ID
      * 
@@ -343,7 +349,7 @@ public class MerchantProduct extends BaseEntity {
     public Long getCategoryId() {
         return this.categoryId;
     }
-    
+
     /**
      * 获取品牌
      * 
@@ -352,7 +358,7 @@ public class MerchantProduct extends BaseEntity {
     public String getBrand() {
         return this.brand;
     }
-    
+
     /**
      * 获取价格
      * 
@@ -361,7 +367,7 @@ public class MerchantProduct extends BaseEntity {
     public BigDecimal getPrice() {
         return this.price;
     }
-    
+
     /**
      * 获取市场价
      * 
@@ -370,7 +376,7 @@ public class MerchantProduct extends BaseEntity {
     public BigDecimal getMarketPrice() {
         return this.marketPrice;
     }
-    
+
     /**
      * 获取成本价
      * 
@@ -379,7 +385,7 @@ public class MerchantProduct extends BaseEntity {
     public BigDecimal getCostPrice() {
         return this.costPrice;
     }
-    
+
     /**
      * 获取库存数量
      * 
@@ -388,7 +394,7 @@ public class MerchantProduct extends BaseEntity {
     public Integer getStockQuantity() {
         return this.stockQuantity;
     }
-    
+
     /**
      * 获取预警库存
      * 
@@ -397,7 +403,7 @@ public class MerchantProduct extends BaseEntity {
     public Integer getWarningStock() {
         return this.warningStock;
     }
-    
+
     /**
      * 获取主图
      * 
@@ -406,7 +412,7 @@ public class MerchantProduct extends BaseEntity {
     public String getMainImage() {
         return this.mainImage;
     }
-    
+
     /**
      * 获取图片列表
      * 
@@ -415,7 +421,7 @@ public class MerchantProduct extends BaseEntity {
     public String getImages() {
         return this.images;
     }
-    
+
     /**
      * 获取描述
      * 
@@ -424,7 +430,7 @@ public class MerchantProduct extends BaseEntity {
     public String getDescription() {
         return this.description;
     }
-    
+
     /**
      * 获取规格
      * 
@@ -433,7 +439,7 @@ public class MerchantProduct extends BaseEntity {
     public String getSpecifications() {
         return this.specifications;
     }
-    
+
     /**
      * 获取属性
      * 
@@ -442,7 +448,7 @@ public class MerchantProduct extends BaseEntity {
     public String getAttributes() {
         return this.attributes;
     }
-    
+
     /**
      * 获取重量
      * 
@@ -451,7 +457,7 @@ public class MerchantProduct extends BaseEntity {
     public Integer getWeight() {
         return this.weight;
     }
-    
+
     /**
      * 获取尺寸
      * 
@@ -460,7 +466,7 @@ public class MerchantProduct extends BaseEntity {
     public String getDimensions() {
         return this.dimensions;
     }
-    
+
     /**
      * 获取状态
      * 
@@ -469,7 +475,7 @@ public class MerchantProduct extends BaseEntity {
     public Integer getStatus() {
         return this.status;
     }
-    
+
     /**
      * 获取是否推荐
      * 
@@ -478,7 +484,7 @@ public class MerchantProduct extends BaseEntity {
     public Integer getIsRecommended() {
         return this.isRecommended;
     }
-    
+
     /**
      * 获取是否新品
      * 
@@ -487,7 +493,7 @@ public class MerchantProduct extends BaseEntity {
     public Integer getIsNew() {
         return this.isNew;
     }
-    
+
     /**
      * 获取是否热销
      * 
@@ -496,7 +502,7 @@ public class MerchantProduct extends BaseEntity {
     public Integer getIsHot() {
         return this.isHot;
     }
-    
+
     /**
      * 获取销量
      * 
@@ -505,7 +511,7 @@ public class MerchantProduct extends BaseEntity {
     public Integer getSalesCount() {
         return this.salesCount;
     }
-    
+
     /**
      * 获取浏览量
      * 
@@ -514,7 +520,7 @@ public class MerchantProduct extends BaseEntity {
     public Integer getViewCount() {
         return this.viewCount;
     }
-    
+
     /**
      * 获取收藏量
      * 
@@ -523,7 +529,7 @@ public class MerchantProduct extends BaseEntity {
     public Integer getFavoriteCount() {
         return this.favoriteCount;
     }
-    
+
     /**
      * 获取评分
      * 
@@ -532,7 +538,7 @@ public class MerchantProduct extends BaseEntity {
     public BigDecimal getRating() {
         return this.rating;
     }
-    
+
     /**
      * 获取评价数量
      * 
@@ -541,7 +547,7 @@ public class MerchantProduct extends BaseEntity {
     public Integer getReviewCount() {
         return this.reviewCount;
     }
-    
+
     /**
      * 获取排序值
      * 
@@ -550,7 +556,7 @@ public class MerchantProduct extends BaseEntity {
     public Integer getSortOrder() {
         return this.sortOrder;
     }
-    
+
     /**
      * 获取SEO关键词
      * 
@@ -559,7 +565,7 @@ public class MerchantProduct extends BaseEntity {
     public String getSeoKeywords() {
         return this.seoKeywords;
     }
-    
+
     /**
      * 获取SEO描述
      * 
@@ -568,7 +574,7 @@ public class MerchantProduct extends BaseEntity {
     public String getSeoDescription() {
         return this.seoDescription;
     }
-    
+
     /**
      * 设置商品名称
      * 
@@ -577,7 +583,7 @@ public class MerchantProduct extends BaseEntity {
     public void setProductName(String productName) {
         this.productName = productName;
     }
-    
+
     /**
      * 设置分类ID
      * 
@@ -586,7 +592,7 @@ public class MerchantProduct extends BaseEntity {
     public void setCategoryId(Long categoryId) {
         this.categoryId = categoryId;
     }
-    
+
     /**
      * 设置品牌
      * 
@@ -595,7 +601,7 @@ public class MerchantProduct extends BaseEntity {
     public void setBrand(String brand) {
         this.brand = brand;
     }
-    
+
     /**
      * 设置价格
      * 
@@ -604,7 +610,7 @@ public class MerchantProduct extends BaseEntity {
     public void setPrice(BigDecimal price) {
         this.price = price;
     }
-    
+
     /**
      * 设置市场价
      * 
@@ -613,7 +619,7 @@ public class MerchantProduct extends BaseEntity {
     public void setMarketPrice(BigDecimal marketPrice) {
         this.marketPrice = marketPrice;
     }
-    
+
     /**
      * 设置成本价
      * 
@@ -622,7 +628,7 @@ public class MerchantProduct extends BaseEntity {
     public void setCostPrice(BigDecimal costPrice) {
         this.costPrice = costPrice;
     }
-    
+
     /**
      * 设置库存数量
      * 
@@ -631,7 +637,7 @@ public class MerchantProduct extends BaseEntity {
     public void setStockQuantity(Integer stockQuantity) {
         this.stockQuantity = stockQuantity;
     }
-    
+
     /**
      * 设置预警库存
      * 
@@ -640,7 +646,7 @@ public class MerchantProduct extends BaseEntity {
     public void setWarningStock(Integer warningStock) {
         this.warningStock = warningStock;
     }
-    
+
     /**
      * 设置主图
      * 
@@ -649,7 +655,7 @@ public class MerchantProduct extends BaseEntity {
     public void setMainImage(String mainImage) {
         this.mainImage = mainImage;
     }
-    
+
     /**
      * 设置图片列表
      * 
@@ -658,7 +664,7 @@ public class MerchantProduct extends BaseEntity {
     public void setImages(String images) {
         this.images = images;
     }
-    
+
     /**
      * 设置描述
      * 
@@ -667,7 +673,7 @@ public class MerchantProduct extends BaseEntity {
     public void setDescription(String description) {
         this.description = description;
     }
-    
+
     /**
      * 设置规格
      * 
@@ -676,7 +682,7 @@ public class MerchantProduct extends BaseEntity {
     public void setSpecifications(String specifications) {
         this.specifications = specifications;
     }
-    
+
     /**
      * 设置属性
      * 
@@ -685,7 +691,7 @@ public class MerchantProduct extends BaseEntity {
     public void setAttributes(String attributes) {
         this.attributes = attributes;
     }
-    
+
     /**
      * 设置重量
      * 
@@ -694,7 +700,7 @@ public class MerchantProduct extends BaseEntity {
     public void setWeight(Integer weight) {
         this.weight = weight;
     }
-    
+
     /**
      * 设置尺寸
      * 
@@ -703,7 +709,7 @@ public class MerchantProduct extends BaseEntity {
     public void setDimensions(String dimensions) {
         this.dimensions = dimensions;
     }
-    
+
     /**
      * 设置状态
      * 
@@ -712,7 +718,7 @@ public class MerchantProduct extends BaseEntity {
     public void setStatus(Integer status) {
         this.status = status;
     }
-    
+
     /**
      * 设置销量
      * 
@@ -721,7 +727,7 @@ public class MerchantProduct extends BaseEntity {
     public void setSalesCount(Integer salesCount) {
         this.salesCount = salesCount;
     }
-    
+
     /**
      * 设置浏览量
      * 
@@ -730,7 +736,7 @@ public class MerchantProduct extends BaseEntity {
     public void setViewCount(Integer viewCount) {
         this.viewCount = viewCount;
     }
-    
+
     /**
      * 设置收藏量
      * 
@@ -739,7 +745,7 @@ public class MerchantProduct extends BaseEntity {
     public void setFavoriteCount(Integer favoriteCount) {
         this.favoriteCount = favoriteCount;
     }
-    
+
     /**
      * 设置评价数量
      * 
@@ -748,7 +754,7 @@ public class MerchantProduct extends BaseEntity {
     public void setReviewCount(Integer reviewCount) {
         this.reviewCount = reviewCount;
     }
-    
+
     /**
      * 设置SEO关键词
      * 
@@ -757,7 +763,7 @@ public class MerchantProduct extends BaseEntity {
     public void setSeoKeywords(String seoKeywords) {
         this.seoKeywords = seoKeywords;
     }
-    
+
     /**
      * 设置SEO描述
      * 
@@ -766,7 +772,7 @@ public class MerchantProduct extends BaseEntity {
     public void setSeoDescription(String seoDescription) {
         this.seoDescription = seoDescription;
     }
-    
+
     /**
      * 设置商家ID
      * 

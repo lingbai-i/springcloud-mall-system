@@ -39,13 +39,13 @@
         </dependency>
 
         <!-- Spring Cloud Starter Alibaba Nacos Discovery -->
-        <!--
         <dependency>
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
         </dependency>
 
-        Spring Cloud Starter Alibaba Nacos Config
+        <!-- Spring Cloud Starter Alibaba Nacos Config -->
+        <!--
         <dependency>
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>

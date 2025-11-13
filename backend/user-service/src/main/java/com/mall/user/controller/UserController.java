@@ -716,4 +716,124 @@ public class UserController {
 
         return username;
     }
+
+    /**
+     * 通用文件上传接口（用于商家入驻等场景）
+     * 
+     * @param file 上传的文件
+     * @return 文件URL
+     */
+    @PostMapping("/upload")
+    @Operation(summary = "通用文件上传", description = "上传图片文件到MinIO存储，返回访问URL")
+    public ResponseEntity<Map<String, Object>> uploadFile(@RequestParam("file") MultipartFile file) {
+
+        logger.info("通用文件上传 - 文件名: {}, 大小: {} bytes",
+                file.getOriginalFilename(), file.getSize());
+
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            // 验证文件
+            if (file.isEmpty()) {
+                response.put("success", false);
+                response.put("message", "文件不能为空");
+                response.put("code", 400);
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // 验证文件类型
+            String contentType = file.getContentType();
+            if (contentType == null || !contentType.startsWith("image/")) {
+                response.put("success", false);
+                response.put("message", "只支持上传图片文件");
+                response.put("code", 400);
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // 验证文件大小（2MB）
+            if (file.getSize() > 2 * 1024 * 1024) {
+                response.put("success", false);
+                response.put("message", "文件大小不能超过2MB");
+                response.put("code", 400);
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // 生成唯一文件名
+            String extension = getFileExtension(file.getOriginalFilename());
+            String fileName = String.format("file_%d_%d%s",
+                    System.currentTimeMillis(),
+                    (int) (Math.random() * 10000),
+                    extension);
+
+            // 上传到MinIO (直接使用minioClient)
+            String bucketName = "mall-avatars"; // 使用现有bucket
+            minioService.minioClient.putObject(
+                    io.minio.PutObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(fileName)
+                            .stream(file.getInputStream(), file.getSize(), -1)
+                            .contentType(contentType)
+                            .build());
+
+            // 构建访问URL
+            String fileUrl = String.format("http://localhost:9000/%s/%s", bucketName, fileName);
+
+            response.put("success", true);
+            response.put("message", "文件上传成功");
+            response.put("code", 200);
+            response.put("data", new HashMap<String, Object>() {
+                {
+                    put("url", fileUrl);
+                    put("filename", fileName);
+                }
+            });
+
+            logger.info("✅ 文件上传成功: {}", fileUrl);
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            logger.error("文件上传失败", e);
+            response.put("success", false);
+            response.put("message", "文件上传失败: " + e.getMessage());
+            response.put("code", 500);
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+
+    /**
+     * 获取文件扩展名
+     */
+    private String getFileExtension(String filename) {
+        if (filename == null || !filename.contains(".")) {
+            return ".jpg";
+        }
+        return filename.substring(filename.lastIndexOf("."));
+    }
+
+    /**
+     * 获取用户统计数据
+     */
+    @GetMapping("/statistics")
+    @Operation(summary = "获取用户统计数据", description = "获取用户总数、活跃用户等统计信息")
+    public ResponseEntity<Map<String, Object>> getUserStatistics() {
+        logger.info("获取用户统计数据请求");
+
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            Map<String, Object> stats = userService.getUserStatistics();
+
+            response.put("success", true);
+            response.put("message", "获取统计数据成功");
+            response.put("data", stats);
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            logger.error("获取用户统计数据失败", e);
+            response.put("success", false);
+            response.put("message", "获取统计数据失败: " + e.getMessage());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
 }

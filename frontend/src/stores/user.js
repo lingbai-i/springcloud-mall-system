@@ -23,6 +23,7 @@ export const useUserStore = defineStore('user', () => {
   const username = computed(() => userInfo.value.username || '')
   const avatar = computed(() => userInfo.value.avatar || '')
   const userId = computed(() => userInfo.value.id || userInfo.value.userId || null)
+  const merchantId = computed(() => userInfo.value.merchantId || null)
   const isAdmin = computed(() => 
     userInfo.value.role === 'admin' || 
     userInfo.value.username === 'admin' ||
@@ -39,23 +40,50 @@ export const useUserStore = defineStore('user', () => {
    */
   const login = async (loginData) => {
     try {
-      // 调用auth API
-      const { login } = await import('@/api/auth')
-      const result = await login(loginData)
+      let result
       
-      // 后端返回格式: {success: true, data: {accessToken, expiresIn, userInfo}}
+      // 根据登录类型调用不同API
+      if (loginData.type === 'merchant') {
+        // 商家登录
+        const { merchantLogin } = await import('@/api/merchant')
+        result = await merchantLogin({
+          username: loginData.username,
+          password: loginData.password
+        })
+      } else if (loginData.type === 'admin') {
+        // 管理员登录
+        const { adminLogin } = await import('@/api/admin')
+        result = await adminLogin(loginData)
+      } else {
+        // 普通用户登录
+        const { login: userLogin } = await import('@/api/auth')
+        result = await userLogin(loginData)
+      }
+      
+      // 后端返回格式: {success: true, data: {accessToken/token, expiresIn, userInfo}}
       if (!result.success && result.code !== 200) {
         throw { code: result.code, message: result.message }
       }
       
-      // 从data中提取token和userInfo
-      const { accessToken, userInfo: userData } = result.data
+      // 从 data 中提取 token 和 userInfo
+      // 兼容不同的字段名：accessToken/token
+      const tokenValue = result.data.accessToken || result.data.token
+      const userData = result.data.userInfo || result.data
       
-      token.value = accessToken
+      // 如果是商家登录，确保 userInfo 中包含商家标识
+      if (loginData.type === 'merchant') {
+        userData.role = userData.role || 'merchant'
+        userData.isMerchant = true
+      } else if (loginData.type === 'admin') {
+        userData.role = userData.role || 'admin'
+        userData.isAdmin = true
+      }
+      
+      token.value = tokenValue
       userInfo.value = userData
       
       // 持久化存储
-      localStorage.setItem('token', accessToken)
+      localStorage.setItem('token', tokenValue)
       localStorage.setItem('userInfo', JSON.stringify(userData))
       
       return result.data
@@ -208,6 +236,7 @@ export const useUserStore = defineStore('user', () => {
     username,
     avatar,
     userId,
+    merchantId,
     isAdmin,
     isMerchant,
     

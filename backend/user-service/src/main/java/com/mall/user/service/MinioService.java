@@ -19,13 +19,22 @@ import java.util.Base64;
 @RequiredArgsConstructor
 public class MinioService {
 
-  private final MinioClient minioClient;
+  public final MinioClient minioClient; // 改为public，允许Controller访问
 
   @Value("${minio.bucket-name}")
   private String bucketName;
 
   @Value("${minio.public-url}")
   private String publicUrl;
+
+  // Getter方法供Controller使用
+  public String getBucketName() {
+    return bucketName;
+  }
+
+  public String getPublicUrl() {
+    return publicUrl;
+  }
 
   /**
    * 上传头像文件

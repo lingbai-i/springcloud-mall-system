@@ -5,7 +5,7 @@ spring:
   application:
     name: cart-service
   profiles:
-    active: dev
+    active: simple
 
   # 数据源配置
   datasource:
@@ -42,11 +42,11 @@ spring:
     nacos:
       discovery:
         server-addr: localhost:8848
-        namespace: public
+        namespace: simple
         group: DEFAULT_GROUP
       config:
         server-addr: localhost:8848
-        namespace: public
+        namespace: simple
         group: DEFAULT_GROUP
         file-extension: yml
         import-check:

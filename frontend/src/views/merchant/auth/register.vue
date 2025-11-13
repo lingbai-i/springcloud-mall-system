@@ -88,41 +88,58 @@
           size="large"
         >
           <!-- 店铺类型选择（仅企业显示） -->
-          <div v-if="registerForm.entityType === 'enterprise'">
-            <el-divider content-position="left">店铺类型</el-divider>
-            <el-form-item label="店铺类型" prop="shopType">
-              <el-radio-group v-model="registerForm.shopType">
-                <el-radio label="flagship">
-                  <div class="radio-content">
-                    <strong>旗舰店</strong>
-                    <span class="radio-desc">以自有品牌或品牌一级独占性授权书开店</span>
-                  </div>
+          <div v-if="registerForm.entityType === 'enterprise'" class="form-section">
+            <h3 class="section-title">店铺类型</h3>
+            <el-form-item label="店铺类型" prop="shopType" required>
+              <el-radio-group v-model="registerForm.shopType" class="shop-type-radio-group">
+                <el-radio label="flagship" class="shop-type-radio">
+                  <span class="radio-label">旗舰店</span>
+                  <el-tooltip
+                    content="以自有品牌或品牌一级独占性授权书开店"
+                    placement="top"
+                    effect="light"
+                  >
+                    <el-icon class="info-icon"><QuestionFilled /></el-icon>
+                  </el-tooltip>
                 </el-radio>
-                <el-radio label="specialty">
-                  <div class="radio-content">
-                    <strong>专卖店</strong>
-                    <span class="radio-desc">以自有品牌或品牌授权书开店</span>
-                  </div>
+                <el-radio label="specialty" class="shop-type-radio">
+                  <span class="radio-label">专卖店</span>
+                  <el-tooltip
+                    content="以自有品牌或品牌授权书开店"
+                    placement="top"
+                    effect="light"
+                  >
+                    <el-icon class="info-icon"><QuestionFilled /></el-icon>
+                  </el-tooltip>
                 </el-radio>
-                <el-radio label="franchise">
-                  <div class="radio-content">
-                    <strong>专营店</strong>
-                    <span class="radio-desc">以自有品牌或品牌授权书开设的主要经营同一大类商品的店铺</span>
-                  </div>
+                <el-radio label="franchise" class="shop-type-radio">
+                  <span class="radio-label">专营店</span>
+                  <el-tooltip
+                    content="以自有品牌或品牌授权书开设的主要经营同一大类商品的店铺"
+                    placement="top"
+                    effect="light"
+                  >
+                    <el-icon class="info-icon"><QuestionFilled /></el-icon>
+                  </el-tooltip>
                 </el-radio>
-                <el-radio label="ordinary">
-                  <div class="radio-content">
-                    <strong>普通企业店</strong>
-                    <span class="radio-desc">以企业营业执照及法定代表人身份证件开店，部分类目开放</span>
-                  </div>
+                <el-radio label="ordinary" class="shop-type-radio">
+                  <span class="radio-label">普通企业店</span>
+                  <el-tooltip
+                    content="以企业营业执照及法定代表人身份证件开店，部分类目开放"
+                    placement="top"
+                    effect="light"
+                  >
+                    <el-icon class="info-icon"><QuestionFilled /></el-icon>
+                  </el-tooltip>
                 </el-radio>
               </el-radio-group>
             </el-form-item>
           </div>
           
           <!-- 基本信息 -->
-          <el-divider content-position="left">基本信息</el-divider>
-          <el-form-item label="店铺名称" prop="shopName">
+          <div class="form-section">
+            <h3 class="section-title">基本信息</h3>
+            <el-form-item label="店铺名称" prop="shopName" required>
             <el-input
               v-model="registerForm.shopName"
               placeholder="请输入店铺名称（2-20个字符）"
@@ -130,7 +147,7 @@
             />
           </el-form-item>
           
-          <el-form-item label="联系人" prop="contactName">
+            <el-form-item label="联系人" prop="contactName" required>
             <el-input
               v-model="registerForm.contactName"
               placeholder="请输入联系人姓名"
@@ -138,7 +155,7 @@
             />
           </el-form-item>
           
-          <el-form-item label="联系电话" prop="contactPhone">
+            <el-form-item label="联系电话" prop="contactPhone" required>
             <el-input
               v-model="registerForm.contactPhone"
               placeholder="请输入联系电话"
@@ -146,17 +163,18 @@
             />
           </el-form-item>
           
-          <el-form-item label="邮箱" prop="email">
+            <el-form-item label="邮箱" prop="email" required>
             <el-input
               v-model="registerForm.email"
               placeholder="请输入邮箱地址"
               clearable
             />
           </el-form-item>
+          </div>
           
           <!-- 企业信息（企业类型显示） -->
-          <div v-if="registerForm.entityType === 'enterprise'">
-            <el-divider content-position="left">企业信息</el-divider>
+          <div v-if="registerForm.entityType === 'enterprise'" class="form-section">
+            <h3 class="section-title">企业信息</h3>
             <el-form-item label="企业名称" prop="companyName">
               <el-input
                 v-model="registerForm.companyName"
@@ -185,10 +203,11 @@
             <el-form-item label="营业执照" prop="businessLicense">
               <el-upload
                 class="license-uploader"
-                action="/api/upload"
+                action="/api/users/upload"
                 :show-file-list="false"
-                :on-success="handleLicenseSuccess"
-                :before-upload="beforeLicenseUpload"
+                :on-success="(res) => handleUploadSuccess(res, 'businessLicense')"
+                :before-upload="beforeFileUpload"
+                name="file"
               >
                 <img v-if="registerForm.businessLicense" :src="registerForm.businessLicense" class="license-image" />
                 <el-icon v-else class="license-uploader-icon"><Plus /></el-icon>
@@ -197,9 +216,9 @@
             </el-form-item>
           </div>
           
-          <!-- 个体工商户信息（个体类型显示） -->
-          <div v-if="registerForm.entityType === 'individual'">
-            <el-divider content-position="left">个体工商户信息</el-divider>
+           <!-- 个体工商户信息（个体类型显示） -->
+           <div v-if="registerForm.entityType === 'individual'" class="form-section">
+             <h3 class="section-title">个体工商户信息</h3>
             <el-form-item label="个体户名称" prop="companyName">
               <el-input
                 v-model="registerForm.companyName"
@@ -224,24 +243,25 @@
               />
             </el-form-item>
             
-            <el-form-item label="营业执照" prop="businessLicense">
+             <el-form-item label="营业执照" prop="businessLicense">
               <el-upload
                 class="license-uploader"
-                action="/api/upload"
+                action="/api/users/upload"
                 :show-file-list="false"
-                :on-success="handleLicenseSuccess"
-                :before-upload="beforeLicenseUpload"
+                :on-success="(res) => handleUploadSuccess(res, 'businessLicense')"
+                :before-upload="beforeFileUpload"
+                name="file"
               >
                 <img v-if="registerForm.businessLicense" :src="registerForm.businessLicense" class="license-image" />
                 <el-icon v-else class="license-uploader-icon"><Plus /></el-icon>
               </el-upload>
-              <div class="upload-tip">请上传个体工商户营业执照照片</div>
-            </el-form-item>
-          </div>
-          
-          <!-- 个人信息（个人类型显示） -->
-          <div v-if="registerForm.entityType === 'personal'">
-            <el-divider content-position="left">个人身份信息</el-divider>
+               <div class="upload-tip">请上传个体工商户营业执照照片</div>
+             </el-form-item>
+           </div>
+           
+           <!-- 个人信息（个人类型显示） -->
+           <div v-if="registerForm.entityType === 'personal'" class="form-section">
+             <h3 class="section-title">个人身份信息</h3>
             <el-form-item label="真实姓名" prop="legalPerson">
               <el-input
                 v-model="registerForm.legalPerson"
@@ -262,10 +282,11 @@
             <el-form-item label="身份证正面" prop="idCardFront">
               <el-upload
                 class="license-uploader"
-                action="/api/upload"
+                action="/api/users/upload"
                 :show-file-list="false"
-                :on-success="(res) => handleIdCardSuccess(res, 'front')"
-                :before-upload="beforeLicenseUpload"
+                :on-success="(res) => handleUploadSuccess(res, 'idCardFront')"
+                :before-upload="beforeFileUpload"
+                name="file"
               >
                 <img v-if="registerForm.idCardFront" :src="registerForm.idCardFront" class="license-image" />
                 <el-icon v-else class="license-uploader-icon"><Plus /></el-icon>
@@ -276,10 +297,11 @@
             <el-form-item label="身份证反面" prop="idCardBack">
               <el-upload
                 class="license-uploader"
-                action="/api/upload"
+                action="/api/users/upload"
                 :show-file-list="false"
-                :on-success="(res) => handleIdCardSuccess(res, 'back')"
-                :before-upload="beforeLicenseUpload"
+                :on-success="(res) => handleUploadSuccess(res, 'idCardBack')"
+                :before-upload="beforeFileUpload"
+                name="file"
               >
                 <img v-if="registerForm.idCardBack" :src="registerForm.idCardBack" class="license-image" />
                 <el-icon v-else class="license-uploader-icon"><Plus /></el-icon>
@@ -288,9 +310,10 @@
             </el-form-item>
           </div>
           
-          <!-- 账号设置 -->
-          <el-divider content-position="left">账号设置</el-divider>
-          <el-form-item label="登录账号" prop="username">
+           <!-- 账号设置 -->
+           <div class="form-section">
+             <h3 class="section-title">账号设置</h3>
+           <el-form-item label="登录账号" prop="username" required>
             <el-input
               v-model="registerForm.username"
               placeholder="请输入登录账号（6-20个字符）"
@@ -298,7 +321,7 @@
             />
           </el-form-item>
           
-          <el-form-item label="登录密码" prop="password">
+           <el-form-item label="登录密码" prop="password" required>
             <el-input
               v-model="registerForm.password"
               type="password"
@@ -325,9 +348,10 @@
               <el-link type="primary" @click="showAgreement">《商家入驻协议》</el-link>
               和
               <el-link type="primary" @click="showPrivacy">《隐私政策》</el-link>
-            </el-checkbox>
-          </el-form-item>
-        </el-form>
+             </el-checkbox>
+           </el-form-item>
+           </div>
+         </el-form>
         
         <div class="step-actions">
           <el-button size="large" @click="prevStep">上一步</el-button>
@@ -424,7 +448,7 @@
 import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { OfficeBuilding, Shop, User, Plus } from '@element-plus/icons-vue'
+import { OfficeBuilding, Shop, User, Plus, QuestionFilled } from '@element-plus/icons-vue'
 
 const router = useRouter()
 
@@ -627,35 +651,34 @@ const goBack = () => {
   router.back()
 }
 
-// 营业执照上传成功
-const handleLicenseSuccess = (response) => {
-  registerForm.businessLicense = response.data.url
-  ElMessage.success('上传成功')
-}
-
-// 身份证上传成功
-const handleIdCardSuccess = (response, side) => {
-  if (side === 'front') {
-    registerForm.idCardFront = response.data.url
+// 文件上传成功回调（MinIO）
+const handleUploadSuccess = (response, fieldName) => {
+  console.log('上传成功响应:', response)
+  
+  if (response.success || response.code === 200) {
+    // 提取文件URL
+    const fileUrl = response.data?.url || response.data
+    registerForm[fieldName] = fileUrl
+    ElMessage.success('文件上传成功')
   } else {
-    registerForm.idCardBack = response.data.url
+    ElMessage.error(response.message || '文件上传失败')
   }
-  ElMessage.success('上传成功')
 }
 
-// 上传前检查
-const beforeLicenseUpload = (file) => {
-  const isJPG = file.type === 'image/jpeg' || file.type === 'image/png'
+// 文件上传前验证
+const beforeFileUpload = (file) => {
+  const isImage = file.type === 'image/jpeg' || file.type === 'image/png'
+  if (!isImage) {
+    ElMessage.error('只能上传 JPG 或 PNG 格式的图片!')
+    return false
+  }
+  
   const isLt2M = file.size / 1024 / 1024 < 2
-
-  if (!isJPG) {
-    ElMessage.error('上传图片只能是 JPG 或 PNG 格式!')
-    return false
-  }
   if (!isLt2M) {
-    ElMessage.error('上传图片大小不能超过 2MB!')
+    ElMessage.error('图片大小不能超过 2MB!')
     return false
   }
+  
   return true
 }
 
@@ -682,15 +705,22 @@ const handleSubmit = async () => {
   submitting.value = true
   
   try {
-    // TODO: 调用API提交申请
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    // 导入API
+    const { submitMerchantApplication } = await import('@/api/merchant')
     
-    ElMessage.success('申请提交成功！我们将在3个工作日内完成审核')
+    // 调用API提交申请
+    const response = await submitMerchantApplication(registerForm)
     
-    // 跳转到成功页面或登录页面
-    setTimeout(() => {
-      router.push('/merchant/login')
-    }, 1500)
+    if (response.success || response.code === 200) {
+      ElMessage.success('申请提交成功！我们将在1个工作日内完成审核')
+      
+      // 跳转到成功页面或登录页面
+      setTimeout(() => {
+        router.push('/merchant/login')
+      }, 1500)
+    } else {
+      ElMessage.error(response.message || '提交失败')
+    }
     
   } catch (error) {
     console.error('提交失败:', error)
@@ -830,12 +860,115 @@ const handleSubmit = async () => {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  margin-left: 8px;
 }
 
 .radio-desc {
   font-size: 12px;
   color: #999;
   margin-top: 4px;
+  display: block;
+  line-height: 1.5;
+}
+
+/* 表单区块样式 */
+.form-section {
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 24px;
+  border: 2px solid #e0e0e0;
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 20px 0;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+/* 店铺类型radio优化布局 */
+.shop-type-radio-group {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.shop-type-radio {
+  display: inline-flex !important;
+  align-items: center !important;
+  margin-right: 0 !important;
+  margin-bottom: 0 !important;
+  width: 100% !important;
+  padding: 12px 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  transition: all 0.3s;
+  background-color: #ffffff;
+}
+
+.shop-type-radio:hover {
+  background-color: #f5f7fa;
+  border-color: #667eea;
+}
+
+.shop-type-radio .radio-label {
+  margin-left: 8px;
+  font-weight: 500;
+  color: #333;
+  flex: 1;
+}
+
+.shop-type-radio .info-icon {
+  margin-left: 6px;
+  font-size: 16px;
+  color: #909399;
+  cursor: help;
+  transition: color 0.3s;
+}
+
+.shop-type-radio .info-icon:hover {
+  color: #667eea;
+}
+
+/* Element Plus Radio组件样式调整 */
+:deep(.el-radio) {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 0;
+  white-space: normal;
+}
+
+:deep(.el-radio__label) {
+  padding-left: 0;
+  display: inline-flex;
+  align-items: center;
+  width: 100%;
+}
+
+:deep(.el-radio__input) {
+  align-self: flex-start;
+  margin-top: 2px;
+}
+
+/* Tooltip过渡动画 */
+:deep(.el-tooltip__popper) {
+  transition: opacity 0.3s ease-in-out;
+}
+
+/* 表单项间距 */
+.register-form :deep(.el-form-item) {
+  margin-bottom: 16px;
+}
+
+/* 必填字段标记 */
+:deep(.el-form-item.is-required:not(.is-no-asterisk)) > .el-form-item__label:before {
+  content: '*';
+  color: #f56c6c;
+  margin-right: 4px;
 }
 
 /* 上传组件 */

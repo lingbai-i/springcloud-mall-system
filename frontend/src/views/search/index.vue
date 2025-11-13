@@ -117,6 +117,7 @@ import { ref, reactive, onMounted, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import LocalIcon from '@/components/LocalIcon.vue'
+import { searchProducts } from '@/api/product'
 
 const route = useRoute()
 const router = useRouter()
@@ -146,32 +147,27 @@ const handleSearch = async () => {
   
   try {
     // 调用真实搜索API
-    const response = await fetch('/api/products/search', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        keyword: searchQuery.value,
-        category: filters.category,
-        priceRange: filters.priceRange,
-        sortBy: filters.sortBy,
-        page: currentPage.value,
-        size: pageSize.value
-      })
+    const response = await searchProducts({
+      keyword: searchQuery.value,
+      current: currentPage.value,
+      size: pageSize.value
     })
     
-    if (!response.ok) {
-      throw new Error('搜索请求失败')
-    }
-    
-    const result = await response.json()
-    
-    if (result.code === 200) {
-      products.value = result.data.records || []
-      total.value = result.data.total || 0
+    if (response.code === 200 && response.data) {
+      // 假设返回的是分页数据结构
+      if (response.data.records) {
+        products.value = response.data.records
+        total.value = response.data.total || 0
+      } else if (Array.isArray(response.data)) {
+        // 如果直接返回数组
+        products.value = response.data
+        total.value = response.data.length
+      } else {
+        products.value = []
+        total.value = 0
+      }
     } else {
-      throw new Error(result.message || '搜索失败')
+      throw new Error(response.message || '搜索失败')
     }
     
   } catch (error) {

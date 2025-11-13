@@ -4,6 +4,7 @@
  * 设计意图：在浏览器环境中复用统一日志接口，后续可透明替换为 Winston。
  * @author lingbai
  * @version 1.0 2025-11-08T08:50:53+08:00：首次添加，提供统一日志接口
+ * @version 1.1 2025-11-12T18:56:48+08:00：明确错误日志输出载荷可包含 Axios 关键信息（URL/方法/状态/响应头/堆栈）。
  */
 
 // 当前日志级别（可通过环境变量或运行时修改）
@@ -79,4 +80,3 @@ export function error(message, error) {
 }
 
 export default { setLevel, debug, info, warn, error }
-

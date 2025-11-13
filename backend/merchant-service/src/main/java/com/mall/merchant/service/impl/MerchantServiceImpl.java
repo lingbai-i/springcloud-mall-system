@@ -170,11 +170,18 @@ public class MerchantServiceImpl implements MerchantService {
                 return R.fail("账户已被禁用，请联系客服");
             }
 
-            // 检查审核状态
-            // 修改说明：实体字段 approvalStatus 与兼容访问器 getAuditStatus 对齐
-            if (merchant.getAuditStatus() == 3) {
-                log.warn("商家审核被拒绝，用户名：{}", username);
-                return R.fail("账户审核未通过，请重新提交认证信息");
+            // 检查审核状态 - 必须通过审核才能登录
+            if (merchant.getApprovalStatus() == null || merchant.getApprovalStatus() != 1) {
+                log.warn("商家未通过审核或审核状态异常，用户名：{}，审核状态：{}",
+                        username, merchant.getApprovalStatus());
+                return R.fail("账户未通过审核，请等待审核或联系客服");
+            }
+
+            // 检查商家类型 - 确保有商家类型
+            if (merchant.getMerchantType() == null || merchant.getMerchantType() == 0) {
+                log.warn("商家类型未设置，用户名：{}，商家类型：{}",
+                        username, merchant.getMerchantType());
+                return R.fail("账户类型异常，请联系客服");
             }
 
             // 更新登录信息
@@ -190,6 +197,9 @@ public class MerchantServiceImpl implements MerchantService {
             result.put("avatar", merchant.getAvatar());
             result.put("auditStatus", merchant.getAuditStatus());
             result.put("status", merchant.getStatus());
+            result.put("role", "merchant"); // 设置角色为商家
+            result.put("isMerchant", true); // 商家标识
+            result.put("merchantType", merchant.getMerchantType()); // 商家类型
             // 生成JWT token
             String token = jwtUtil.generateToken(merchant.getId(), merchant.getUsername(),
                     String.valueOf(merchant.getStatus()));
@@ -968,4 +978,3 @@ public class MerchantServiceImpl implements MerchantService {
         }
     }
 }
-

@@ -184,10 +184,11 @@
 <script setup>
 import { ref, reactive, onMounted, nextTick } from 'vue'
 import { useUserStore } from '@/stores/user'
+import { getProductList } from '@/api/merchant/product'
 import * as echarts from 'echarts'
 import {
   Plus, List, Setting, User, ShoppingBag, Money, TrendCharts, Star,
-  ArrowUp, ArrowDown, Clock, Warning, Document, Truck
+  ArrowUp, ArrowDown, Clock, Warning, Document, Van
 } from '@element-plus/icons-vue'
 
 const userStore = useUserStore()
@@ -203,100 +204,67 @@ const overviewData = reactive([
   {
     key: 'todaySales',
     label: '今日销售额',
-    value: '¥12,580',
+    value: '¥0',
     icon: 'Money',
     color: '#52c41a',
-    trend: 15.6
+    trend: 0
   },
   {
     key: 'todayOrders',
     label: '今日订单',
-    value: '156',
+    value: '0',
     icon: 'ShoppingBag',
     color: '#1890ff',
-    trend: 8.2
+    trend: 0
   },
   {
     key: 'totalProducts',
     label: '商品总数',
-    value: '1,248',
+    value: '0',
     icon: 'List',
     color: '#722ed1',
-    trend: 2.1
+    trend: 0
   },
   {
     key: 'shopRating',
     label: '店铺评分',
-    value: '4.8',
+    value: '0',
     icon: 'Star',
     color: '#fa8c16',
-    trend: 0.3
+    trend: 0
   }
 ])
 
 // 最新订单
-const recentOrders = reactive([
-  {
-    id: 1,
-    orderNo: 'M202401150001',
-    customerName: '张三',
-    totalAmount: '299.00',
-    status: 'pending_payment',
-    createTime: '2024-01-15 14:30:25'
-  },
-  {
-    id: 2,
-    orderNo: 'M202401150002',
-    customerName: '李四',
-    totalAmount: '158.50',
-    status: 'pending_shipment',
-    createTime: '2024-01-15 13:45:12'
-  },
-  {
-    id: 3,
-    orderNo: 'M202401150003',
-    customerName: '王五',
-    totalAmount: '89.90',
-    status: 'shipped',
-    createTime: '2024-01-15 12:20:08'
-  },
-  {
-    id: 4,
-    orderNo: 'M202401150004',
-    customerName: '赵六',
-    totalAmount: '456.00',
-    status: 'completed',
-    createTime: '2024-01-15 11:15:33'
-  }
-])
+const recentOrders = reactive([])
 
 // 待处理事项
 const pendingItems = reactive([
   {
     type: 'pending_orders',
     title: '待发货订单',
-    count: 23,
-    icon: 'Truck',
+    count: 0,
+    icon: 'Van',
     color: '#fa541c'
   },
   {
     type: 'low_stock',
     title: '库存不足',
-    count: 8,
+    count: 0,
     icon: 'Warning',
     color: '#faad14'
   },
   {
     type: 'pending_reviews',
     title: '待回复评价',
-    count: 12,
+    count: 0,
     icon: 'Document',
     color: '#13c2c2'
   },
   {
     type: 'expired_products',
     title: '即将下架',
-    count: 5,
+    count: 0,
     icon: 'Clock',
     color: '#eb2f96'
   }
@@ -307,26 +275,26 @@ const analysisData = reactive([
   {
     key: 'conversion_rate',
     label: '转化率',
-    value: '3.2%',
-    desc: '较上月提升0.5%'
+    value: '0%',
+    desc: '暂无数据'
   },
   {
     key: 'avg_order_value',
     label: '客单价',
-    value: '¥186',
-    desc: '较上月提升¥12'
+    value: '¥0',
+    desc: '暂无数据'
   },
   {
     key: 'return_rate',
     label: '退货率',
-    value: '2.1%',
-    desc: '较上月下降0.3%'
+    value: '0%',
+    desc: '暂无数据'
   },
   {
     key: 'customer_satisfaction',
     label: '客户满意度',
-    value: '96.8%',
-    desc: '较上月提升1.2%'
+    value: '0%',
+    desc: '暂无数据'
   }
 ])
 
@@ -357,7 +325,7 @@ const initSalesChart = () => {
     },
     xAxis: {
       type: 'category',
-      data: ['01-09', '01-10', '01-11', '01-12', '01-13', '01-14', '01-15']
+      data: [] // 空数据
     },
     yAxis: [
       {
@@ -376,7 +344,7 @@ const initSalesChart = () => {
         name: '销售额',
         type: 'line',
         smooth: true,
-        data: [8200, 9500, 7800, 11200, 13600, 10800, 12580],
+        data: [], // 空数据
         itemStyle: {
           color: '#52c41a'
         }
@@ -385,7 +353,7 @@ const initSalesChart = () => {
         name: '订单量',
         type: 'bar',
         yAxisIndex: 1,
-        data: [82, 95, 78, 112, 136, 108, 156],
+        data: [], // 空数据
         itemStyle: {
           color: '#1890ff'
         }
@@ -427,13 +395,7 @@ const initProductChart = () => {
         labelLine: {
           show: false
         },
-        data: [
-          { value: 335, name: '智能手机' },
-          { value: 310, name: '笔记本电脑' },
-          { value: 234, name: '平板电脑' },
-          { value: 135, name: '智能手表' },
-          { value: 148, name: '耳机音响' }
-        ]
+        data: [] // 空数据
       }
     ]
   }
@@ -495,12 +457,48 @@ const handlePendingItem = (type) => {
 // 生命周期
 onMounted(() => {
   initCurrentDate()
+  loadDashboardData() // 加载仪表盘数据
   
   nextTick(() => {
     initSalesChart()
     initProductChart()
   })
 })
+
+// 加载仪表盘数据
+const loadDashboardData = async () => {
+  try {
+    // 查询商家的所有商品（不分页）
+    const response = await getProductList({
+      merchantId: userStore.merchantId,
+      page: 1,
+      size: 1000  // 获取足够多的数据用于统计
+    })
+    
+    if (response.code === 200 && response.data) {
+      const products = response.data.records || []
+      
+      // 更新商品总数
+      const totalProducts = response.data.total || products.length
+      overviewData[2].value = String(totalProducts)
+      
+      // 统计在售商品
+      const onSaleCount = products.filter(p => p.status === 1).length
+      
+      // 统计库存不足商品
+      const lowStockCount = products.filter(p => p.stockQuantity <= (p.warningStock || 10)).length
+      pendingItems[1].count = lowStockCount
+      
+      console.log('仪表盘数据加载成功:', {
+        totalProducts,
+        onSaleCount,
+        lowStockCount
+      })
+    }
+  } catch (error) {
+    console.error('加载仪表盘数据失败:', error)
+  }
+}
 </script>
 
 <style scoped>

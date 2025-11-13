@@ -25,10 +25,10 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class UserManagementServiceImpl implements UserManagementService {
-    
+
     private final UserServiceClient userServiceClient;
     private final AuditLogMapper auditLogMapper;
-    
+
     @Override
     public PageResult<Map<String, Object>> getUserList(Integer page, Integer size, String keyword, Integer status) {
         R<PageResult<Map<String, Object>>> result = userServiceClient.getUserList(page, size, keyword, status);
@@ -37,7 +37,7 @@ public class UserManagementServiceImpl implements UserManagementService {
         }
         return result.getData();
     }
-    
+
     @Override
     public Map<String, Object> getUserDetail(Long userId) {
         R<Map<String, Object>> result = userServiceClient.getUserDetail(userId);
@@ -46,7 +46,7 @@ public class UserManagementServiceImpl implements UserManagementService {
         }
         return result.getData();
     }
-    
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void disableUser(Long userId, Long adminId) {
@@ -54,13 +54,13 @@ public class UserManagementServiceImpl implements UserManagementService {
         if (!result.isSuccess()) {
             throw new BusinessException("禁用用户失败: " + result.getMessage());
         }
-        
+
         // 记录审计日志
         recordAuditLog(adminId, "禁用用户", "user", userId, "禁用用户", true);
-        
+
         log.info("禁用用户成功: userId={}, adminId={}", userId, adminId);
     }
-    
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void enableUser(Long userId, Long adminId) {
@@ -68,18 +68,27 @@ public class UserManagementServiceImpl implements UserManagementService {
         if (!result.isSuccess()) {
             throw new BusinessException("启用用户失败: " + result.getMessage());
         }
-        
+
         // 记录审计日志
         recordAuditLog(adminId, "启用用户", "user", userId, "启用用户", true);
-        
+
         log.info("启用用户成功: userId={}, adminId={}", userId, adminId);
     }
-    
+
+    @Override
+    public Map<String, Object> getUserStats() {
+        R<Map<String, Object>> result = userServiceClient.getUserStatistics();
+        if (!result.isSuccess()) {
+            throw new BusinessException("获取用户统计数据失败: " + result.getMessage());
+        }
+        return result.getData();
+    }
+
     /**
      * 记录审计日志
      */
-    private void recordAuditLog(Long adminId, String operationType, String resourceType, 
-                                 Long resourceId, String operationDesc, boolean success) {
+    private void recordAuditLog(Long adminId, String operationType, String resourceType,
+            Long resourceId, String operationDesc, boolean success) {
         AuditLog auditLog = new AuditLog();
         auditLog.setAdminId(adminId);
         auditLog.setOperationType(operationType);

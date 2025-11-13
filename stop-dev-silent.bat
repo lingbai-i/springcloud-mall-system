@@ -1,5 +1,6 @@
 @echo off
-chcp 65001 >nul
+setlocal enabledelayedexpansion
+
 echo ========================================
 echo 停止在线商城所有服务
 echo ========================================
@@ -37,7 +38,7 @@ taskkill /F /IM mvn >nul 2>&1
 
 REM 停止Docker容器（基础设施）
 echo 停止Docker基础设施...
-docker-compose -f docker-compose-dev.yml down
+docker compose -f docker-compose-dev.yml down 2>nul
 if %errorlevel% equ 0 (
     echo Docker容器已停止
 ) else (
@@ -74,5 +75,11 @@ echo   - 基础设施服务 (MySQL, Redis, Nacos) 已停止
 echo   - 如需重新启动，请运行 start-dev-silent.bat
 echo   - 查看日志文件: logs\ 目录
 echo.
+echo 💡 其他命令:
+echo   - 启动服务: start-dev-silent.bat
+echo   - 调试启动: start-dev-debug.bat
+echo   - 系统诊断: diagnose.bat
+echo.
 pause
+exit /b 0
 

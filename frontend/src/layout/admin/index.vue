@@ -36,7 +36,7 @@
             <span>商家管理</span>
           </template>
           <el-menu-item index="/admin/merchants">商家列表</el-menu-item>
-          <el-menu-item index="/admin/merchants/audit">商家审核</el-menu-item>
+          <el-menu-item index="/admin/merchants/applications">商家审核</el-menu-item>
         </el-sub-menu>
         
         <el-sub-menu index="products">

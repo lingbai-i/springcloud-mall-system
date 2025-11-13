@@ -48,11 +48,27 @@ service.interceptors.request.use(
     const publicPaths = [
       '/users/register',
       '/users/login',
-      '/sms/send'
+      '/user-service/auth/login',
+      '/user-service/auth/register', 
+      '/user-service/auth/sms-login',
+      '/sms/send',
+      '/merchant/login',      // 商家登录
+      '/merchant/register',   // 商家注册
+      '/merchant/products',   // 临时：商家商品管理（待实现JWT过滤器后移除）
+      '/merchant/orders'      // 临时：商家订单管理（待实现JWT过滤器后移除）
     ]
     
     // 检查当前请求是否为公开路径
     const isPublicPath = publicPaths.some(path => config.url?.includes(path))
+    
+    // 调试日志
+    if (config.url?.includes('/merchant/products')) {
+      console.log('[DEBUG] 商品管理请求检测:', {
+        url: config.url,
+        isPublicPath,
+        matchedPaths: publicPaths.filter(path => config.url?.includes(path))
+      })
+    }
     
     // 只在非公开路径且有token时添加Authorization头
     if (!isPublicPath && userStore.token) {
@@ -60,6 +76,8 @@ service.interceptors.request.use(
       console.log('[HTTP] 已添加 Authorization 头')
     } else if (!isPublicPath && !userStore.token) {
       console.warn('[HTTP] 需要 token 但未找到，请求可能会失败', config.url)
+    } else if (isPublicPath) {
+      console.log('[HTTP] 公开路径，跳过 Authorization 头', config.url)
     }
     
     // CSRF 防护：对变更类请求方法注入 CSRF 令牌头（后端建议名：X-CSRF-TOKEN 或 X-XSRF-TOKEN）
@@ -82,7 +100,17 @@ service.interceptors.request.use(
     return config
   },
   error => {
-    logger.error('Request error', error)
+    // 记录请求阶段错误的关键信息，便于快速定位网络/配置问题
+    const cfg = error?.config || {}
+    const details = {
+      url: cfg.url,
+      method: cfg.method,
+      headers: cfg.headers,
+      baseURL: cfg.baseURL,
+      timeout: cfg.timeout,
+      stack: error?.stack
+    }
+    logger.error('Request error', details)
     return Promise.reject(error)
   }
 )
@@ -146,7 +174,20 @@ service.interceptors.response.use(
     }
   },
   error => {
-    logger.error('Response error', error)
+    // 记录响应阶段错误的关键信息（URL、方法、状态码、响应头、堆栈）
+    const resp = error?.response || {}
+    const cfg = error?.config || {}
+    const details = {
+      url: cfg.url,
+      method: cfg.method,
+      status: resp.status,
+      statusText: resp.statusText,
+      responseHeaders: resp.headers,
+      requestHeaders: cfg.headers,
+      baseURL: cfg.baseURL,
+      stack: error?.stack
+    }
+    logger.error('Response error', details)
     
     if (error.response) {
       const { status, data, config } = error.response
@@ -155,7 +196,8 @@ service.interceptors.response.use(
       const nonCriticalPaths = [
         '/cart-service',  // 购物车服务
         '/product-service',  // 商品服务
-        '/order-service'  // 订单服务
+        '/order-service',  // 订单服务
+        '/reviews'  // 评价相关
       ]
       
       const isNonCriticalApi = nonCriticalPaths.some(path => 
@@ -178,7 +220,11 @@ service.interceptors.response.use(
           ElMessage.error('没有权限访问')
           break
         case 404:
-          ElMessage.error('请求的资源不存在')
+          if (!isNonCriticalApi) {
+            ElMessage.error('请求的资源不存在')
+          } else {
+            logger.debug('非关键API返回404，静默处理', { url: config?.url })
+          }
           break
         case 500:
           ElMessage.error('服务器内部错误')

@@ -13,10 +13,10 @@ spring:
   cloud:
     nacos:
       discovery:
-        server-addr: nacos:8848
+        server-addr: localhost:8848
         namespace: ${spring.profiles.active}
       config:
-        server-addr: nacos:8848
+        server-addr: localhost:8848
         namespace: ${spring.profiles.active}
         file-extension: yml
         group: DEFAULT_GROUP
@@ -49,6 +49,15 @@ spring:
             - Path=/api/product/**
           filters:
             - StripPrefix=2
+        # 商品服务兼容路由（支持前端/api/product-service/**路径）
+        - id: product-service-compat
+          uri: lb://product-service
+          predicates:
+            - Path=/api/product-service/**
+          filters:
+            - name: StripPrefix
+              args:
+                parts: 2
         # 购物车服务
         - id: cart-service
           uri: lb://cart-service
@@ -70,13 +79,20 @@ spring:
             - Path=/api/payment/**
           filters:
             - StripPrefix=2
-        # 商家服务
+        # 商家服务（单数）
         - id: merchant-service
           uri: lb://merchant-service
           predicates:
             - Path=/api/merchant/**
           filters:
-            - StripPrefix=2
+            - StripPrefix=1
+        # 商家服务（复数）
+        - id: merchant-service-plural
+          uri: lb://merchant-service
+          predicates:
+            - Path=/api/merchants/**
+          filters:
+            - StripPrefix=1
         # 管理服务
         - id: admin-service
           uri: lb://admin-service
@@ -110,7 +126,7 @@ spring.cloud.sentinel:
   datasource:
     ds1:
       nacos:
-        server-addr: nacos:8848
+        server-addr: localhost:8848
         dataId: gateway-flow-rules
         groupId: SENTINEL_GROUP
         rule-type: flow

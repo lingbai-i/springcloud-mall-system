@@ -305,6 +305,7 @@ import {
   TrendCharts,
   ArrowDown
 } from '@element-plus/icons-vue'
+import { getMerchantList } from '@/api/admin'
 import MerchantDetail from './components/MerchantDetail.vue'
 import MerchantApproval from './components/MerchantApproval.vue'
 import MerchantEdit from './components/MerchantEdit.vue'
@@ -358,6 +359,15 @@ const categoryMap = {
 const loadMerchants = async () => {
   loading.value = true
   try {
+    // 准备查询参数
+    const queryParams = {
+      page: pagination.current,
+      size: pagination.size,
+      keyword: searchForm.keyword,
+      status: searchForm.status,
+      category: searchForm.category
+    }
+    
     // 调用真实的API
     const response = await getMerchantList(queryParams)
     merchants.value = response.data.list || []

@@ -21,9 +21,9 @@ import java.util.Map;
 @RequestMapping("/admin/users")
 @RequiredArgsConstructor
 public class UserManagementController {
-    
+
     private final UserManagementService userManagementService;
-    
+
     /**
      * 查询用户列表
      */
@@ -33,11 +33,11 @@ public class UserManagementController {
             @RequestParam(value = "size", defaultValue = "10") Integer size,
             @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "status", required = false) Integer status) {
-        
+
         PageResult<Map<String, Object>> result = userManagementService.getUserList(page, size, keyword, status);
         return R.ok(result);
     }
-    
+
     /**
      * 获取用户详情
      */
@@ -46,7 +46,7 @@ public class UserManagementController {
         Map<String, Object> result = userManagementService.getUserDetail(userId);
         return R.ok(result);
     }
-    
+
     /**
      * 禁用用户
      */
@@ -56,7 +56,7 @@ public class UserManagementController {
         userManagementService.disableUser(userId, adminId);
         return R.ok();
     }
-    
+
     /**
      * 启用用户
      */
@@ -65,5 +65,14 @@ public class UserManagementController {
         Long adminId = (Long) request.getAttribute("adminId");
         userManagementService.enableUser(userId, adminId);
         return R.ok();
+    }
+
+    /**
+     * 获取用户统计数据
+     */
+    @GetMapping("/stats")
+    public R<Map<String, Object>> getUserStats() {
+        Map<String, Object> result = userManagementService.getUserStats();
+        return R.ok(result);
     }
 }

@@ -59,16 +59,21 @@ public class MerchantProductServiceImpl implements MerchantProductService {
 
         try {
             // 设置默认值
-            product.setStatus(0); // 默认下架状态
+            product.setStatus(product.getStatus() != null ? product.getStatus() : 0); // 默认下架状态
             product.setSalesCount(0);
             product.setViewCount(0);
             product.setFavoriteCount(0);
-            // product.setCommentCount(0); // 该字段可能不存在
+            product.setReviewCount(0); // 评价数量
             product.setRating(BigDecimal.ZERO);
-            product.setIsRecommended(0);
-            product.setIsNew(1);
+            product.setIsRecommended(product.getIsRecommended() != null ? product.getIsRecommended() : 0);
+            product.setIsNew(product.getIsNew() != null ? product.getIsNew() : 1);
             product.setIsHot(0);
             product.setSortOrder(0);
+
+            // 确保库存预警值不为null
+            if (product.getWarningStock() == null) {
+                product.setWarningStock(10);
+            }
 
             // 保存商品
             MerchantProduct savedProduct = productRepository.save(product);
@@ -1164,7 +1169,7 @@ public class MerchantProductServiceImpl implements MerchantProductService {
     /**
      * 获取热销商品列表
      * 
-     * @param merchantId 商家ID
+     * @param merchantId 商家ID（可为null，表示获取所有商家的热销商品）
      * @param limit      数量限制
      * @return 热销商品列表
      */
@@ -1174,7 +1179,16 @@ public class MerchantProductServiceImpl implements MerchantProductService {
 
         try {
             Pageable pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "salesCount"));
-            Page<MerchantProduct> page = productRepository.findByMerchantIdAndStatus(merchantId, 1, pageable);
+            Page<MerchantProduct> page;
+
+            if (merchantId == null) {
+                // 获取所有商家的热销商品（仅上架状态）
+                page = productRepository.findByStatus(1, pageable);
+            } else {
+                // 获取指定商家的热销商品
+                page = productRepository.findByMerchantIdAndStatus(merchantId, 1, pageable);
+            }
+
             return R.ok(page.getContent());
 
         } catch (Exception e) {
@@ -1186,7 +1200,7 @@ public class MerchantProductServiceImpl implements MerchantProductService {
     /**
      * 获取推荐商品列表
      * 
-     * @param merchantId 商家ID
+     * @param merchantId 商家ID（可为null，表示获取所有商家的推荐商品）
      * @param page       页码
      * @param size       每页大小
      * @return 推荐商品列表
@@ -1197,8 +1211,15 @@ public class MerchantProductServiceImpl implements MerchantProductService {
 
         try {
             Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-            Page<MerchantProduct> productPage = productRepository.findByMerchantIdAndIsRecommended(merchantId, 1,
-                    pageable);
+            Page<MerchantProduct> productPage;
+
+            if (merchantId == null) {
+                // 获取所有商家的推荐商品（仅上架状态）
+                productPage = productRepository.findByStatusAndIsRecommended(1, 1, pageable);
+            } else {
+                // 获取指定商家的推荐商品
+                productPage = productRepository.findByMerchantIdAndIsRecommended(merchantId, 1, pageable);
+            }
 
             PageResult<MerchantProduct> result = new PageResult<>();
             result.setRecords(productPage.getContent());
