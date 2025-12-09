@@ -678,16 +678,7 @@ start-dev-silent.bat
 
 本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
 
-## 联系方式
-
-- 项目地址: https://github.com/your-repo/spring-cloud-mall
-- 问题反馈: https://github.com/your-repo/spring-cloud-mall/issues
-- 邮箱: mall@example.com
-
-## 致谢
-
-感谢所有为本项目做出贡献的开发者！
 
 ---
 
-**注意**: 本项目仅用于学习和研究目的，请勿用于商业用途。
+**注意**: 本项目仅用于学习和研究目的，未经授权禁止商用！
