@@ -94,3 +94,34 @@ bin/
 *.so
 *.dylib
 *.exe
+
+# AI Tools
+.kiro/
+.qoder/
+.trae/
+.codebuddy/
+.cursor/
+
+# Temporary directories
+database-files/
+database-schema/
+BOOT-INF/
+
+# Temporary documentation
+*修复报告.md
+*总结.md
+*实现报告.md
+*验证报告.md
+
+# Academic documents (keep locally, don't commit)
+课程论文.md
+论文.md
+*论文*.md
+*论文*.docx
+数据库设计文档.md
+数据库表清单.md
+核心数据表清单.md
+详细设计.md
+在线商城需求说明.md
+技术栈设计.md
+*.docx

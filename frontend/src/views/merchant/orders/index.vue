@@ -293,6 +293,135 @@
         />
       </div>
     </el-card>
+
+    <!-- 发货对话框 -->
+    <el-dialog
+      v-model="showShipmentDialog"
+      title="订单发货"
+      width="500px"
+      :close-on-click-modal="false">
+      <el-form
+        ref="shipmentFormRef"
+        :model="shipmentForm"
+        :rules="shipmentRules"
+        label-width="100px">
+        <el-form-item label="物流公司" prop="logisticsCompany">
+          <el-select
+            v-model="shipmentForm.logisticsCompany"
+            placeholder="请选择物流公司"
+            style="width: 100%">
+            <el-option
+              v-for="company in logisticsCompanies"
+              :key="company.value"
+              :label="company.label"
+              :value="company.value" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="物流单号" prop="logisticsNo">
+          <el-input
+            v-model="shipmentForm.logisticsNo"
+            placeholder="请输入物流单号"
+            clearable />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showShipmentDialog = false">取消</el-button>
+        <el-button type="primary" :loading="loading" @click="confirmShipment">
+          确认发货
+        </el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 订单详情对话框 -->
+    <el-dialog
+      v-model="showOrderDetailDialog"
+      title="订单详情"
+      width="700px"
+      :close-on-click-modal="false">
+      <div v-loading="orderDetailLoading">
+        <template v-if="currentOrderDetail">
+          <!-- 订单基本信息 -->
+          <div class="detail-section">
+            <h4>订单信息</h4>
+            <el-descriptions :column="2" border size="small">
+              <el-descriptions-item label="订单号">{{ currentOrderDetail.orderNo }}</el-descriptions-item>
+              <el-descriptions-item label="订单状态">
+                <el-tag :type="getStatusType(currentOrderDetail.status)" size="small">
+                  {{ currentOrderDetail.statusText }}
+                </el-tag>
+              </el-descriptions-item>
+              <el-descriptions-item label="下单时间">{{ formatTime(currentOrderDetail.createTime) }}</el-descriptions-item>
+              <el-descriptions-item label="支付时间">{{ formatTime(currentOrderDetail.payTime) || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="支付方式">{{ currentOrderDetail.payMethod }}</el-descriptions-item>
+              <el-descriptions-item label="发货时间">{{ formatTime(currentOrderDetail.shipTime) || '-' }}</el-descriptions-item>
+            </el-descriptions>
+          </div>
+
+          <!-- 收货信息 -->
+          <div class="detail-section">
+            <h4>收货信息</h4>
+            <el-descriptions :column="1" border size="small">
+              <el-descriptions-item label="收货人">{{ currentOrderDetail.receiverName }}</el-descriptions-item>
+              <el-descriptions-item label="联系电话">{{ currentOrderDetail.receiverPhone }}</el-descriptions-item>
+              <el-descriptions-item label="收货地址">{{ currentOrderDetail.receiverAddress }}</el-descriptions-item>
+            </el-descriptions>
+          </div>
+
+          <!-- 物流信息 -->
+          <div class="detail-section" v-if="currentOrderDetail.logisticsNo">
+            <h4>物流信息</h4>
+            <el-descriptions :column="2" border size="small">
+              <el-descriptions-item label="物流公司">{{ currentOrderDetail.logisticsCompany }}</el-descriptions-item>
+              <el-descriptions-item label="物流单号">{{ currentOrderDetail.logisticsNo }}</el-descriptions-item>
+            </el-descriptions>
+          </div>
+
+          <!-- 商品信息 -->
+          <div class="detail-section">
+            <h4>商品信息</h4>
+            <div class="detail-products">
+              <div v-for="item in currentOrderDetail.items" :key="item.id" class="detail-product-item">
+                <img :src="item.image" class="product-img" />
+                <div class="product-info">
+                  <div class="product-name">{{ item.name }}</div>
+                  <div class="product-spec">{{ item.spec }}</div>
+                </div>
+                <div class="product-price">{{ item.price }} 元 x {{ item.quantity }}</div>
+                <div class="product-subtotal">{{ item.subtotal }} 元</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 费用信息 -->
+          <div class="detail-section">
+            <h4>费用明细</h4>
+            <el-descriptions :column="2" border size="small">
+              <el-descriptions-item label="商品金额">{{ currentOrderDetail.productAmount }} 元</el-descriptions-item>
+              <el-descriptions-item label="运费">{{ currentOrderDetail.shippingFee }} 元</el-descriptions-item>
+              <el-descriptions-item label="优惠金额">-{{ currentOrderDetail.discountAmount }} 元</el-descriptions-item>
+              <el-descriptions-item label="实付金额">
+                <span style="color: #f56c6c; font-weight: 600;">{{ currentOrderDetail.totalAmount }} 元</span>
+              </el-descriptions-item>
+            </el-descriptions>
+          </div>
+
+          <!-- 备注 -->
+          <div class="detail-section" v-if="currentOrderDetail.remark">
+            <h4>订单备注</h4>
+            <p>{{ currentOrderDetail.remark }}</p>
+          </div>
+        </template>
+      </div>
+      <template #footer>
+        <el-button @click="showOrderDetailDialog = false">关闭</el-button>
+        <el-button 
+          v-if="currentOrderDetail && currentOrderDetail.status === 'pending_shipment'" 
+          type="primary" 
+          @click="showOrderDetailDialog = false; shipOrder(currentOrderDetail.id)">
+          去发货
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -301,7 +430,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Download, Operation, Search, Refresh, ArrowDown,
-  ShoppingBag, Clock, Van, CheckCircle, XCircle, RefreshRight, Money
+  ShoppingBag, Clock, Van, CircleCheck, CircleClose, RefreshRight, Money
 } from '@element-plus/icons-vue'
 
 // 响应式数据
@@ -310,6 +439,36 @@ const selectedOrders = ref([])
 const showOrderDetail = ref(false)
 const showShipmentDialog = ref(false)
 const currentOrderId = ref(null)
+
+// 订单详情对话框
+const showOrderDetailDialog = ref(false)
+const orderDetailLoading = ref(false)
+const currentOrderDetail = ref(null)
+
+// 发货对话框数据
+const shipmentForm = reactive({
+  logisticsCompany: '',
+  logisticsNo: ''
+})
+const shipmentRules = {
+  logisticsCompany: [{ required: true, message: '请选择物流公司', trigger: 'change' }],
+  logisticsNo: [{ required: true, message: '请输入物流单号', trigger: 'blur' }]
+}
+const shipmentFormRef = ref(null)
+
+// 物流公司选项
+const logisticsCompanies = [
+  { label: '顺丰速运', value: 'SF' },
+  { label: '中通快递', value: 'ZTO' },
+  { label: '圆通速递', value: 'YTO' },
+  { label: '韵达快递', value: 'YD' },
+  { label: '申通快递', value: 'STO' },
+  { label: '极兔速递', value: 'JTSD' },
+  { label: '邮政快递包裹', value: 'YZPY' },
+  { label: 'EMS', value: 'EMS' },
+  { label: '京东物流', value: 'JD' },
+  { label: '德邦快递', value: 'DBL' }
+]
 
 // 搜索表单
 const searchForm = reactive({
@@ -359,7 +518,7 @@ const orderStats = reactive([
     key: 'completed',
     label: '已完成',
     value: '0',
-    icon: 'CheckCircle',
+    icon: 'CircleCheck',
     color: '#13c2c2',
     status: 'completed'
   }
@@ -446,35 +605,256 @@ const handleCurrentChange = (page) => {
 const loadOrderList = async () => {
   loading.value = true
   try {
-    // TODO: 调用真实的API
-    // const response = await orderApi.getOrderList({
-    //   ...searchForm,
-    //   page: pagination.currentPage,
-    //   pageSize: pagination.pageSize
-    // })
-    // orderList.value = response.data.list || []
-    // pagination.total = response.data.total || 0
+    // 获取商家ID
+    const merchantId = localStorage.getItem('merchantId')
+    if (!merchantId) {
+      ElMessage.warning('请先登录商家账号')
+      return
+    }
     
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 500))
-    orderList.value = []
-    pagination.total = 0
+    // 构建查询参数
+    const params = new URLSearchParams({
+      merchantId: merchantId,
+      page: pagination.currentPage - 1,
+      size: pagination.pageSize
+    })
+    
+    // 添加状态筛选
+    if (searchForm.status) {
+      params.append('status', mapStatusToBackend(searchForm.status))
+    }
+    
+    // 调用后端API获取商家订单
+    const response = await fetch(`/api/order-service/orders/merchant?${params.toString()}`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    })
+    
+    const result = await response.json()
+    console.log('商家订单列表响应:', result)
+    
+    if (result.success && result.data) {
+      // 转换后端数据格式
+      const rawOrders = result.data.content || []
+      orderList.value = rawOrders.map(order => ({
+        id: order.id,
+        orderNo: order.orderNo,
+        status: mapStatusToFrontend(order.status),
+        createTime: order.createTime,
+        buyerName: order.receiverName,
+        buyerPhone: order.receiverPhone,
+        totalAmount: order.totalAmount,
+        paymentMethod: order.payMethod || 'alipay',
+        receiverName: order.receiverName,
+        receiverPhone: order.receiverPhone,
+        shippingAddress: order.receiverAddress,
+        trackingNo: order.logisticsNo,
+        logisticsCompany: order.logisticsCompany,
+        items: (order.orderItems || []).map(item => ({
+          id: item.id,
+          name: item.productName,
+          image: item.productImage,
+          spec: item.productSpec,
+          price: item.productPrice,
+          quantity: item.quantity
+        }))
+      }))
+      
+      pagination.total = result.data.totalElements || 0
+      
+      // 更新统计数据
+      updateOrderStats()
+    } else {
+      throw new Error(result.message || '获取订单失败')
+    }
     
   } catch (error) {
+    console.error('加载订单列表失败:', error)
     ElMessage.error('加载订单列表失败')
+    orderList.value = []
+    pagination.total = 0
   } finally {
     loading.value = false
   }
 }
 
-const viewOrder = (orderId) => {
-  ElMessage.info('订单详情功能开发中...')
-  console.log('查看订单:', orderId)
+// 映射前端状态到后端状态
+const mapStatusToBackend = (status) => {
+  const statusMap = {
+    'pending_payment': 'PENDING',
+    'pending_shipment': 'PAID',
+    'shipped': 'SHIPPED',
+    'completed': 'COMPLETED',
+    'cancelled': 'CANCELLED',
+    'refunding': 'REFUNDING',
+    'refunded': 'REFUNDED'
+  }
+  return statusMap[status] || status
 }
 
+// 映射后端状态到前端状态
+const mapStatusToFrontend = (status) => {
+  const statusMap = {
+    'PENDING': 'pending_payment',
+    'PAID': 'pending_shipment',
+    'SHIPPED': 'shipped',
+    'COMPLETED': 'completed',
+    'CANCELLED': 'cancelled',
+    'REFUNDING': 'refunding',
+    'REFUNDED': 'refunded'
+  }
+  return statusMap[status] || status?.toLowerCase() || 'pending_payment'
+}
+
+// 更新订单统计
+const updateOrderStats = () => {
+  const statusCounts = {}
+  orderList.value.forEach(order => {
+    statusCounts[order.status] = (statusCounts[order.status] || 0) + 1
+  })
+  
+  orderStats.forEach(stat => {
+    stat.value = String(statusCounts[stat.status] || 0)
+  })
+}
+
+/**
+ * 查看订单详情
+ * @param {number} orderId - 订单ID
+ */
+const viewOrder = async (orderId) => {
+  currentOrderId.value = orderId
+  orderDetailLoading.value = true
+  showOrderDetailDialog.value = true
+  
+  try {
+    const merchantId = localStorage.getItem('merchantId')
+    const response = await fetch(`/api/order-service/orders/${orderId}?merchantId=${merchantId}`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    })
+    const result = await response.json()
+    console.log('订单详情响应:', result)
+    
+    if (result.success && result.data) {
+      const data = result.data
+      currentOrderDetail.value = {
+        id: data.id,
+        orderNo: data.orderNo,
+        status: mapStatusToFrontend(data.status),
+        statusText: getStatusText(mapStatusToFrontend(data.status)),
+        createTime: data.createTime,
+        payTime: data.payTime,
+        shipTime: data.shipTime,
+        totalAmount: data.totalAmount,
+        productAmount: data.productAmount || data.totalAmount,
+        shippingFee: data.shippingFee || 0,
+        discountAmount: data.discountAmount || 0,
+        payMethod: data.payMethod || '-',
+        receiverName: data.receiverName,
+        receiverPhone: data.receiverPhone,
+        receiverAddress: data.receiverAddress,
+        logisticsCompany: data.logisticsCompany,
+        logisticsNo: data.logisticsNo || data.trackingNo,
+        remark: data.remark,
+        items: (data.orderItems || []).map(item => ({
+          id: item.id,
+          name: item.productName,
+          image: item.productImage || 'https://via.placeholder.com/80',
+          spec: item.productSpec,
+          price: item.productPrice,
+          quantity: item.quantity,
+          subtotal: item.subtotal || (item.productPrice * item.quantity)
+        }))
+      }
+    } else {
+      throw new Error(result.message || '获取订单详情失败')
+    }
+  } catch (error) {
+    console.error('获取订单详情失败:', error)
+    ElMessage.error('获取订单详情失败')
+    showOrderDetailDialog.value = false
+  } finally {
+    orderDetailLoading.value = false
+  }
+}
+
+/**
+ * 打开发货对话框
+ * @param {number} orderId - 订单ID
+ */
 const shipOrder = (orderId) => {
-  ElMessage.info('发货功能开发中...')
-  console.log('发货订单:', orderId)
+  currentOrderId.value = orderId
+  // 重置表单
+  shipmentForm.logisticsCompany = ''
+  shipmentForm.logisticsNo = ''
+  showShipmentDialog.value = true
+}
+
+/**
+ * 确认发货
+ * 调用后端API标记订单为已发货状态
+ */
+const confirmShipment = async () => {
+  // 表单验证
+  if (!shipmentFormRef.value) return
+  
+  try {
+    await shipmentFormRef.value.validate()
+  } catch (error) {
+    return
+  }
+  
+  const merchantId = localStorage.getItem('merchantId')
+  if (!merchantId) {
+    ElMessage.warning('请先登录商家账号')
+    return
+  }
+  
+  loading.value = true
+  try {
+    // 调用后端发货API
+    const params = new URLSearchParams({
+      merchantId: merchantId,
+      logisticsCompany: getLogisticsCompanyName(shipmentForm.logisticsCompany),
+      logisticsNo: shipmentForm.logisticsNo
+    })
+    
+    const response = await fetch(`/api/order-service/orders/${currentOrderId.value}/ship?${params.toString()}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json'
+      }
+    })
+    
+    const result = await response.json()
+    console.log('发货响应:', result)
+    
+    if (result.success || result.code === 200) {
+      ElMessage.success('发货成功，订单状态已更新')
+      showShipmentDialog.value = false
+      // 刷新订单列表
+      loadOrderList()
+    } else {
+      throw new Error(result.message || '发货失败')
+    }
+  } catch (error) {
+    console.error('发货失败:', error)
+    ElMessage.error(error.message || '发货失败，请稍后重试')
+  } finally {
+    loading.value = false
+  }
+}
+
+/**
+ * 获取物流公司名称
+ * @param {string} code - 物流公司代码
+ * @returns {string} 物流公司名称
+ */
+const getLogisticsCompanyName = (code) => {
+  const company = logisticsCompanies.find(c => c.value === code)
+  return company ? company.label : code
 }
 
 const cancelOrder = async (orderId) => {
@@ -874,5 +1254,71 @@ onMounted(() => {
     flex-direction: row;
     flex-wrap: wrap;
   }
+}
+
+/* 订单详情对话框样式 */
+.detail-section {
+  margin-bottom: 20px;
+}
+
+.detail-section h4 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #303133;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.detail-products {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detail-product-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #fafafa;
+  border-radius: 6px;
+}
+
+.detail-product-item .product-img {
+  width: 60px;
+  height: 60px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.detail-product-item .product-info {
+  flex: 1;
+}
+
+.detail-product-item .product-name {
+  font-size: 14px;
+  color: #303133;
+  margin-bottom: 4px;
+}
+
+.detail-product-item .product-spec {
+  font-size: 12px;
+  color: #909399;
+}
+
+.detail-product-item .product-price {
+  font-size: 13px;
+  color: #606266;
+  width: 100px;
+  text-align: right;
+}
+
+.detail-product-item .product-subtotal {
+  font-size: 14px;
+  font-weight: 500;
+  color: #f56c6c;
+  width: 80px;
+  text-align: right;
 }
 </style>

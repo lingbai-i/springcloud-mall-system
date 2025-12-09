@@ -1,5 +1,8 @@
 package com.mall.product.domain.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import com.mall.common.core.domain.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -12,12 +15,14 @@ import java.math.BigDecimal;
  * 用于记录商品价格变更历史
  * 
  * @author lingbai
- * @version 1.0
+ * @version 1.1
  * @since 2025-01-21
+ * 修改日志：V1.1 2025-12-01：添加 MyBatis-Plus 注解
  */
 @Data
 @EqualsAndHashCode(callSuper = false)
 @JsonIgnoreProperties(ignoreUnknown = true)
+@TableName("price_history")
 public class PriceHistory extends BaseEntity {
     
     /**

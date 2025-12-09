@@ -481,12 +481,17 @@ const editProduct = (productId) => {
 }
 
 const handleProductAction = async (command, row) => {
-  const [action, id] = command.split('_')
+  // 命令格式: "action_id"，例如 "off_sale_123" 或 "on_sale_123"
+  const parts = command.split('_')
+  const id = parts[parts.length - 1] // 获取最后一个部分作为ID
+  const action = parts.slice(0, -1).join('_') // 获取前面的部分作为action
   
   switch (action) {
-    case 'on':
-    case 'off':
-      await handleToggleStatus(id, action === 'on' ? 'on_sale' : 'off_sale')
+    case 'on_sale':
+      await handleToggleStatus(id, 'on_sale')
+      break
+    case 'off_sale':
+      await handleToggleStatus(id, 'off_sale')
       break
     case 'copy':
       await handleCopyProduct(id)

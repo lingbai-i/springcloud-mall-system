@@ -46,14 +46,13 @@ spring:
           filters:
             - StripPrefix=2
         # 商品服务兼容路由（支持前端/api/product-service/**路径）
+        # 路由到 product-service 的 /api/** 接口
         - id: product-service-compat
           uri: lb://product-service
           predicates:
             - Path=/api/product-service/**
           filters:
-            - name: StripPrefix
-              args:
-                parts: 2
+            - RewritePath=/api/product-service/(?<segment>.*), /api/${segment}
         # 购物车服务
         - id: cart-service
           uri: lb://cart-service
@@ -78,14 +77,13 @@ spring:
           filters:
             - StripPrefix=2
         # 订单服务兼容路由（支持前端/api/order-service/**路径）
+        # 路由到 order-service 的 /** 接口（order-service 接口路径不带 /api 前缀）
         - id: order-service-compat
           uri: lb://order-service
           predicates:
             - Path=/api/order-service/**
           filters:
-            - name: StripPrefix
-              args:
-                parts: 2
+            - RewritePath=/api/order-service/(?<segment>.*), /${segment}
         # 支付服务
         - id: payment-service
           uri: lb://payment-service

@@ -45,6 +45,34 @@
 - **HTTP 客户端**: Axios
 - **工具库**: VueUse + Hutool
 
+## 📁 项目目录结构
+
+```
+springcloud-mall/
+├── backend/              # 后端微服务
+│   ├── gateway-service/     # 网关服务
+│   ├── auth-service/        # 认证服务
+│   ├── user-service/        # 用户服务
+│   ├── product-service/     # 商品服务
+│   ├── order-service/       # 订单服务
+│   ├── merchant-service/    # 商家服务
+│   ├── admin-service/       # 管理服务
+│   └── ...                  # 其他服务
+├── frontend/             # 前端Vue项目
+├── docs/                 # 项目文档
+│   ├── 商家审核系统-API文档.md
+│   ├── 数据库设计文档-完整版.md
+│   └── ...
+├── sql/                  # 数据库脚本
+├── scripts/              # 启动和管理脚本
+├── assets/               # 项目资源文件
+│   ├── icon/                # 图标资源
+│   └── vector-icons/        # 矢量图标
+├── config/               # 配置文件
+├── docker-compose.yml    # Docker编排文件
+└── README.md            # 项目说明
+```
+
 ## 系统架构
 
 ### 微服务划分
@@ -122,24 +150,37 @@
 
 如果启动脚本闪退或遇到错误，请查看:
 - 📖 **[故障排查指南](TROUBLESHOOTING.md)** - 详细的问题诊断和解决方案
-- 🔧 使用 `start-dev-debug.bat` 调试模式启动，获取详细错误信息
 - 📋 查看 [常见问题 FAQ](#常见问题-faq)
 
-## 🎯 本地开发（推荐）
+## 🎯 快速启动
 
-**适用场景**：日常开发、调试、快速迭代
-
-### 一键启动
+### 一键启动所有服务
 
 ```bash
-start-dev.bat
+# Windows
+scripts\start-all.bat
+
+# Linux/Mac
+./scripts/start-all-services.ps1
 ```
 
-此脚本会：
+此脚本会自动启动：
+1. Docker 基础设施（MySQL、Redis、Nacos）
+2. 所有后端微服务
+3. 前端Vue应用
 
-1. 启动 Docker 基础设施（MySQL、Redis、Nacos）
-2. 询问是否启动后端微服务
-3. 询问是否启动前端
+### 服务管理
+
+```bash
+# 服务管理工具（Windows）
+scripts\service-manager.bat
+
+# 服务管理工具（PowerShell）
+.\scripts\service-manager.ps1
+
+# 停止所有服务
+scripts\stop-dev-silent.bat
+```
 
 ### 手动启动
 

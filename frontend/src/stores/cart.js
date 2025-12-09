@@ -42,9 +42,22 @@ export const useCartStore = defineStore('cart', () => {
   }
 
   // 添加商品到购物车
-  async function addToCart(productId, quantity = 1, specifications = '') {
+  // 支持两种调用方式：addToCart(productId, quantity, specifications) 或 addToCart({productId, quantity, specifications})
+  async function addToCart(productIdOrData, quantity = 1, specifications = '') {
     try {
-      const response = await cartApi.addToCart({ productId, quantity, specifications })
+      let data
+      // 判断第一个参数是对象还是productId
+      if (typeof productIdOrData === 'object' && productIdOrData !== null) {
+        data = {
+          productId: productIdOrData.productId,
+          quantity: productIdOrData.quantity || 1,
+          specifications: productIdOrData.specifications || ''
+        }
+      } else {
+        data = { productId: productIdOrData, quantity, specifications }
+      }
+      
+      const response = await cartApi.addToCart(data)
       if (response.success) {
         await fetchCartItems()
         return true

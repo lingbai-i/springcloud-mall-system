@@ -122,7 +122,10 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
+import { useUserStore } from '@/stores/user'
+
 const router = useRouter()
+const userStore = useUserStore()
 
 // 响应式数据
 const loading = ref(false)
@@ -131,6 +134,22 @@ const orders = ref([])
 const total = ref(0)
 const currentPage = ref(1)
 const pageSize = ref(10)
+
+/**
+ * 映射后端订单状态到前端状态
+ */
+const mapOrderStatus = (status: string) => {
+  const statusMap = {
+    'PENDING': 'pending',
+    'PAID': 'paid',
+    'SHIPPED': 'shipped',
+    'COMPLETED': 'completed',
+    'CANCELLED': 'cancelled',
+    'REFUNDING': 'refunding',
+    'REFUNDED': 'refunded'
+  }
+  return statusMap[status] || status?.toLowerCase() || 'pending'
+}
 
 /**
  * 获取订单状态类型
@@ -167,10 +186,16 @@ const fetchOrders = async () => {
   loading.value = true
   try {
     // 获取用户ID（从用户store或localStorage）
-    const userId = localStorage.getItem('userId') || '5' // 默认测试用户ID
+    const userId = userStore.userId || localStorage.getItem('userId')
+    if (!userId) {
+      ElMessage.warning('请先登录')
+      router.push('/login')
+      return
+    }
+    console.log('获取订单列表，用户ID:', userId)
     
     // 调用真实API，添加必需的userId参数
-    const response = await fetch(`/api/orders?userId=${userId}&page=${currentPage.value - 1}&size=${pageSize.value}`, {
+    const response = await fetch(`/api/order-service/orders?userId=${userId}&page=${currentPage.value - 1}&size=${pageSize.value}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -186,7 +211,25 @@ const fetchOrders = async () => {
     
     // 后端返回的数据结构：{ success: true, data: { content: [], totalElements: 0, ... } }
     if (result.success) {
-      orders.value = result.data.content || []
+      // 转换后端数据格式为前端期望的格式
+      const rawOrders = result.data.content || []
+      orders.value = rawOrders.map(order => ({
+        id: order.id,
+        orderNumber: order.orderNo,
+        createTime: order.createTime,
+        status: mapOrderStatus(order.status),
+        itemsAmount: order.productAmount,
+        shippingFee: order.shippingFee || order.freightAmount || 0,
+        totalAmount: order.totalAmount,
+        items: (order.orderItems || []).map(item => ({
+          id: item.id,
+          name: item.productName,
+          image: item.productImage,
+          specification: item.productSpec,
+          price: item.productPrice,
+          quantity: item.quantity
+        }))
+      }))
       total.value = result.data.totalElements || 0
     } else {
       throw new Error(result.message || '获取订单失败')

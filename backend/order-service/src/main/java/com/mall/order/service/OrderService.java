@@ -38,6 +38,16 @@ public interface OrderService {
     Order getOrderById(Long orderId, Long userId);
     
     /**
+     * 根据订单ID获取订单详情（支持用户或商家）
+     * 
+     * @param orderId    订单ID
+     * @param userId     用户ID（可选）
+     * @param merchantId 商家ID（可选）
+     * @return 订单详情
+     */
+    Order getOrderByIdForUserOrMerchant(Long orderId, Long userId, Long merchantId);
+    
+    /**
      * 根据订单号获取订单详情
      * 
      * @param orderNo 订单号
@@ -169,4 +179,89 @@ public interface OrderService {
      * @return 更新结果
      */
     Boolean updateOrderStatus(Long orderId, OrderStatus status);
+    
+    // ==================== 商家订单管理 ====================
+    
+    /**
+     * 分页查询商家订单列表
+     * 
+     * @param merchantId 商家ID
+     * @param pageable 分页参数
+     * @return 订单分页数据
+     */
+    Page<Order> getMerchantOrders(Long merchantId, Pageable pageable);
+    
+    /**
+     * 根据状态分页查询商家订单
+     * 
+     * @param merchantId 商家ID
+     * @param status 订单状态
+     * @param pageable 分页参数
+     * @return 订单分页数据
+     */
+    Page<Order> getMerchantOrdersByStatus(Long merchantId, OrderStatus status, Pageable pageable);
+    
+    /**
+     * 商家发货
+     * 
+     * @param orderId 订单ID
+     * @param merchantId 商家ID
+     * @param logisticsCompany 物流公司
+     * @param logisticsNo 物流单号
+     * @return 发货结果
+     */
+    Boolean shipOrder(Long orderId, Long merchantId, String logisticsCompany, String logisticsNo);
+    
+    /**
+     * 获取商家订单统计信息
+     * 
+     * @param merchantId 商家ID
+     * @return 订单统计数据
+     */
+    Map<String, Object> getMerchantOrderStats(Long merchantId);
+    
+    // ==================== 管理员订单管理 ====================
+    
+    /**
+     * 分页查询所有订单（管理员）
+     * 
+     * @param pageable 分页参数
+     * @return 订单分页数据
+     */
+    Page<Order> getAllOrders(Pageable pageable);
+    
+    /**
+     * 根据状态分页查询所有订单（管理员）
+     * 
+     * @param status 订单状态
+     * @param pageable 分页参数
+     * @return 订单分页数据
+     */
+    Page<Order> getAllOrdersByStatus(OrderStatus status, Pageable pageable);
+    
+    /**
+     * 根据订单号搜索订单（管理员）
+     * 
+     * @param orderNo 订单号
+     * @param pageable 分页参数
+     * @return 订单分页数据
+     */
+    Page<Order> searchOrdersByOrderNo(String orderNo, Pageable pageable);
+    
+    /**
+     * 获取管理员订单统计信息
+     * 
+     * @return 订单统计数据
+     */
+    Map<String, Object> getAdminOrderStats();
+    
+    /**
+     * 管理员处理退款
+     * 
+     * @param orderId 订单ID
+     * @param approved 是否同意退款
+     * @param reason 处理原因
+     * @return 处理结果
+     */
+    Boolean handleRefund(Long orderId, Boolean approved, String reason);
 }

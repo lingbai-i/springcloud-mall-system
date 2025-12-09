@@ -76,7 +76,7 @@
         <el-form-item label="主图" prop="mainImage">
           <el-upload
             v-model:file-list="mainImageFileList"
-            action="http://localhost:8087/merchant/products/upload-image"
+            action="/api/merchant/products/upload-image"
             list-type="picture-card"
             :on-success="handleMainImageUploadSuccess"
             :on-error="handleUploadError"
@@ -92,7 +92,7 @@
         <el-form-item label="详情图片" prop="images">
           <el-upload
             v-model:file-list="detailImageFileList"
-            action="http://localhost:8087/merchant/products/upload-image"
+            action="/api/merchant/products/upload-image"
             list-type="picture-card"
             :on-success="handleDetailImageUploadSuccess"
             :on-error="handleUploadError"

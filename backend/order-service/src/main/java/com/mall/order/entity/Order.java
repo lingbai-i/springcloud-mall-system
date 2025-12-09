@@ -43,6 +43,12 @@ public class Order {
     private Long userId;
     
     /**
+     * 商家ID
+     */
+    @Column(name = "merchant_id")
+    private Long merchantId;
+    
+    /**
      * 订单状态
      */
     @Enumerated(EnumType.STRING)
@@ -201,8 +207,9 @@ public class Order {
     
     /**
      * 订单项列表
+     * 使用EAGER加载避免懒加载异常
      */
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<OrderItem> orderItems;
     
     /**

@@ -33,6 +33,17 @@ public interface ProductService {
     Object getProductsByCategoryId(Long current, Long size, Long categoryId);
     
     /**
+     * 根据分类ID分页查询商品（支持商家筛选）
+     * 
+     * @param current 当前页码
+     * @param size 每页大小
+     * @param categoryId 分类ID（可选）
+     * @param merchantId 商家ID（可选）
+     * @return 商品分页数据
+     */
+    Object getProductsByCategoryId(Long current, Long size, Long categoryId, Long merchantId);
+    
+    /**
      * 搜索商品
      * 
      * @param current 当前页码
@@ -41,6 +52,27 @@ public interface ProductService {
      * @return 商品分页数据
      */
     Object searchProducts(Long current, Long size, String keyword);
+    
+    /**
+     * 搜索商品（支持商家筛选）
+     * 
+     * @param current 当前页码
+     * @param size 每页大小
+     * @param keyword 搜索关键词
+     * @param merchantId 商家ID（可选）
+     * @return 商品分页数据
+     */
+    Object searchProducts(Long current, Long size, String keyword, Long merchantId);
+    
+    /**
+     * 根据商家ID分页查询商品
+     * 
+     * @param current 当前页码
+     * @param size 每页大小
+     * @param merchantId 商家ID
+     * @return 商品分页数据
+     */
+    Object getProductsByMerchantId(Long current, Long size, Long merchantId);
     
     /**
      * 获取热销商品列表
@@ -65,6 +97,14 @@ public interface ProductService {
      * @return 商品详情
      */
     Product getProductById(Long id);
+    
+    /**
+     * 根据ID列表批量获取商品
+     * 
+     * @param ids 商品ID列表
+     * @return 商品列表
+     */
+    List<Product> getProductsByIds(List<Long> ids);
     
     /**
      * 获取商品详细信息（包含SKU列表）

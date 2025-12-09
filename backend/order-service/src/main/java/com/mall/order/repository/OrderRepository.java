@@ -132,4 +132,78 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
      */
     @Query("SELECT SUM(o.payAmount) FROM Order o WHERE o.userId = :userId AND o.status = :status")
     java.math.BigDecimal sumPayableAmountByUserIdAndStatus(@Param("userId") Long userId, @Param("status") OrderStatus status);
+    
+    // ==================== 商家订单查询 ====================
+    
+    /**
+     * 根据商家ID分页查询订单
+     * 
+     * @param merchantId 商家ID
+     * @param pageable 分页参数
+     * @return 订单分页数据
+     */
+    Page<Order> findByMerchantIdOrderByCreateTimeDesc(Long merchantId, Pageable pageable);
+    
+    /**
+     * 根据商家ID和订单状态分页查询订单
+     * 
+     * @param merchantId 商家ID
+     * @param status 订单状态
+     * @param pageable 分页参数
+     * @return 订单分页数据
+     */
+    Page<Order> findByMerchantIdAndStatusOrderByCreateTimeDesc(Long merchantId, OrderStatus status, Pageable pageable);
+    
+    /**
+     * 统计商家各状态订单数量
+     * 
+     * @param merchantId 商家ID
+     * @return 订单统计信息
+     */
+    @Query("SELECT o.status, COUNT(o) FROM Order o WHERE o.merchantId = :merchantId GROUP BY o.status")
+    List<Object[]> countOrdersByMerchantIdGroupByStatus(@Param("merchantId") Long merchantId);
+    
+    /**
+     * 统计商家订单总数
+     * 
+     * @param merchantId 商家ID
+     * @return 订单总数
+     */
+    long countByMerchantId(Long merchantId);
+    
+    // ==================== 管理员订单查询 ====================
+    
+    /**
+     * 分页查询所有订单（管理员）
+     * 
+     * @param pageable 分页参数
+     * @return 订单分页数据
+     */
+    Page<Order> findAllByOrderByCreateTimeDesc(Pageable pageable);
+    
+    /**
+     * 根据订单状态分页查询所有订单（管理员）
+     * 
+     * @param status 订单状态
+     * @param pageable 分页参数
+     * @return 订单分页数据
+     */
+    Page<Order> findByStatusOrderByCreateTimeDesc(OrderStatus status, Pageable pageable);
+    
+    /**
+     * 根据订单号模糊查询（管理员）
+     * 
+     * @param orderNo 订单号
+     * @param pageable 分页参数
+     * @return 订单分页数据
+     */
+    Page<Order> findByOrderNoContainingOrderByCreateTimeDesc(String orderNo, Pageable pageable);
+    
+    /**
+     * 统计所有订单各状态数量（管理员）
+     * 
+     * @return 订单统计信息
+     */
+    @Query("SELECT o.status, COUNT(o) FROM Order o GROUP BY o.status")
+    List<Object[]> countAllOrdersGroupByStatus();
 }

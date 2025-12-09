@@ -2,7 +2,6 @@ package com.mall.order.service.impl;
 
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
-import com.mall.common.core.domain.R;
 import com.mall.order.client.CartClient;
 import com.mall.order.client.PaymentClient;
 import com.mall.order.client.ProductClient;
@@ -108,11 +107,7 @@ public class OrderServiceImpl implements OrderService {
                     .map(CreateOrderRequest.OrderItemRequest::getProductId)
                     .toList();
 
-            R<List<Map<String, Object>>> productsResponse = productClient.getProductsBatch(productIds);
-            if (!productsResponse.isSuccess() || productsResponse.getData() == null) {
-                throw new IllegalArgumentException("获取商品信息失败: " + productsResponse.getMessage());
-            }
-            List<Map<String, Object>> products = productsResponse.getData();
+            List<Map<String, Object>> products = productClient.getProductsBatch(productIds);
             if (products.size() != productIds.size()) {
                 throw new IllegalArgumentException("部分商品不存在");
             }
@@ -137,15 +132,27 @@ public class OrderServiceImpl implements OrderService {
             order.setDiscountAmount(
                     request.getDiscountAmount() != null ? request.getDiscountAmount() : BigDecimal.ZERO);
             order.setRemark(request.getRemark());
+            
+            // 设置商家ID（从第一个商品获取，假设订单中所有商品属于同一商家）
+            if (!products.isEmpty()) {
+                Object merchantIdObj = products.get(0).get("merchantId");
+                if (merchantIdObj instanceof Number) {
+                    order.setMerchantId(((Number) merchantIdObj).longValue());
+                }
+            }
 
             // 5. 计算订单金额
             BigDecimal totalAmount = BigDecimal.ZERO;
             List<OrderItem> orderItems = new ArrayList<>();
 
             for (CreateOrderRequest.OrderItemRequest itemRequest : request.getOrderItems()) {
-                // 获取商品详情
+                // 获取商品详情（修复类型匹配问题：Map中的id可能是Integer，需要转换为Long比较）
                 Map<String, Object> product = products.stream()
-                        .filter(p -> Objects.equals(p.get("id"), itemRequest.getProductId()))
+                        .filter(p -> {
+                            Object idObj = p.get("id");
+                            Long productIdFromMap = idObj instanceof Number ? ((Number) idObj).longValue() : null;
+                            return Objects.equals(productIdFromMap, itemRequest.getProductId());
+                        })
                         .findFirst()
                         .orElseThrow(() -> new OrderNotFoundException("商品不存在: " + itemRequest.getProductId()));
 
@@ -170,10 +177,16 @@ public class OrderServiceImpl implements OrderService {
             order.setProductAmount(totalAmount);
             order.setTotalAmount(totalAmount.add(order.getShippingFee()).subtract(order.getDiscountAmount()));
             order.setPayableAmount(order.getTotalAmount());
-            order.setOrderItems(orderItems);
 
-            // 7. 保存订单
+            // 7. 先保存订单获取ID
             Order savedOrder = orderRepository.save(order);
+            
+            // 8. 设置订单项的orderId并保存
+            for (OrderItem orderItem : orderItems) {
+                orderItem.setOrderId(savedOrder.getId());
+            }
+            orderItemRepository.saveAll(orderItems);
+            savedOrder.setOrderItems(orderItems);
             log.info("订单创建成功: orderId={}, orderNo={}, userId={}, totalAmount={}",
                     savedOrder.getId(), savedOrder.getOrderNo(), request.getUserId(), totalAmount);
 
@@ -234,8 +247,51 @@ public class OrderServiceImpl implements OrderService {
             Order order = orderRepository.findById(orderId)
                     .orElseThrow(() -> new OrderNotFoundException(orderId));
 
-            // 2. 验证订单所有者
-            orderValidator.validateOrderOwner(order, userId);
+            // 2. 验证订单所有者（如果userId为null或0，跳过验证，允许商家/管理员查看）
+            if (userId != null && userId > 0) {
+                // 检查是否是订单所有者或商家
+                boolean isOwner = order.getUserId().equals(userId);
+                boolean isMerchant = order.getMerchantId() != null && order.getMerchantId().equals(userId);
+                if (!isOwner && !isMerchant) {
+                    log.warn("用户无权限查看订单，userId: {}, orderId: {}", userId, orderId);
+                    throw new OrderPermissionException("无权限查看此订单");
+                }
+            }
+
+            return order;
+
+        } catch (OrderException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("获取订单详情失败，订单ID: {}", orderId, e);
+            throw new OrderException("获取订单详情失败: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public Order getOrderByIdForUserOrMerchant(Long orderId, Long userId, Long merchantId) {
+        log.info("获取订单详情（用户或商家），订单ID: {}, 用户ID: {}, 商家ID: {}", orderId, userId, merchantId);
+
+        try {
+            Order order = orderRepository.findById(orderId)
+                    .orElseThrow(() -> new OrderNotFoundException(orderId));
+
+            // 验证权限：用户查看自己的订单，或商家查看自己店铺的订单
+            boolean hasPermission = false;
+            
+            if (userId != null && userId > 0 && order.getUserId().equals(userId)) {
+                hasPermission = true; // 用户查看自己的订单
+            }
+            
+            if (merchantId != null && merchantId > 0 && 
+                order.getMerchantId() != null && order.getMerchantId().equals(merchantId)) {
+                hasPermission = true; // 商家查看自己店铺的订单
+            }
+            
+            if (!hasPermission) {
+                log.warn("无权限查看订单，orderId: {}, userId: {}, merchantId: {}", orderId, userId, merchantId);
+                throw new OrderPermissionException("无权限查看此订单");
+            }
 
             return order;
 
@@ -528,17 +584,24 @@ public class OrderServiceImpl implements OrderService {
             orderValidator.validateOrderOwner(order, userId);
             orderValidator.validatePayable(order);
 
-            // 4. 调用支付服务创建支付订单
-            Map<String, Object> paymentRequest = new HashMap<>();
-            paymentRequest.put("orderNo", order.getOrderNo());
-            paymentRequest.put("amount", order.getPayableAmount());
-            paymentRequest.put("paymentMethod", paymentMethod);
-            paymentRequest.put("userId", userId);
-            paymentRequest.put("description", "商城订单支付");
+            // 3. 模拟支付成功，直接更新订单状态
+            String paymentId = "PAY" + System.currentTimeMillis();
+            order.setStatus(OrderStatus.PAID);
+            order.setPayMethod(paymentMethod);
+            order.setPayTime(LocalDateTime.now());
+            order.setPaymentId(paymentId);
+            orderRepository.save(order);
 
-            Map<String, Object> paymentResult = paymentClient.createPayment(paymentRequest);
+            // 4. 返回支付结果
+            Map<String, Object> paymentResult = new HashMap<>();
+            paymentResult.put("success", true);
+            paymentResult.put("paymentId", paymentId);
+            paymentResult.put("orderNo", order.getOrderNo());
+            paymentResult.put("amount", order.getPayableAmount());
+            paymentResult.put("paymentMethod", paymentMethod);
+            paymentResult.put("message", "支付成功");
 
-            log.info("创建支付订单成功，订单号: {}", order.getOrderNo());
+            log.info("模拟支付成功，订单号: {}, 支付ID: {}", order.getOrderNo(), paymentId);
             return paymentResult;
 
         } catch (OrderException e) {
@@ -917,6 +980,183 @@ public class OrderServiceImpl implements OrderService {
         } catch (Exception e) {
             log.error("更新订单状态失败，订单ID: {}", orderId, e);
             return false;
+        }
+    }
+
+    // ==================== 商家订单管理 ====================
+
+    @Override
+    public Page<Order> getMerchantOrders(Long merchantId, Pageable pageable) {
+        log.info("分页查询商家订单，商家ID: {}, 页码: {}, 页大小: {}", 
+                merchantId, pageable.getPageNumber(), pageable.getPageSize());
+        return orderRepository.findByMerchantIdOrderByCreateTimeDesc(merchantId, pageable);
+    }
+
+    @Override
+    public Page<Order> getMerchantOrdersByStatus(Long merchantId, OrderStatus status, Pageable pageable) {
+        log.info("根据状态分页查询商家订单，商家ID: {}, 状态: {}", merchantId, status);
+        return orderRepository.findByMerchantIdAndStatusOrderByCreateTimeDesc(merchantId, status, pageable);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean shipOrder(Long orderId, Long merchantId, String logisticsCompany, String logisticsNo) {
+        log.info("商家发货，订单ID: {}, 商家ID: {}, 物流公司: {}, 物流单号: {}", 
+                orderId, merchantId, logisticsCompany, logisticsNo);
+
+        try {
+            Order order = orderRepository.findById(orderId)
+                    .orElseThrow(() -> new OrderNotFoundException(orderId));
+
+            // 验证订单属于该商家
+            if (order.getMerchantId() == null || !order.getMerchantId().equals(merchantId)) {
+                throw new OrderPermissionException("无权限操作此订单");
+            }
+
+            // 验证订单状态为已付款
+            if (order.getStatus() != OrderStatus.PAID) {
+                throw new OrderStatusException("只有已付款的订单才能发货");
+            }
+
+            // 更新订单信息
+            order.setStatus(OrderStatus.SHIPPED);
+            order.setLogisticsCompany(logisticsCompany);
+            order.setLogisticsNo(logisticsNo);
+            order.setTrackingNo(logisticsNo);
+            order.setShipTime(LocalDateTime.now());
+            orderRepository.save(order);
+
+            // 发布订单发货事件
+            try {
+                OrderEvent event = OrderEvent.createOrderShippedEvent(
+                        orderId, order.getOrderNo(), order.getUserId());
+                event.setMessage("物流公司: " + logisticsCompany + ", 物流单号: " + logisticsNo);
+                orderEventPublisher.publishOrderShippedEvent(event);
+            } catch (Exception e) {
+                log.error("发布订单发货事件失败: orderId={}", orderId, e);
+            }
+
+            log.info("商家发货成功，订单号: {}", order.getOrderNo());
+            return true;
+
+        } catch (OrderException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("商家发货失败，订单ID: {}", orderId, e);
+            throw new OrderException("发货失败: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public Map<String, Object> getMerchantOrderStats(Long merchantId) {
+        log.info("获取商家订单统计，商家ID: {}", merchantId);
+
+        Map<String, Object> stats = new HashMap<>();
+
+        // 统计各状态订单数量
+        List<Object[]> statusCounts = orderRepository.countOrdersByMerchantIdGroupByStatus(merchantId);
+        for (Object[] row : statusCounts) {
+            OrderStatus status = (OrderStatus) row[0];
+            Long count = (Long) row[1];
+            stats.put(status.name().toLowerCase(), count);
+        }
+
+        // 统计总订单数
+        stats.put("totalOrders", orderRepository.countByMerchantId(merchantId));
+
+        return stats;
+    }
+
+    // ==================== 管理员订单管理 ====================
+
+    @Override
+    public Page<Order> getAllOrders(Pageable pageable) {
+        log.info("分页查询所有订单（管理员），页码: {}, 页大小: {}", 
+                pageable.getPageNumber(), pageable.getPageSize());
+        return orderRepository.findAllByOrderByCreateTimeDesc(pageable);
+    }
+
+    @Override
+    public Page<Order> getAllOrdersByStatus(OrderStatus status, Pageable pageable) {
+        log.info("根据状态分页查询所有订单（管理员），状态: {}", status);
+        return orderRepository.findByStatusOrderByCreateTimeDesc(status, pageable);
+    }
+
+    @Override
+    public Page<Order> searchOrdersByOrderNo(String orderNo, Pageable pageable) {
+        log.info("根据订单号搜索订单（管理员），订单号: {}", orderNo);
+        return orderRepository.findByOrderNoContainingOrderByCreateTimeDesc(orderNo, pageable);
+    }
+
+    @Override
+    public Map<String, Object> getAdminOrderStats() {
+        log.info("获取管理员订单统计");
+
+        Map<String, Object> stats = new HashMap<>();
+
+        // 统计各状态订单数量
+        List<Object[]> statusCounts = orderRepository.countAllOrdersGroupByStatus();
+        long totalOrders = 0;
+        for (Object[] row : statusCounts) {
+            OrderStatus status = (OrderStatus) row[0];
+            Long count = (Long) row[1];
+            stats.put(status.name().toLowerCase(), count);
+            totalOrders += count;
+        }
+
+        stats.put("totalOrders", totalOrders);
+
+        return stats;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean handleRefund(Long orderId, Boolean approved, String reason) {
+        log.info("管理员处理退款，订单ID: {}, 是否同意: {}, 原因: {}", orderId, approved, reason);
+
+        try {
+            Order order = orderRepository.findById(orderId)
+                    .orElseThrow(() -> new OrderNotFoundException(orderId));
+
+            // 验证订单状态为退款中
+            if (order.getStatus() != OrderStatus.REFUND_PENDING) {
+                throw new OrderStatusException("订单状态不是退款中，无法处理");
+            }
+
+            if (approved) {
+                // 同意退款
+                order.setStatus(OrderStatus.REFUNDED);
+                order.setRefundTime(LocalDateTime.now());
+
+                // 恢复库存
+                List<OrderItem> orderItems = orderItemRepository.findByOrderId(orderId);
+                for (OrderItem item : orderItems) {
+                    Map<String, Object> restoreRequest = new HashMap<>();
+                    restoreRequest.put("productId", item.getProductId());
+                    restoreRequest.put("quantity", item.getQuantity());
+                    restoreRequest.put("orderNo", order.getOrderNo());
+                    try {
+                        productClient.restoreStock(restoreRequest);
+                    } catch (Exception e) {
+                        log.warn("恢复库存失败，商品ID: {}", item.getProductId(), e);
+                    }
+                }
+
+                log.info("退款处理成功（同意），订单号: {}", order.getOrderNo());
+            } else {
+                // 拒绝退款，恢复到已付款状态
+                order.setStatus(OrderStatus.PAID);
+                log.info("退款处理成功（拒绝），订单号: {}", order.getOrderNo());
+            }
+
+            orderRepository.save(order);
+            return true;
+
+        } catch (OrderException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("处理退款失败，订单ID: {}", orderId, e);
+            throw new OrderException("处理退款失败: " + e.getMessage(), e);
         }
     }
 }

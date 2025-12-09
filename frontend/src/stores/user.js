@@ -74,9 +74,21 @@ export const useUserStore = defineStore('user', () => {
       if (loginData.type === 'merchant') {
         userData.role = userData.role || 'merchant'
         userData.isMerchant = true
+        // 确保merchantId被保存（可能在不同字段中）
+        const merchantIdValue = userData.merchantId || userData.id
+        if (merchantIdValue) {
+          userData.merchantId = merchantIdValue
+          // 同时保存到localStorage以便直接访问
+          localStorage.setItem('merchantId', String(merchantIdValue))
+        }
       } else if (loginData.type === 'admin') {
         userData.role = userData.role || 'admin'
         userData.isAdmin = true
+      }
+      
+      // 如果是普通用户登录，保存userId
+      if (userData.id) {
+        localStorage.setItem('userId', String(userData.id))
       }
       
       token.value = tokenValue

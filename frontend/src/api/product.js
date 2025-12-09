@@ -18,10 +18,10 @@ export function getProductList(params) {
 }
 
 // 获取商品详情
-// TODO: 后续优化 - 统一迁移到product-service
+// V2.0 2025-12-02: 迁移到 product-service，商品数据统一从 product-service 获取
 export function getProductDetail(id) {
   return request({
-    url: `/merchant/products/${id}`,
+    url: `/product-service/${id}`,
     method: 'get'
   })
 }

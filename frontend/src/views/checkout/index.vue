@@ -171,16 +171,16 @@
           <el-cascader
             v-model="addressForm.region"
             :options="regionOptions"
-            placeholder="请选择省市区"
+            placeholder="请选择省市"
             style="width: 100%">
           </el-cascader>
         </el-form-item>
         <el-form-item label="详细地址" prop="detailAddress">
-          <el-input 
-            v-model="addressForm.detailAddress" 
+          <el-input
+            v-model="addressForm.detailAddress"
             type="textarea"
             :rows="2"
-            placeholder="请输入详细地址">
+            placeholder="请输入详细地址（包含区县、街道、门牌号等）">
           </el-input>
         </el-form-item>
         <el-form-item>
@@ -242,10 +242,10 @@ const addressRules = {
     { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }
   ],
   region: [
-    { required: true, message: '请选择所在地区', trigger: 'change' }
+    { required: true, message: '请选择省市', trigger: 'change' }
   ],
   detailAddress: [
-    { required: true, message: '请输入详细地址', trigger: 'blur' }
+    { required: true, message: '请输入详细地址（包含区县、街道等信息）', trigger: 'blur' }
   ]
 }
 
@@ -344,15 +344,13 @@ const addAddress = () => {
 
 const editAddress = (address) => {
   editingAddress.value = address
-  
-  // 根据地址数据格式设置表单值
+
+  // 根据地址数据格式设置表单值（二级联动：省市）
   let region = []
-  if (address.provinceCode && address.cityCode && address.districtCode) {
-    region = [address.provinceCode, address.cityCode, address.districtCode]
-  } else if (address.province && address.city && address.district) {
-    region = [address.province, address.city, address.district]
+  if (address.provinceCode && address.cityCode) {
+    region = [address.provinceCode, address.cityCode]
   }
-  
+
   addressForm.value = {
     receiverName: address.receiverName,
     receiverPhone: address.receiverPhone,
@@ -367,17 +365,16 @@ const saveAddress = async () => {
   try {
     await addressFormRef.value.validate()
     addressSaving.value = true
-    
-    // 构建地址数据
+
+    // 构建地址数据（二级联动：省市）
     const addressData = {
       receiverName: addressForm.value.receiverName,
       receiverPhone: addressForm.value.receiverPhone,
       provinceCode: addressForm.value.region[0],
       cityCode: addressForm.value.region[1],
-      districtCode: addressForm.value.region[2],
       province: getRegionName(addressForm.value.region[0]),
       city: getRegionName(addressForm.value.region[1]),
-      district: getRegionName(addressForm.value.region[2]),
+      district: '',  // 区县信息包含在详细地址中
       detailAddress: addressForm.value.detailAddress,
       isDefault: addressForm.value.isDefault
     }
@@ -432,21 +429,31 @@ const submitOrder = async () => {
     
     submitting.value = true
     
-    // 构建订单数据
+    // 构建订单数据（匹配后端CreateOrderRequest格式）
+    const fullAddress = [
+      selectedAddress.value.province,
+      selectedAddress.value.city,
+      selectedAddress.value.district,
+      selectedAddress.value.detailAddress
+    ].filter(Boolean).join(' ')
+    
     const orderData = {
       userId: userStore.userId,
       // 地址信息
       receiverName: selectedAddress.value.receiverName,
       receiverPhone: selectedAddress.value.receiverPhone,
-      receiverAddress: `${selectedAddress.value.province}${selectedAddress.value.city}${selectedAddress.value.district}${selectedAddress.value.detailAddress}`,
-      // 商品信息 - 后端期望orderItems字段
+      receiverAddress: fullAddress,
+      // 商品信息（后端期望字段名为orderItems）
       orderItems: checkoutItems.value.map(item => ({
         productId: item.productId,
         productSpec: item.specifications || '',
         quantity: item.quantity
       })),
+      // 运费和优惠（暂时设为0）
+      shippingFee: 0,
+      discountAmount: 0,
       // 订单备注
-      remark: orderRemark.value
+      remark: orderRemark.value || ''
     }
     
     console.log('提交订单数据:', orderData)
@@ -461,10 +468,14 @@ const submitOrder = async () => {
       // 清空购物车中的已结算商品
       await cartStore.clearSelected()
       
-      // 跳转到订单详情或支付页面
+      // 后端返回的订单对象中，订单ID字段名为id
+      const orderId = response.data.id || response.data.orderId
+      console.log('订单创建成功，订单ID:', orderId)
+      
+      // 根据支付方式跳转
       if (selectedPayment.value === 1) {
         // 在线支付，跳转到支付页面
-        router.push(`/payment/${response.data.orderId}`)
+        router.push(`/payment/${orderId}`)
       } else {
         // 货到付款，跳转到订单列表
         router.push('/user/orders')

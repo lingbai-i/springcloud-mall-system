@@ -322,22 +322,27 @@ const loadProductDetail = async () => {
         console.warn('解析商品属性失败:', e)
       }
       
+      // V2.0 2025-12-02: 适配 product-service 返回的字段名
+      // product-service 字段: name, stock, originalPrice, mainImage, detailImages, sales
+      // merchant-service 字段: productName, stockQuantity, marketPrice, mainImage, images, salesCount
       product.value = {
         id: productData.id,
-        name: productData.productName,
+        name: productData.name || productData.productName,
         subtitle: productData.seoDescription || '',
         price: productData.price,
-        originalPrice: productData.marketPrice,
-        stock: productData.stockQuantity || 0,
+        originalPrice: productData.originalPrice || productData.marketPrice,
+        stock: productData.stock || productData.stockQuantity || 0,
         image: productData.mainImage,
-        images: productData.images ? productData.images.split(',').filter(img => img) : [productData.mainImage],
+        images: (productData.detailImages || productData.images) 
+          ? (productData.detailImages || productData.images).split(',').filter(img => img) 
+          : [productData.mainImage],
         description: productData.description || '暂无详细描述',
         tags: [],
         specifications: specifications,
         parameters: parameters,
         rating: productData.rating ? parseFloat(productData.rating) : 5.0,
         reviewCount: productData.reviewCount || 0,
-        sales: productData.salesCount || 0,
+        sales: productData.sales || productData.salesCount || 0,
         status: productData.status
       }
     } catch (apiError) {
@@ -404,22 +409,12 @@ const addToCart = async () => {
       specifications: currentSpecName.value
     }
     
-    // 使用真实API添加到购物车
-    try {
-      await addToCartApi(cartItem)
+    // 使用store添加到购物车（store内部会调用API并更新状态）
+    const success = await cartStore.addToCart(cartItem)
+    if (success) {
       ElMessage.success('已添加到购物车')
-      
-      // 更新购物车状态
-      if (cartStore.addItem) {
-        await cartStore.addItem(cartItem)
-      }
-    } catch (apiError) {
-      console.warn('购物车API调用失败:', apiError)
-      // 如果API失败，仍然更新本地状态
-      if (cartStore.addItem) {
-        await cartStore.addItem(cartItem)
-      }
-      ElMessage.success('已添加到购物车')
+    } else {
+      ElMessage.error('添加购物车失败')
     }
     
   } catch (error) {

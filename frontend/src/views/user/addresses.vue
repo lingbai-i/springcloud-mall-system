@@ -1,7 +1,13 @@
 <template>
   <div class="addresses-page">
     <div class="page-header">
-      <h1>收货地址管理</h1>
+      <div class="header-left">
+        <el-button text @click="$router.back()" class="back-button">
+          <el-icon><ArrowLeft /></el-icon>
+          返回
+        </el-button>
+        <h1>收货地址管理</h1>
+      </div>
       <el-button type="primary" @click="showAddDialog = true">
         <LocalIcon name="tianjia" :size="16" />
         添加新地址
@@ -17,12 +23,12 @@
       >
         <div class="address-info">
           <div class="address-header">
-            <span class="recipient">{{ address.recipient }}</span>
-            <span class="phone">{{ address.phone }}</span>
+            <span class="recipient">{{ address.receiverName }}</span>
+            <span class="phone">{{ address.receiverPhone }}</span>
             <el-tag v-if="address.isDefault" type="success" size="small">默认</el-tag>
           </div>
           <div class="address-detail">
-            {{ address.province }} {{ address.city }} {{ address.district }} {{ address.detail }}
+            {{ address.province }} {{ address.city }} {{ address.detailAddress }}
           </div>
         </div>
         
@@ -98,12 +104,16 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus'
+import { ArrowLeft } from '@element-plus/icons-vue'
 // @ts-ignore
 import LocalIcon from '@/components/LocalIcon.vue'
+import { regionData } from '@/utils/region-data'
+import { getAddressList, addAddress, updateAddress, deleteAddress as deleteAddressApi, setDefaultAddress } from '@/api/address'
 
 const addressFormRef = ref<FormInstance>()
 const showAddDialog = ref(false)
 const editingAddress = ref<any>(null)
+const loading = ref(false)
 
 // 地址列表
 const addresses = ref<any[]>([])
@@ -127,15 +137,36 @@ const addressRules = {
     { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }
   ],
   region: [
-    { required: true, message: '请选择所在地区', trigger: 'change' }
+    { required: true, message: '请选择省市', trigger: 'change' }
   ],
   detail: [
-    { required: true, message: '请输入详细地址', trigger: 'blur' }
+    { required: true, message: '请输入详细地址（包含区县、街道等信息）', trigger: 'blur' }
   ]
 }
 
-// 地区选项将从API获取
-const regionOptions = ref([])
+// 地区选项 - 使用完整的省市数据
+const regionOptions = ref(regionData)
+
+/**
+ * 加载地址列表
+ */
+const loadAddresses = async () => {
+  try {
+    loading.value = true
+    const response = await getAddressList()
+    // request.js拦截器已将响应转换为标准格式
+    if (response.success) {
+      addresses.value = response.data || []
+    } else {
+      ElMessage.error(response.message || '加载地址失败')
+    }
+  } catch (error) {
+    console.error('加载地址列表失败:', error)
+    ElMessage.error('加载地址列表失败')
+  } finally {
+    loading.value = false
+  }
+}
 
 /**
  * 编辑地址
@@ -143,10 +174,10 @@ const regionOptions = ref([])
 const editAddress = (address: any) => {
   editingAddress.value = address
   Object.assign(addressForm, {
-    recipient: address.recipient,
-    phone: address.phone,
-    region: [address.province, address.city, address.district],
-    detail: address.detail,
+    recipient: address.receiverName,
+    phone: address.receiverPhone,
+    region: [address.provinceCode, address.cityCode],
+    detail: address.detailAddress,
     isDefault: address.isDefault
   })
   showAddDialog.value = true
@@ -162,25 +193,40 @@ const deleteAddress = async (addressId: number) => {
       cancelButtonText: '取消',
       type: 'warning'
     })
-    
-    const index = addresses.value.findIndex(addr => addr.id === addressId)
-    if (index > -1) {
-      addresses.value.splice(index, 1)
+
+    const response = await deleteAddressApi(addressId)
+    // request.js拦截器已将响应转换为标准格式
+    if (response.success) {
       ElMessage.success('地址删除成功')
+      loadAddresses()
+    } else {
+      ElMessage.error(response.message || '删除失败')
     }
-  } catch (error) {
-    // 用户取消删除
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      console.error('删除地址失败:', error)
+      ElMessage.error('删除地址失败')
+    }
   }
 }
 
 /**
  * 设为默认地址
  */
-const setDefault = (addressId: number) => {
-  addresses.value.forEach(addr => {
-    addr.isDefault = addr.id === addressId
-  })
-  ElMessage.success('默认地址设置成功')
+const setDefault = async (addressId: number) => {
+  try {
+    const response = await setDefaultAddress(addressId)
+    // request.js拦截器已将响应转换为标准格式
+    if (response.success) {
+      ElMessage.success('默认地址设置成功')
+      loadAddresses()
+    } else {
+      ElMessage.error(response.message || '设置失败')
+    }
+  } catch (error) {
+    console.error('设置默认地址失败:', error)
+    ElMessage.error('设置默认地址失败')
+  }
 }
 
 /**
@@ -188,56 +234,52 @@ const setDefault = (addressId: number) => {
  */
 const saveAddress = async () => {
   if (!addressFormRef.value) return
-  
+
   await addressFormRef.value.validate(async (valid) => {
     if (valid) {
       try {
-        const [province, city, district] = addressForm.region
-        
+        loading.value = true
+        const [provinceCode, cityCode] = addressForm.region
+
+        // 根据code获取省市名称
+        const provinceData = regionData.find(p => p.value === provinceCode)
+        const cityData = provinceData?.children?.find(c => c.value === cityCode)
+
+        const addressData = {
+          receiverName: addressForm.recipient,
+          receiverPhone: addressForm.phone,
+          provinceCode,
+          cityCode,
+          province: provinceData?.label || '',
+          city: cityData?.label || '',
+          district: '',  // 区县信息在详细地址中
+          detailAddress: addressForm.detail,
+          isDefault: addressForm.isDefault
+        }
+
+        let response
         if (editingAddress.value) {
           // 编辑模式
-          const index = addresses.value.findIndex((addr: any) => addr.id === editingAddress.value?.id)
-          if (index > -1) {
-            addresses.value[index] = {
-              ...addresses.value[index],
-              recipient: addressForm.recipient,
-              phone: addressForm.phone,
-              province,
-              city,
-              district,
-              detail: addressForm.detail,
-              isDefault: addressForm.isDefault
-            }
-          }
-          ElMessage.success('地址更新成功')
+          response = await updateAddress(editingAddress.value.id, addressData)
         } else {
           // 新增模式
-          const newAddress = {
-            id: Date.now(),
-            recipient: addressForm.recipient,
-            phone: addressForm.phone,
-            province,
-            city,
-            district,
-            detail: addressForm.detail,
-            isDefault: addressForm.isDefault
-          }
-          
-          // 如果设为默认，取消其他默认地址
-          if (addressForm.isDefault) {
-            addresses.value.forEach(addr => {
-              addr.isDefault = false
-            })
-          }
-          
-          addresses.value.push(newAddress)
-          ElMessage.success('地址添加成功')
+          response = await addAddress(addressData)
         }
-        
-        showAddDialog.value = false
-        resetForm()
+
+        // request.js拦截器已将响应转换为标准格式
+        if (response.success) {
+          ElMessage.success(editingAddress.value ? '地址更新成功' : '地址添加成功')
+          showAddDialog.value = false
+          resetForm()
+          loadAddresses()
+        } else {
+          ElMessage.error(response.message || '保存失败')
+        }
       } catch (error) {
+        console.error('保存地址失败:', error)
         ElMessage.error('保存失败')
+      } finally {
+        loading.value = false
       }
     }
   })
@@ -259,7 +301,7 @@ const resetForm = () => {
 }
 
 onMounted(() => {
-  // 初始化数据
+  loadAddresses()
 })
 </script>
 
@@ -275,6 +317,21 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 30px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.back-button {
+  padding: 8px 12px;
+  color: #606266;
+}
+
+.back-button:hover {
+  color: #409eff;
 }
 
 .page-header h1 {

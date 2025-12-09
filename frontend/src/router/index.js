@@ -202,6 +202,17 @@ const routes = [
       hideLayout: true
     }
   },
+  // 支付页面
+  {
+    path: '/payment/:id',
+    name: 'Payment',
+    component: () => import('@/views/payment/index.vue'),
+    meta: {
+      title: '订单支付',
+      requiresAuth: true,
+      hideLayout: true
+    }
+  },
   // 管理员端路由
   {
     path: '/admin',
