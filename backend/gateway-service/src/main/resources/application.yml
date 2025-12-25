@@ -96,19 +96,16 @@ spring:
           filters:
             - StripPrefix=2
         # 商家服务（单数）
+        # 注意：merchant-service控制器路径包含/api前缀，因此不需要StripPrefix
         - id: merchant-service
           uri: lb://merchant-service
           predicates:
             - Path=/api/merchant/**
-          filters:
-            - StripPrefix=1
         # 商家服务（复数）
         - id: merchant-service-plural
           uri: lb://merchant-service
           predicates:
             - Path=/api/merchants/**
-          filters:
-            - StripPrefix=1
         # 管理服务
         - id: admin-service
           uri: lb://admin-service

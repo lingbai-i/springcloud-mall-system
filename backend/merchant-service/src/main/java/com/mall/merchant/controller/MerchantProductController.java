@@ -34,7 +34,7 @@ import java.util.Map;
  * @since 2025-01-27
  */
 @RestController
-@RequestMapping("/merchant/products")
+@RequestMapping("/api/merchant/products")
 @RequiredArgsConstructor
 @Validated
 @Tag(name = "商家商品管理", description = "商品的增删改查、上下架、库存管理等功能")

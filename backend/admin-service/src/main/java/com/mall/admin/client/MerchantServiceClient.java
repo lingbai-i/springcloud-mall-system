@@ -13,7 +13,7 @@ import java.util.Map;
  * @author system
  * @since 2025-01-09
  */
-@FeignClient(name = "merchant-service", path = "/admin/merchants")
+@FeignClient(name = "merchant-service", path = "/api/admin/merchants")
 public interface MerchantServiceClient {
 
         /**

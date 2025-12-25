@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.PathVariable;
  * @version 1.0
  * @since 2025-01-21
  */
-@FeignClient(name = "merchant-service", path = "/merchant/products")
+@FeignClient(name = "merchant-service", path = "/api/merchant/products")
 public interface ProductClient {
 
     /**

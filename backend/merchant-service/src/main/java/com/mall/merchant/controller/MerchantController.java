@@ -28,7 +28,7 @@ import java.util.Map;
  * @since 2025-01-27
  */
 @RestController
-@RequestMapping("/merchant")
+@RequestMapping("/api/merchant")
 @RequiredArgsConstructor
 @Validated
 @Tag(name = "商家管理", description = "商家注册、登录、信息管理、认证等功能")

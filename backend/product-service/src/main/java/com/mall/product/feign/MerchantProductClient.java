@@ -21,7 +21,7 @@ public interface MerchantProductClient {
   /**
    * 获取商品列表
    */
-  @GetMapping("/merchant/products/list")
+  @GetMapping("/api/merchant/products/list")
   R<PageResult<Map<String, Object>>> getProductList(
       @RequestParam(name = "merchantId") Long merchantId,
       @RequestParam(name = "page", defaultValue = "1") Integer page,
@@ -31,7 +31,7 @@ public interface MerchantProductClient {
   /**
    * 获取热销商品
    */
-  @GetMapping("/merchant/products/hot-selling")
+  @GetMapping("/api/merchant/products/hot-selling")
   R<java.util.List<Map<String, Object>>> getHotSellingProducts(
       @RequestParam(name = "merchantId") Long merchantId,
       @RequestParam(name = "limit", defaultValue = "10") Integer limit);
@@ -39,7 +39,7 @@ public interface MerchantProductClient {
   /**
    * 获取推荐商品
    */
-  @GetMapping("/merchant/products/recommended")
+  @GetMapping("/api/merchant/products/recommended")
   R<PageResult<Map<String, Object>>> getRecommendedProducts(
       @RequestParam(name = "merchantId") Long merchantId,
       @RequestParam(name = "page", defaultValue = "1") Integer page,

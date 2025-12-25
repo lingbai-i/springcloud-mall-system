@@ -24,7 +24,7 @@ import java.util.Map;
  */
 @Slf4j
 @RestController
-@RequestMapping("/merchants")
+@RequestMapping("/api/merchants")
 @RequiredArgsConstructor
 public class MerchantApplicationController {
 
