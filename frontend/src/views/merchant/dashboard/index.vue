@@ -5,7 +5,7 @@
       <el-card shadow="never" class="welcome-card">
         <div class="welcome-content">
           <div class="welcome-info">
-            <h2>欢迎回来，{{ userStore.userInfo?.shopName || '商家' }}！</h2>
+            <h2>欢迎回来，{{ userStore.userInfo?.shopName || userStore.userInfo?.nickname || userStore.userInfo?.username || '商家' }}！</h2>
             <p class="welcome-desc">今天是 {{ currentDate }}，祝您生意兴隆！</p>
             <div class="quick-actions">
               <el-button type="primary" @click="$router.push('/merchant/products/add')">
@@ -23,7 +23,7 @@
             </div>
           </div>
           <div class="welcome-avatar">
-            <el-avatar :size="80" :src="userStore.userInfo?.avatar">
+            <el-avatar :size="80" :src="userStore.userInfo?.avatar || userStore.userInfo?.logo">
               <el-icon><User /></el-icon>
             </el-avatar>
           </div>

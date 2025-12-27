@@ -116,7 +116,7 @@
           <!-- 用户信息 -->
           <el-dropdown @command="handleCommand" class="user-dropdown">
             <span class="user-info">
-              <el-avatar :size="32" :src="userStore.avatar" />
+              <el-avatar :size="32" :src="userStore.userInfo?.avatar || userStore.userInfo?.logo" />
               <span class="username">{{ displayName }}</span>
               <el-icon><ArrowDown /></el-icon>
             </span>
@@ -174,10 +174,10 @@ const notificationCount = ref(0)
 // 当前激活的菜单
 const activeMenu = computed(() => route.path)
 
-// 显示名称：优先显示店铺名称，其次用户名
+// 显示名称：优先显示店铺名称，其次昵称，最后用户名
 const displayName = computed(() => {
   const info = userStore.userInfo
-  return info.shopName || info.username || '商家'
+  return info.shopName || info.nickname || info.username || '商家'
 })
 
 // 面包屑导航
