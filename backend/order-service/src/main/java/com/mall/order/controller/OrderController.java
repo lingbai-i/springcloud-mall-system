@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -330,6 +331,59 @@ public class OrderController {
         return R.ok(stats);
     }
 
+    /**
+     * 获取商家最近订单
+     * 
+     * @param merchantId 商家ID
+     * @param limit 数量限制
+     * @return 最近订单列表
+     */
+    @GetMapping("/merchant/recent")
+    public R<List<Order>> getMerchantRecentOrders(
+            @RequestParam Long merchantId,
+            @RequestParam(value = "limit", defaultValue = "10") int limit) {
+        log.info("获取商家最近订单，商家ID: {}, 数量: {}", merchantId, limit);
+
+        List<Order> orders = orderService.getMerchantRecentOrders(merchantId, limit);
+        return R.ok(orders);
+    }
+
+    /**
+     * 获取商家每日销售统计
+     * 
+     * @param merchantId 商家ID
+     * @param startDate 开始日期
+     * @param endDate 结束日期
+     * @return 每日销售统计列表
+     */
+    @GetMapping("/merchant/daily-sales")
+    public R<List<Map<String, Object>>> getMerchantDailySales(
+            @RequestParam Long merchantId,
+            @RequestParam String startDate,
+            @RequestParam String endDate) {
+        log.info("获取商家每日销售统计，商家ID: {}, 开始日期: {}, 结束日期: {}", merchantId, startDate, endDate);
+
+        List<Map<String, Object>> dailySales = orderService.getMerchantDailySales(merchantId, startDate, endDate);
+        return R.ok(dailySales);
+    }
+
+    /**
+     * 获取商家热销商品统计
+     * 
+     * @param merchantId 商家ID
+     * @param limit 数量限制
+     * @return 热销商品列表
+     */
+    @GetMapping("/merchant/hot-products")
+    public R<List<Map<String, Object>>> getMerchantHotProducts(
+            @RequestParam Long merchantId,
+            @RequestParam(value = "limit", defaultValue = "10") int limit) {
+        log.info("获取商家热销商品统计，商家ID: {}, 数量: {}", merchantId, limit);
+
+        List<Map<String, Object>> hotProducts = orderService.getMerchantHotProducts(merchantId, limit);
+        return R.ok(hotProducts);
+    }
+
     // ==================== 管理员订单管理接口 ====================
 
     /**
@@ -402,5 +456,35 @@ public class OrderController {
 
         Boolean result = orderService.handleRefund(id, approved, reason);
         return R.ok(result);
+    }
+
+    /**
+     * 获取销售趋势数据（管理员）
+     * 
+     * @param days 天数
+     * @return 销售趋势数据
+     */
+    @GetMapping("/admin/sales-trend")
+    public R<Map<String, Object>> getAdminSalesTrend(
+            @RequestParam(value = "days", defaultValue = "30") int days) {
+        log.info("获取管理员销售趋势数据，天数: {}", days);
+
+        Map<String, Object> result = orderService.getAdminSalesTrend(days);
+        return R.ok(result);
+    }
+
+    /**
+     * 获取最近订单（管理员）
+     * 
+     * @param limit 数量限制
+     * @return 最近订单列表
+     */
+    @GetMapping("/admin/recent")
+    public R<List<Map<String, Object>>> getAdminRecentOrders(
+            @RequestParam(value = "limit", defaultValue = "10") int limit) {
+        log.info("获取管理员最近订单，数量: {}", limit);
+
+        List<Map<String, Object>> orders = orderService.getAdminRecentOrders(limit);
+        return R.ok(orders);
     }
 }

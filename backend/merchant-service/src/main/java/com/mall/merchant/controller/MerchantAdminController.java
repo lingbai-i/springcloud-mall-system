@@ -30,6 +30,26 @@ public class MerchantAdminController {
   private final MerchantService merchantService;
 
   /**
+   * 获取商家统计数据（管理员）
+   * 供 admin-service Feign 调用
+   */
+  @GetMapping("/statistics")
+  public R<Map<String, Object>> getMerchantStatistics() {
+    log.info("管理员获取商家统计数据");
+    
+    try {
+      R<Map<String, Object>> result = merchantService.getMerchantStatistics();
+      if (result.isSuccess()) {
+        return R.ok(result.getData());
+      }
+      return R.fail("获取商家统计失败");
+    } catch (Exception e) {
+      log.error("获取商家统计失败", e);
+      return R.fail("获取商家统计失败: " + e.getMessage());
+    }
+  }
+
+  /**
    * 获取申请列表（管理员）
    */
   @GetMapping("/applications")

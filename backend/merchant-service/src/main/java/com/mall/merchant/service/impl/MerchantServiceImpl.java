@@ -701,22 +701,25 @@ public class MerchantServiceImpl implements MerchantService {
             Long totalMerchants = merchantRepository.countTotalMerchants();
             statistics.put("totalMerchants", totalMerchants);
 
-            // 待审核商家数
-            // 修复说明：仓库方法改为 countByApprovalStatus，字段与实体一致
-            Long pendingAudit = merchantRepository.countByApprovalStatus(1);
+            // 待审核商家数（供 admin-service 使用）
+            // 审核状态：0-待审核，1-审核通过，2-审核拒绝
+            Long pendingAudit = merchantRepository.countByApprovalStatus(0);
             statistics.put("pendingAudit", pendingAudit);
+            statistics.put("pendingMerchants", pendingAudit); // 兼容 admin-service 字段名
 
             // 已通过审核商家数
-            Long approved = merchantRepository.countByApprovalStatus(2);
+            Long approved = merchantRepository.countByApprovalStatus(1);
             statistics.put("approved", approved);
+            statistics.put("approvedMerchants", approved); // 兼容 admin-service 字段名
 
             // 审核被拒绝商家数
-            Long rejected = merchantRepository.countByApprovalStatus(3);
+            Long rejected = merchantRepository.countByApprovalStatus(2);
             statistics.put("rejected", rejected);
 
             // 正常状态商家数
             Long normalStatus = merchantRepository.countByStatus(1);
             statistics.put("normalStatus", normalStatus);
+            statistics.put("activeMerchants", normalStatus); // 兼容 admin-service 字段名
 
             // 禁用状态商家数
             Long disabledStatus = merchantRepository.countByStatus(0);
@@ -735,6 +738,17 @@ public class MerchantServiceImpl implements MerchantService {
             LocalDateTime todayEnd = todayStart.plusDays(1);
             Long todayNew = merchantRepository.countNewMerchants(todayStart, todayEnd);
             statistics.put("todayNew", todayNew);
+            
+            // 计算商家趋势（今日新增/昨日新增）
+            LocalDateTime yesterdayStart = todayStart.minusDays(1);
+            Long yesterdayNew = merchantRepository.countNewMerchants(yesterdayStart, todayStart);
+            double merchantsTrend = 0;
+            if (yesterdayNew != null && yesterdayNew > 0) {
+                merchantsTrend = ((double)(todayNew - yesterdayNew) / yesterdayNew) * 100;
+            } else if (todayNew != null && todayNew > 0) {
+                merchantsTrend = 100;
+            }
+            statistics.put("merchantsTrend", Math.round(merchantsTrend * 100.0) / 100.0);
 
             return R.ok(statistics);
 

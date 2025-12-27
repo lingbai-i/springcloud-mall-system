@@ -812,31 +812,19 @@ public class UserController {
 
     /**
      * 获取用户统计数据
+     * 供 admin-service Feign 调用
      */
     @GetMapping("/statistics")
     @Operation(summary = "获取用户统计数据", description = "获取用户总数、活跃用户等统计信息")
-    public ResponseEntity<Map<String, Object>> getUserStatistics() {
+    public com.mall.common.core.domain.R<Map<String, Object>> getUserStatistics() {
         logger.info("获取用户统计数据请求");
-
-        Map<String, Object> response = new HashMap<>();
 
         try {
             Map<String, Object> stats = userService.getUserStatistics();
-
-            // 返回符合Feign预期的格式：包含code字段
-            response.put("code", 200);
-            response.put("message", "获取统计数据成功");
-            response.put("data", stats);
-            response.put("timestamp", System.currentTimeMillis());
-
-            return ResponseEntity.ok(response);
-
+            return com.mall.common.core.domain.R.ok(stats);
         } catch (Exception e) {
             logger.error("获取用户统计数据失败", e);
-            response.put("code", 500);
-            response.put("message", "获取统计数据失败: " + e.getMessage());
-            response.put("timestamp", System.currentTimeMillis());
-            return ResponseEntity.status(500).body(response);
+            return com.mall.common.core.domain.R.fail("获取统计数据失败: " + e.getMessage());
         }
     }
 

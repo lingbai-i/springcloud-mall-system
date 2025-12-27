@@ -206,4 +206,105 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
      */
     @Query("SELECT o.status, COUNT(o) FROM Order o GROUP BY o.status")
     List<Object[]> countAllOrdersGroupByStatus();
+
+    /**
+     * 计算已完成订单的总交易额
+     * 
+     * @return 总交易额
+     */
+    @Query("SELECT COALESCE(SUM(o.payAmount), 0) FROM Order o WHERE o.status = 'COMPLETED'")
+    java.math.BigDecimal sumCompletedOrdersAmount();
+
+    /**
+     * 计算有效交易额（已付款、已发货、已完成的订单）
+     * 
+     * @return 有效交易额
+     */
+    @Query("SELECT COALESCE(SUM(o.payAmount), 0) FROM Order o WHERE o.status IN ('PAID', 'SHIPPED', 'COMPLETED')")
+    java.math.BigDecimal sumValidTransactionAmount();
+
+    /**
+     * 计算指定日期范围内已完成订单的总交易额
+     * 
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     * @return 交易额
+     */
+    @Query("SELECT COALESCE(SUM(o.payAmount), 0) FROM Order o WHERE o.status = 'COMPLETED' AND o.createTime >= :startTime AND o.createTime < :endTime")
+    java.math.BigDecimal sumCompletedOrdersAmountBetween(@Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
+
+    /**
+     * 计算指定日期范围内有效交易额（已付款、已发货、已完成的订单）
+     * 
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     * @return 有效交易额
+     */
+    @Query("SELECT COALESCE(SUM(o.payAmount), 0) FROM Order o WHERE o.status IN ('PAID', 'SHIPPED', 'COMPLETED') AND o.createTime >= :startTime AND o.createTime < :endTime")
+    java.math.BigDecimal sumValidTransactionAmountBetween(@Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
+
+    /**
+     * 统计指定日期范围内的订单数量
+     * 
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     * @return 订单数量
+     */
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.createTime >= :startTime AND o.createTime < :endTime")
+    long countOrdersBetween(@Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
+
+    /**
+     * 按日期统计销售额和订单数（用于趋势图）
+     * 
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     * @return 每日统计数据 [日期, 销售额, 订单数]
+     */
+    @Query("SELECT FUNCTION('DATE', o.createTime) as orderDate, COALESCE(SUM(o.payAmount), 0), COUNT(o) FROM Order o WHERE o.createTime >= :startTime AND o.createTime < :endTime GROUP BY FUNCTION('DATE', o.createTime) ORDER BY orderDate")
+    List<Object[]> getDailySalesStatistics(@Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
+
+    /**
+     * 查询最近的订单（管理员）
+     * 
+     * @param pageable 分页参数
+     * @return 最近订单列表
+     */
+    @Query("SELECT o FROM Order o ORDER BY o.createTime DESC")
+    List<Order> findRecentOrders(Pageable pageable);
+
+    /**
+     * 统计指定状态的订单数量
+     * 
+     * @param status 订单状态
+     * @return 订单数量
+     */
+    long countByStatus(OrderStatus status);
+
+    // ==================== 商家仪表盘查询 ====================
+
+    /**
+     * 按日期统计商家销售额和订单数（用于趋势图）
+     * 
+     * @param merchantId 商家ID
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     * @return 每日统计数据 [日期, 销售额, 订单数]
+     */
+    @Query("SELECT FUNCTION('DATE', o.createTime) as orderDate, COALESCE(SUM(o.payAmount), 0), COUNT(o) FROM Order o WHERE o.merchantId = :merchantId AND o.createTime >= :startTime AND o.createTime < :endTime GROUP BY FUNCTION('DATE', o.createTime) ORDER BY orderDate")
+    List<Object[]> getMerchantDailySalesStatistics(@Param("merchantId") Long merchantId, @Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
+
+    /**
+     * 获取商家热销商品统计
+     * 使用 JPQL 查询避免 JSqlParser 版本兼容问题
+     * 
+     * @param merchantId 商家ID
+     * @param pageable 分页参数
+     * @return 热销商品数据 [商品ID, 商品名称, 销量, 销售额]
+     */
+    @Query("SELECT oi.productId, oi.productName, SUM(oi.quantity), SUM(oi.subtotal) " +
+            "FROM OrderItem oi JOIN oi.order o " +
+            "WHERE o.merchantId = :merchantId AND o.status IN ('PAID', 'SHIPPED', 'COMPLETED') " +
+            "GROUP BY oi.productId, oi.productName " +
+            "ORDER BY SUM(oi.quantity) DESC")
+    List<Object[]> getMerchantHotProducts(@Param("merchantId") Long merchantId, Pageable pageable);
 }

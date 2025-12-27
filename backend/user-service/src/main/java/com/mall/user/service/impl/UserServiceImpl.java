@@ -262,12 +262,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             // 统计总用户数
             Long total = userMapper.selectCount(null);
             stats.put("total", total != null ? total : 0);
+            stats.put("totalUsers", total != null ? total : 0); // 兼容 admin-service 字段名
 
             // 统计活跃用户数（状态为1）
             LambdaQueryWrapper<User> activeWrapper = new LambdaQueryWrapper<>();
             activeWrapper.eq(User::getStatus, 1);
             Long active = userMapper.selectCount(activeWrapper);
             stats.put("active", active != null ? active : 0);
+            stats.put("activeUsers", active != null ? active : 0); // 兼容 admin-service 字段名
 
             // 统计禁用用户数（状态为0）
             LambdaQueryWrapper<User> disabledWrapper = new LambdaQueryWrapper<>();
@@ -277,6 +279,27 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
             // 统计待验证用户数（暂时设置为0，后续根据实际业务调整）
             stats.put("pending", 0);
+            
+            // 计算用户趋势（今日新增/昨日新增）
+            java.time.LocalDateTime todayStart = java.time.LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0);
+            java.time.LocalDateTime yesterdayStart = todayStart.minusDays(1);
+            
+            LambdaQueryWrapper<User> todayWrapper = new LambdaQueryWrapper<>();
+            todayWrapper.ge(User::getCreateTime, todayStart);
+            Long todayNew = userMapper.selectCount(todayWrapper);
+            
+            LambdaQueryWrapper<User> yesterdayWrapper = new LambdaQueryWrapper<>();
+            yesterdayWrapper.ge(User::getCreateTime, yesterdayStart);
+            yesterdayWrapper.lt(User::getCreateTime, todayStart);
+            Long yesterdayNew = userMapper.selectCount(yesterdayWrapper);
+            
+            double usersTrend = 0;
+            if (yesterdayNew != null && yesterdayNew > 0) {
+                usersTrend = ((double)((todayNew != null ? todayNew : 0) - yesterdayNew) / yesterdayNew) * 100;
+            } else if (todayNew != null && todayNew > 0) {
+                usersTrend = 100;
+            }
+            stats.put("usersTrend", Math.round(usersTrend * 100.0) / 100.0);
 
             return stats;
 
@@ -285,9 +308,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             e.printStackTrace();
             // 返回默认值
             stats.put("total", 0);
+            stats.put("totalUsers", 0);
             stats.put("active", 0);
+            stats.put("activeUsers", 0);
             stats.put("disabled", 0);
             stats.put("pending", 0);
+            stats.put("usersTrend", 0);
             return stats;
         }
     }

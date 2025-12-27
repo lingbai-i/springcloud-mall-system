@@ -29,14 +29,18 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import org.springframework.data.domain.Sort;
 
 /**
  * 订单服务实现类
@@ -1106,6 +1110,44 @@ public class OrderServiceImpl implements OrderService {
 
         stats.put("totalOrders", totalOrders);
 
+        // 计算总交易额（已付款、已发货、已完成订单金额之和）
+        BigDecimal totalTransactionAmount = orderRepository.sumValidTransactionAmount();
+        stats.put("totalTransactionAmount", totalTransactionAmount != null ? totalTransactionAmount : BigDecimal.ZERO);
+
+        // 计算今日统计
+        LocalDateTime todayStart = LocalDateTime.now().toLocalDate().atStartOfDay();
+        LocalDateTime todayEnd = todayStart.plusDays(1);
+        long todayOrders = orderRepository.countOrdersBetween(todayStart, todayEnd);
+        BigDecimal todayTransactionAmount = orderRepository.sumValidTransactionAmountBetween(todayStart, todayEnd);
+        stats.put("todayOrders", todayOrders);
+        stats.put("todayTransactionAmount", todayTransactionAmount != null ? todayTransactionAmount : BigDecimal.ZERO);
+
+        // 计算昨日统计（用于趋势计算）
+        LocalDateTime yesterdayStart = todayStart.minusDays(1);
+        long yesterdayOrders = orderRepository.countOrdersBetween(yesterdayStart, todayStart);
+        BigDecimal yesterdayTransactionAmount = orderRepository.sumValidTransactionAmountBetween(yesterdayStart, todayStart);
+        stats.put("yesterdayOrders", yesterdayOrders);
+        stats.put("yesterdayTransactionAmount", yesterdayTransactionAmount != null ? yesterdayTransactionAmount : BigDecimal.ZERO);
+
+        // 计算趋势百分比
+        if (yesterdayOrders > 0) {
+            double ordersTrend = ((double)(todayOrders - yesterdayOrders) / yesterdayOrders) * 100;
+            stats.put("ordersTrend", Math.round(ordersTrend * 100.0) / 100.0);
+        } else {
+            stats.put("ordersTrend", todayOrders > 0 ? 100.0 : 0.0);
+        }
+
+        if (yesterdayTransactionAmount != null && yesterdayTransactionAmount.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal todayAmount = todayTransactionAmount != null ? todayTransactionAmount : BigDecimal.ZERO;
+            double transactionTrend = todayAmount.subtract(yesterdayTransactionAmount)
+                    .divide(yesterdayTransactionAmount, 4, java.math.RoundingMode.HALF_UP)
+                    .multiply(new BigDecimal(100))
+                    .doubleValue();
+            stats.put("transactionTrend", Math.round(transactionTrend * 100.0) / 100.0);
+        } else {
+            stats.put("transactionTrend", (todayTransactionAmount != null && todayTransactionAmount.compareTo(BigDecimal.ZERO) > 0) ? 100.0 : 0.0);
+        }
+
         return stats;
     }
 
@@ -1158,5 +1200,155 @@ public class OrderServiceImpl implements OrderService {
             log.error("处理退款失败，订单ID: {}", orderId, e);
             throw new OrderException("处理退款失败: " + e.getMessage(), e);
         }
+    }
+
+    @Override
+    public Map<String, Object> getAdminSalesTrend(int days) {
+        log.info("获取管理员销售趋势数据，天数: {}", days);
+
+        Map<String, Object> result = new HashMap<>();
+        List<String> dates = new ArrayList<>();
+        List<BigDecimal> sales = new ArrayList<>();
+        List<Long> orders = new ArrayList<>();
+
+        LocalDateTime endTime = LocalDateTime.now().toLocalDate().atStartOfDay().plusDays(1);
+        LocalDateTime startTime = endTime.minusDays(days);
+
+        // 获取每日统计数据
+        List<Object[]> dailyStats = orderRepository.getDailySalesStatistics(startTime, endTime);
+        
+        // 创建日期到数据的映射
+        Map<String, Object[]> statsMap = new HashMap<>();
+        for (Object[] row : dailyStats) {
+            String date = row[0].toString();
+            statsMap.put(date, row);
+        }
+
+        // 填充所有日期的数据（包括没有订单的日期）
+        java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        for (int i = days - 1; i >= 0; i--) {
+            LocalDateTime date = endTime.minusDays(i + 1);
+            String dateStr = date.format(formatter);
+            dates.add(dateStr);
+            
+            if (statsMap.containsKey(dateStr)) {
+                Object[] row = statsMap.get(dateStr);
+                sales.add((BigDecimal) row[1]);
+                orders.add((Long) row[2]);
+            } else {
+                sales.add(BigDecimal.ZERO);
+                orders.add(0L);
+            }
+        }
+
+        result.put("dates", dates);
+        result.put("sales", sales);
+        result.put("orders", orders);
+
+        return result;
+    }
+
+    @Override
+    public List<Map<String, Object>> getAdminRecentOrders(int limit) {
+        log.info("获取管理员最近订单，数量: {}", limit);
+
+        Pageable pageable = PageRequest.of(0, limit);
+        List<Order> recentOrders = orderRepository.findRecentOrders(pageable);
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Order order : recentOrders) {
+            Map<String, Object> orderMap = new HashMap<>();
+            orderMap.put("orderNo", order.getOrderNo());
+            orderMap.put("userName", order.getReceiverName()); // 使用收货人名称作为用户名
+            orderMap.put("amount", order.getPayableAmount());
+            orderMap.put("status", order.getStatus().name().toLowerCase());
+            orderMap.put("createTime", order.getCreateTime() != null ? 
+                    order.getCreateTime().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) : "");
+            result.add(orderMap);
+        }
+
+        return result;
+    }
+
+    // ==================== 商家仪表盘接口 ====================
+
+    @Override
+    public List<Order> getMerchantRecentOrders(Long merchantId, int limit) {
+        log.info("获取商家最近订单，商家ID: {}, 数量: {}", merchantId, limit);
+        Pageable pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "createTime"));
+        return orderRepository.findByMerchantIdOrderByCreateTimeDesc(merchantId, pageable).getContent();
+    }
+
+    @Override
+    public List<Map<String, Object>> getMerchantDailySales(Long merchantId, String startDate, String endDate) {
+        log.info("获取商家每日销售统计，商家ID: {}, 开始日期: {}, 结束日期: {}", merchantId, startDate, endDate);
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        
+        try {
+            LocalDateTime startTime = LocalDate.parse(startDate).atStartOfDay();
+            LocalDateTime endTime = LocalDate.parse(endDate).plusDays(1).atStartOfDay();
+
+            // 获取每日统计数据
+            List<Object[]> dailyStats = orderRepository.getMerchantDailySalesStatistics(merchantId, startTime, endTime);
+            
+            // 创建日期到数据的映射
+            Map<String, Object[]> statsMap = new HashMap<>();
+            for (Object[] row : dailyStats) {
+                String date = row[0].toString();
+                statsMap.put(date, row);
+            }
+
+            // 填充所有日期的数据（包括没有订单的日期）
+            java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            LocalDate start = LocalDate.parse(startDate);
+            LocalDate end = LocalDate.parse(endDate);
+            
+            for (LocalDate date = start; !date.isAfter(end); date = date.plusDays(1)) {
+                String dateStr = date.format(formatter);
+                Map<String, Object> dayData = new HashMap<>();
+                dayData.put("date", dateStr);
+                
+                if (statsMap.containsKey(dateStr)) {
+                    Object[] row = statsMap.get(dateStr);
+                    dayData.put("totalSales", row[1] != null ? row[1] : BigDecimal.ZERO);
+                    dayData.put("totalOrders", row[2] != null ? row[2] : 0L);
+                } else {
+                    dayData.put("totalSales", BigDecimal.ZERO);
+                    dayData.put("totalOrders", 0L);
+                }
+                
+                result.add(dayData);
+            }
+        } catch (Exception e) {
+            log.error("获取商家每日销售统计失败，商家ID: {}", merchantId, e);
+        }
+
+        return result;
+    }
+
+    @Override
+    public List<Map<String, Object>> getMerchantHotProducts(Long merchantId, int limit) {
+        log.info("获取商家热销商品统计，商家ID: {}, 数量: {}", merchantId, limit);
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        
+        try {
+            Pageable pageable = PageRequest.of(0, limit);
+            List<Object[]> hotProducts = orderRepository.getMerchantHotProducts(merchantId, pageable);
+            
+            for (Object[] row : hotProducts) {
+                Map<String, Object> product = new HashMap<>();
+                product.put("productId", row[0]);
+                product.put("productName", row[1] != null ? row[1] : "未知商品");
+                product.put("salesCount", row[2] != null ? row[2] : 0L);
+                product.put("salesAmount", row[3] != null ? row[3] : BigDecimal.ZERO);
+                result.add(product);
+            }
+        } catch (Exception e) {
+            log.error("获取商家热销商品统计失败，商家ID: {}", merchantId, e);
+        }
+
+        return result;
     }
 }

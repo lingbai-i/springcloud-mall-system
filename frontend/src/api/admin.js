@@ -92,6 +92,31 @@ export const getUserDistribution = () => {
 }
 
 /**
+ * 获取最近订单
+ * @param {Object} params 查询参数
+ * @param {number} params.limit 数量限制
+ * @returns {Promise} 最近订单列表
+ */
+export const getRecentOrders = (params) => {
+  return request({
+    url: '/admin/dashboard/recent-orders',
+    method: 'get',
+    params
+  })
+}
+
+/**
+ * 获取待处理事项统计
+ * @returns {Promise} 待处理事项统计
+ */
+export const getPendingItems = () => {
+  return request({
+    url: '/admin/dashboard/pending-items',
+    method: 'get'
+  })
+}
+
+/**
  * 获取用户列表
  * @param {Object} params 查询参数
  * @param {number} params.page 页码

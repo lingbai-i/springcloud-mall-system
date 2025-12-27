@@ -2,6 +2,7 @@ package com.mall.merchant.service.impl;
 
 import com.mall.common.core.domain.PageResult;
 import com.mall.common.core.domain.R;
+import com.mall.merchant.client.OrderServiceClient;
 import com.mall.merchant.domain.entity.MerchantOrder;
 import com.mall.merchant.repository.MerchantOrderRepository;
 import com.mall.merchant.service.MerchantOrderService;
@@ -19,6 +20,7 @@ import org.springframework.util.StringUtils;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -30,7 +32,7 @@ import java.util.Optional;
  * 实现商家订单相关的业务逻辑处理
  * 
  * @author lingbai
- * @version 1.0
+ * @version 1.1
  * @since 2025-01-27
  */
 @Service
@@ -40,12 +42,14 @@ public class MerchantOrderServiceImpl implements MerchantOrderService {
   private static final Logger log = LoggerFactory.getLogger(MerchantOrderServiceImpl.class);
 
   private final MerchantOrderRepository orderRepository;
+  private final OrderServiceClient orderServiceClient;
 
   /*
    * 修改日志
    * V1.1 2025-11-05：修复订单状态统计返回类型调用错误；修正订单趋势实现并补充销售趋势方法。
-   * 变更原因：编译报错提示未覆盖抽象方法 getSalesTrend，且 getOrderCountByStatus 使用了错误的仓库返回类型；
-   * 影响范围：订单趋势与状态统计相关接口的实现与日志输出。
+   * V1.2 2025-12-26：添加 OrderServiceClient 依赖，通过 Feign 调用 order-service 获取订单数据。
+   * 变更原因：merchant_order 表为空，实际订单数据在 order-service 的 orders 表中。
+   * 影响范围：getRecentOrders、getDailySalesStatistics、getHotProductsStatistics 等方法。
    */
 
   /**
@@ -304,6 +308,7 @@ public class MerchantOrderServiceImpl implements MerchantOrderService {
 
   /**
    * 获取最近订单列表
+   * 通过 Feign 调用 order-service 获取数据
    * 
    * @param merchantId 商家ID
    * @param limit      限制数量
@@ -314,13 +319,115 @@ public class MerchantOrderServiceImpl implements MerchantOrderService {
     log.debug("获取最近订单列表，商家ID：{}，限制：{}", merchantId, limit);
 
     try {
-      Pageable pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "createTime"));
-      Page<MerchantOrder> orderPage = orderRepository.findRecentOrders(merchantId, pageable);
-      return R.ok(orderPage.getContent());
+      // 通过 Feign 调用 order-service 获取最近订单
+      R<List<Map<String, Object>>> result = orderServiceClient.getMerchantRecentOrders(merchantId, limit);
+      
+      if (result == null || !result.isSuccess()) {
+        log.warn("从 order-service 获取最近订单失败，商家ID：{}", merchantId);
+        return R.ok(new ArrayList<>());
+      }
+      
+      // 将 order-service 返回的数据转换为 MerchantOrder 对象
+      List<MerchantOrder> orders = new ArrayList<>();
+      if (result.getData() != null) {
+        for (Map<String, Object> orderData : result.getData()) {
+          MerchantOrder order = convertToMerchantOrder(orderData);
+          orders.add(order);
+        }
+      }
+      
+      log.debug("从 order-service 获取到 {} 条最近订单", orders.size());
+      return R.ok(orders);
 
     } catch (Exception e) {
       log.error("获取最近订单列表失败，商家ID：{}，错误信息：{}", merchantId, e.getMessage(), e);
-      return R.fail("获取最近订单列表失败");
+      // 降级：尝试从本地仓库获取
+      try {
+        Pageable pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "createTime"));
+        Page<MerchantOrder> orderPage = orderRepository.findRecentOrders(merchantId, pageable);
+        return R.ok(orderPage.getContent());
+      } catch (Exception ex) {
+        return R.ok(new ArrayList<>());
+      }
+    }
+  }
+  
+  /**
+   * 将 order-service 返回的 Map 数据转换为 MerchantOrder 对象
+   */
+  private MerchantOrder convertToMerchantOrder(Map<String, Object> orderData) {
+    MerchantOrder order = new MerchantOrder();
+    
+    if (orderData.get("id") != null) {
+      order.setId(Long.valueOf(orderData.get("id").toString()));
+    }
+    if (orderData.get("orderNo") != null) {
+      order.setOrderNo(orderData.get("orderNo").toString());
+    }
+    if (orderData.get("merchantId") != null) {
+      order.setMerchantId(Long.valueOf(orderData.get("merchantId").toString()));
+    }
+    if (orderData.get("userId") != null) {
+      order.setUserId(Long.valueOf(orderData.get("userId").toString()));
+    }
+    if (orderData.get("totalAmount") != null) {
+      order.setTotalAmount(new BigDecimal(orderData.get("totalAmount").toString()));
+    }
+    if (orderData.get("payAmount") != null) {
+      order.setPaidAmount(new BigDecimal(orderData.get("payAmount").toString()));
+    } else if (orderData.get("payableAmount") != null) {
+      order.setPaidAmount(new BigDecimal(orderData.get("payableAmount").toString()));
+    }
+    if (orderData.get("status") != null) {
+      String status = orderData.get("status").toString();
+      order.setStatus(convertStatusToInt(status));
+    }
+    if (orderData.get("receiverName") != null) {
+      order.setReceiverName(orderData.get("receiverName").toString());
+    }
+    if (orderData.get("receiverPhone") != null) {
+      order.setReceiverPhone(orderData.get("receiverPhone").toString());
+    }
+    if (orderData.get("createTime") != null) {
+      order.setCreateTime(parseDateTime(orderData.get("createTime")));
+    }
+    
+    return order;
+  }
+  
+  /**
+   * 将订单状态字符串转换为整数
+   */
+  private Integer convertStatusToInt(String status) {
+    if (status == null) return 0;
+    switch (status.toUpperCase()) {
+      case "PENDING": return 1;
+      case "PAID": return 2;
+      case "SHIPPED": return 3;
+      case "COMPLETED": return 5;
+      case "CANCELLED": return 6;
+      case "REFUNDING": return 7;
+      case "REFUNDED": return 8;
+      default: return 0;
+    }
+  }
+  
+  /**
+   * 解析日期时间
+   */
+  private LocalDateTime parseDateTime(Object dateTimeObj) {
+    if (dateTimeObj == null) return null;
+    if (dateTimeObj instanceof LocalDateTime) {
+      return (LocalDateTime) dateTimeObj;
+    }
+    try {
+      String dateTimeStr = dateTimeObj.toString();
+      if (dateTimeStr.contains("T")) {
+        return LocalDateTime.parse(dateTimeStr.substring(0, 19));
+      }
+      return LocalDateTime.parse(dateTimeStr, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+    } catch (Exception e) {
+      return null;
     }
   }
 
@@ -855,6 +962,7 @@ public class MerchantOrderServiceImpl implements MerchantOrderService {
 
   /**
    * 获取每日销售统计
+   * 通过 Feign 调用 order-service 获取数据
    * 
    * @param merchantId 商家ID
    * @param startDate 开始日期
@@ -866,11 +974,21 @@ public class MerchantOrderServiceImpl implements MerchantOrderService {
     log.debug("获取每日销售统计，商家ID：{}，开始日期：{}，结束日期：{}", merchantId, startDate, endDate);
     
     try {
-      // 简单实现：返回空列表，后续可根据实际需求完善
-      return R.ok(new ArrayList<>());
+      // 通过 Feign 调用 order-service 获取每日销售统计
+      String startDateStr = startDate.toString();
+      String endDateStr = endDate.toString();
+      R<List<Map<String, Object>>> result = orderServiceClient.getMerchantDailySales(merchantId, startDateStr, endDateStr);
+      
+      if (result == null || !result.isSuccess()) {
+        log.warn("从 order-service 获取每日销售统计失败，商家ID：{}", merchantId);
+        return R.ok(new ArrayList<>());
+      }
+      
+      log.debug("从 order-service 获取到 {} 条每日销售统计", result.getData() != null ? result.getData().size() : 0);
+      return R.ok(result.getData() != null ? result.getData() : new ArrayList<>());
     } catch (Exception e) {
       log.error("获取每日销售统计失败，商家ID：{}，错误信息：{}", merchantId, e.getMessage(), e);
-      return R.fail("获取每日销售统计失败");
+      return R.ok(new ArrayList<>());
     }
   }
 
@@ -898,6 +1016,7 @@ public class MerchantOrderServiceImpl implements MerchantOrderService {
 
   /**
    * 获取热销商品统计
+   * 通过 Feign 调用 order-service 获取数据
    * 
    * @param merchantId 商家ID
    * @param topCount 返回前N个商品
@@ -910,11 +1029,19 @@ public class MerchantOrderServiceImpl implements MerchantOrderService {
     log.debug("获取热销商品统计，商家ID：{}，前N个商品：{}，时间范围：{} ~ {}", merchantId, topCount, startTime, endTime);
     
     try {
-      // 简单实现：返回空列表，后续可根据实际需求完善
-      return R.ok(new ArrayList<>());
+      // 通过 Feign 调用 order-service 获取热销商品统计
+      R<List<Map<String, Object>>> result = orderServiceClient.getMerchantHotProducts(merchantId, topCount);
+      
+      if (result == null || !result.isSuccess()) {
+        log.warn("从 order-service 获取热销商品统计失败，商家ID：{}", merchantId);
+        return R.ok(new ArrayList<>());
+      }
+      
+      log.debug("从 order-service 获取到 {} 条热销商品统计", result.getData() != null ? result.getData().size() : 0);
+      return R.ok(result.getData() != null ? result.getData() : new ArrayList<>());
     } catch (Exception e) {
       log.error("获取热销商品统计失败，商家ID：{}，错误信息：{}", merchantId, e.getMessage(), e);
-      return R.fail("获取热销商品统计失败");
+      return R.ok(new ArrayList<>());
     }
   }
 

@@ -264,4 +264,50 @@ public interface OrderService {
      * @return 处理结果
      */
     Boolean handleRefund(Long orderId, Boolean approved, String reason);
+
+    /**
+     * 获取管理员销售趋势数据
+     * 
+     * @param days 天数
+     * @return 销售趋势数据
+     */
+    Map<String, Object> getAdminSalesTrend(int days);
+
+    /**
+     * 获取管理员最近订单
+     * 
+     * @param limit 数量限制
+     * @return 最近订单列表
+     */
+    List<Map<String, Object>> getAdminRecentOrders(int limit);
+
+    // ==================== 商家仪表盘接口 ====================
+
+    /**
+     * 获取商家最近订单
+     * 
+     * @param merchantId 商家ID
+     * @param limit 数量限制
+     * @return 最近订单列表
+     */
+    List<Order> getMerchantRecentOrders(Long merchantId, int limit);
+
+    /**
+     * 获取商家每日销售统计
+     * 
+     * @param merchantId 商家ID
+     * @param startDate 开始日期
+     * @param endDate 结束日期
+     * @return 每日销售统计列表
+     */
+    List<Map<String, Object>> getMerchantDailySales(Long merchantId, String startDate, String endDate);
+
+    /**
+     * 获取商家热销商品统计
+     * 
+     * @param merchantId 商家ID
+     * @param limit 数量限制
+     * @return 热销商品列表
+     */
+    List<Map<String, Object>> getMerchantHotProducts(Long merchantId, int limit);
 }

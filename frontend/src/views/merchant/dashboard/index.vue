@@ -186,7 +186,17 @@ import { ref, reactive, onMounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { getLowStockProducts } from '@/api/merchant/product'
-import { getKeyMetrics } from '@/api/merchant/dashboard'
+import { 
+  getKeyMetrics, 
+  getOverviewStatistics,
+  getTodayStatistics,
+  getYesterdayStatistics,
+  getSalesTrend,
+  getRecentOrders,
+  getOrderStatusStatistics,
+  getHotProducts,
+  getDailySalesStatistics
+} from '@/api/merchant/dashboard'
 import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'
 import {
@@ -500,10 +510,24 @@ const calculateTrend = (today, yesterday) => {
 }
 
 /**
- * 加载数据概览 - 直接从 order-service 获取数据
+ * 加载数据概览 - 通过 merchant-service API 获取数据
  */
 const loadOverviewData = async () => {
   loading.overview = true
+  
+  // 调试：打印 userStore 状态
+  console.log('仪表盘-userStore状态:', {
+    merchantId: userStore.merchantId,
+    userInfo: userStore.userInfo,
+    isMerchant: userStore.isMerchant,
+    isLoggedIn: userStore.isLoggedIn
+  })
+  console.log('仪表盘-localStorage:', {
+    merchantId: localStorage.getItem('merchantId'),
+    token: localStorage.getItem('token')?.substring(0, 20) + '...',
+    userInfo: localStorage.getItem('userInfo')
+  })
+  
   const merchantId = userStore.merchantId || localStorage.getItem('merchantId')
   
   if (!merchantId) {
@@ -512,81 +536,77 @@ const loadOverviewData = async () => {
     return
   }
   
+  console.log('仪表盘-使用merchantId:', merchantId)
+  
   try {
-    // 获取所有订单来计算统计数据
-    const params = new URLSearchParams({
-      merchantId: merchantId,
-      page: 0,
-      size: 1000
-    })
+    // 并行获取今日和昨日统计数据
+    const [todayRes, yesterdayRes, overviewRes] = await Promise.allSettled([
+      getTodayStatistics(merchantId),
+      getYesterdayStatistics(merchantId),
+      getOverviewStatistics(merchantId)
+    ])
     
-    const response = await fetch(`/api/order-service/orders/merchant?${params.toString()}`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-    })
-    
-    const result = await response.json()
-    
-    let todaySales = 0, todayOrders = 0, totalOrders = 0, totalSales = 0
+    let todaySales = 0, todayOrders = 0, totalProducts = 0
     let yesterdaySales = 0, yesterdayOrders = 0
     
-    if (result.success && result.data) {
-      const orders = result.data.content || []
-      totalOrders = result.data.totalElements || orders.length
-      
-      // 获取今天和昨天的日期
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      const yesterday = new Date(today)
-      yesterday.setDate(yesterday.getDate() - 1)
-      
-      orders.forEach(order => {
-        const orderDate = new Date(order.createTime)
-        orderDate.setHours(0, 0, 0, 0)
-        const amount = parseFloat(order.totalAmount) || 0
-        
-        totalSales += amount
-        
-        if (orderDate.getTime() === today.getTime()) {
-          todaySales += amount
-          todayOrders++
-        } else if (orderDate.getTime() === yesterday.getTime()) {
-          yesterdaySales += amount
-          yesterdayOrders++
-        }
-      })
-      
-      console.log('仪表盘-订单统计:', { todaySales, todayOrders, yesterdaySales, yesterdayOrders, totalOrders })
+    // 处理今日统计
+    if (todayRes.status === 'fulfilled' && todayRes.value?.data) {
+      const data = todayRes.value.data
+      todaySales = data.totalSales || data.todaySales || 0
+      todayOrders = data.totalOrders || data.todayOrders || 0
     }
     
-    // 获取商品总数 - 直接调用 merchant-service API
-    let totalProducts = 0
-    try {
-      const productParams = new URLSearchParams({
-        merchantId: merchantId,
-        page: 1,
-        size: 1
-      })
-      
-      const productResponse = await fetch(`/api/merchant/products/list?${productParams.toString()}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+    // 处理昨日统计
+    if (yesterdayRes.status === 'fulfilled' && yesterdayRes.value?.data) {
+      const data = yesterdayRes.value.data
+      yesterdaySales = data.totalSales || data.yesterdaySales || 0
+      yesterdayOrders = data.totalOrders || data.yesterdayOrders || 0
+    }
+    
+    // 处理总览统计
+    if (overviewRes.status === 'fulfilled' && overviewRes.value?.data) {
+      const data = overviewRes.value.data
+      totalProducts = data.totalProducts || 0
+    }
+    
+    // 如果 merchant-service API 没有返回数据，尝试从订单统计获取
+    if (todaySales === 0 && todayOrders === 0) {
+      try {
+        const statsRes = await getOrderStatusStatistics(merchantId)
+        if (statsRes?.data) {
+          todayOrders = statsRes.data.todayOrders || 0
+          todaySales = statsRes.data.todaySales || 0
         }
-      })
-      
-      const productResult = await productResponse.json()
-      console.log('仪表盘-商品列表响应:', productResult)
-      
-      if (productResult.success && productResult.data) {
-        // PageResult 结构: { records, total, current, size, pages }
-        totalProducts = productResult.data.total || productResult.data.records?.length || 0
+      } catch (e) {
+        console.warn('获取订单统计失败:', e)
       }
-    } catch (e) {
-      console.warn('获取商品总数失败:', e)
     }
     
-    console.log('仪表盘-商品总数:', totalProducts)
+    // 获取商品总数
+    if (totalProducts === 0) {
+      try {
+        const productParams = new URLSearchParams({
+          merchantId: merchantId,
+          page: 1,
+          size: 1
+        })
+        
+        const productResponse = await fetch(`/api/merchant/products/list?${productParams.toString()}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        })
+        
+        const productResult = await productResponse.json()
+        if (productResult.success && productResult.data) {
+          totalProducts = productResult.data.total || productResult.data.records?.length || 0
+        }
+      } catch (e) {
+        console.warn('获取商品总数失败:', e)
+      }
+    }
+    
+    console.log('仪表盘-数据概览:', { todaySales, todayOrders, yesterdaySales, yesterdayOrders, totalProducts })
     
     // 更新数据概览
     overviewData[0].value = `¥${todaySales.toFixed(2)}`
@@ -659,7 +679,7 @@ const getPeriodDays = () => {
 }
 
 /**
- * 加载销售趋势数据 - 从 order-service 获取订单并计算
+ * 加载销售趋势数据 - 通过 merchant-service API 获取
  */
 const loadSalesTrend = async () => {
   loading.salesTrend = true
@@ -673,57 +693,31 @@ const loadSalesTrend = async () => {
   try {
     const days = getPeriodDays()
     
-    // 获取所有订单
-    const params = new URLSearchParams({
-      merchantId: merchantId,
-      page: 0,
-      size: 1000
-    })
+    // 计算日期范围
+    const endDate = new Date()
+    const startDate = new Date()
+    startDate.setDate(startDate.getDate() - days + 1)
     
-    const response = await fetch(`/api/order-service/orders/merchant?${params.toString()}`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-    })
+    const startDateStr = startDate.toISOString().split('T')[0]
+    const endDateStr = endDate.toISOString().split('T')[0]
     
-    const result = await response.json()
+    // 通过 merchant-service API 获取每日销售统计
+    const response = await getDailySalesStatistics(merchantId, startDateStr, endDateStr)
     
-    if (result.success && result.data) {
-      const orders = result.data.content || []
-      
-      // 计算日期范围
-      const endDate = new Date()
-      const startDate = new Date()
-      startDate.setDate(startDate.getDate() - days + 1)
-      
-      // 初始化每日统计
-      const dailyStats = {}
-      for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-        const dateKey = d.toISOString().split('T')[0]
-        dailyStats[dateKey] = { sales: 0, orders: 0 }
-      }
-      
-      // 统计每日数据
-      orders.forEach(order => {
-        const orderDate = new Date(order.createTime)
-        const dateKey = orderDate.toISOString().split('T')[0]
-        
-        if (dailyStats[dateKey]) {
-          dailyStats[dateKey].sales += parseFloat(order.totalAmount) || 0
-          dailyStats[dateKey].orders++
-        }
-      })
+    if (response?.data && Array.isArray(response.data)) {
+      const dailyData = response.data
       
       // 转换为图表数据
-      const dates = Object.keys(dailyStats).sort()
-      const salesAmounts = dates.map(d => dailyStats[d].sales)
-      const orderCounts = dates.map(d => dailyStats[d].orders)
-      const displayDates = dates.map(d => d.substring(5)) // 只显示月-日
+      const dates = dailyData.map(d => d.date?.substring(5) || '') // 只显示月-日
+      const salesAmounts = dailyData.map(d => d.totalSales || d.sales || 0)
+      const orderCounts = dailyData.map(d => d.totalOrders || d.orders || 0)
       
-      updateSalesChart(displayDates, salesAmounts, orderCounts)
+      updateSalesChart(dates, salesAmounts, orderCounts)
       console.log('仪表盘-销售趋势加载成功:', { days, dataPoints: dates.length })
     } else {
+      // 如果 API 没有返回数据，显示空图表
       updateSalesChart([], [], [])
+      console.log('仪表盘-销售趋势: 无数据')
     }
   } catch (error) {
     console.error('加载销售趋势失败:', error)
@@ -751,7 +745,7 @@ const updateSalesChart = (dates, salesAmounts, orderCounts) => {
 }
 
 /**
- * 加载热销商品数据 - 从 order-service 获取订单并统计商品销量
+ * 加载热销商品数据 - 通过 merchant-service API 获取
  */
 const loadHotProducts = async () => {
   loading.hotProducts = true
@@ -763,53 +757,21 @@ const loadHotProducts = async () => {
   }
   
   try {
-    // 获取所有订单
-    const params = new URLSearchParams({
-      merchantId: merchantId,
-      page: 0,
-      size: 1000
-    })
+    // 通过 merchant-service API 获取热销商品统计
+    const response = await getHotProducts(merchantId, 10)
     
-    const response = await fetch(`/api/order-service/orders/merchant?${params.toString()}`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-    })
-    
-    const result = await response.json()
-    
-    if (result.success && result.data) {
-      const orders = result.data.content || []
+    if (response?.data && Array.isArray(response.data) && response.data.length > 0) {
+      // 转换为饼图数据
+      const chartData = response.data.map(item => ({
+        name: item.productName || item.name || '未知商品',
+        value: item.salesCount || item.quantity || item.value || 0
+      }))
       
-      // 统计商品销量
-      const productSales = {}
-      orders.forEach(order => {
-        const items = order.orderItems || []
-        items.forEach(item => {
-          const productName = item.productName || '未知商品'
-          const quantity = item.quantity || 1
-          
-          if (!productSales[productName]) {
-            productSales[productName] = 0
-          }
-          productSales[productName] += quantity
-        })
-      })
-      
-      // 转换为饼图数据，取前10名
-      const sortedProducts = Object.entries(productSales)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 10)
-        .map(([name, value]) => ({ name, value }))
-      
-      if (sortedProducts.length > 0) {
-        updateProductChart(sortedProducts)
-        console.log('仪表盘-热销商品加载成功:', sortedProducts.length, '个商品')
-      } else {
-        updateProductChart([{ name: '暂无销售数据', value: 1 }])
-      }
+      updateProductChart(chartData)
+      console.log('仪表盘-热销商品加载成功:', chartData.length, '个商品')
     } else {
       updateProductChart([{ name: '暂无销售数据', value: 1 }])
+      console.log('仪表盘-热销商品: 无数据')
     }
   } catch (error) {
     console.error('加载热销商品失败:', error)
@@ -833,7 +795,7 @@ const updateProductChart = (data) => {
 }
 
 /**
- * 加载最近订单 - 直接调用 order-service
+ * 加载最近订单 - 通过 merchant-service API 获取
  */
 const loadRecentOrders = async () => {
   loading.recentOrders = true
@@ -845,42 +807,31 @@ const loadRecentOrders = async () => {
   }
   
   try {
-    // 直接调用 order-service API，与 merchant/orders 页面保持一致
-    const params = new URLSearchParams({
-      merchantId: merchantId,
-      page: 0,
-      size: 10
-    })
+    // 通过 merchant-service API 获取最近订单
+    const response = await getRecentOrders(merchantId, 10)
     
-    const response = await fetch(`/api/order-service/orders/merchant?${params.toString()}`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-    })
-    
-    const result = await response.json()
-    console.log('仪表盘-最近订单响应:', result)
-    
-    if (result.success && result.data) {
-      const rawOrders = result.data.content || []
-      
+    if (response?.data && Array.isArray(response.data)) {
       // 清空并重新填充数组
       recentOrders.length = 0
-      rawOrders.slice(0, 10).forEach(order => {
+      response.data.slice(0, 10).forEach(order => {
         recentOrders.push({
-          id: order.id,
-          orderNo: order.orderNo,
-          customerName: order.receiverName || '匿名用户',
-          totalAmount: order.totalAmount || 0,
+          id: order.id || order.orderId,
+          orderNo: order.orderNo || order.orderNumber,
+          customerName: order.receiverName || order.customerName || '匿名用户',
+          totalAmount: order.totalAmount || order.payableAmount || 0,
           status: mapStatusToFrontend(order.status),
           createTime: order.createTime
         })
       })
       
       console.log('仪表盘-最近订单加载成功:', recentOrders.length, '条')
+    } else {
+      recentOrders.length = 0
+      console.log('仪表盘-最近订单: 无数据')
     }
   } catch (error) {
     console.error('加载最近订单失败:', error)
+    recentOrders.length = 0
   } finally {
     loading.recentOrders = false
   }
@@ -903,7 +854,7 @@ const mapStatusToFrontend = (status) => {
 }
 
 /**
- * 加载待处理事项 - 直接调用 order-service
+ * 加载待处理事项 - 通过 merchant-service API 获取
  */
 const loadPendingItems = async () => {
   loading.pendingItems = true
@@ -915,35 +866,16 @@ const loadPendingItems = async () => {
   }
   
   try {
-    // 获取所有订单来统计各状态数量
-    const params = new URLSearchParams({
-      merchantId: merchantId,
-      page: 0,
-      size: 1000 // 获取足够多的订单来统计
-    })
+    // 通过 merchant-service API 获取订单状态统计
+    const response = await getOrderStatusStatistics(merchantId)
     
-    const response = await fetch(`/api/order-service/orders/merchant?${params.toString()}`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-    })
-    
-    const result = await response.json()
-    
-    if (result.success && result.data) {
-      const orders = result.data.content || []
+    if (response?.data) {
+      const stats = response.data
       
-      // 统计各状态订单数量
-      const statusCounts = {}
-      orders.forEach(order => {
-        const status = order.status
-        statusCounts[status] = (statusCounts[status] || 0) + 1
-      })
+      // 待发货订单数 (状态: PAID 或 pending_shipment)
+      pendingItems[0].count = stats.pendingShipment || stats.PAID || stats.paid || 0
       
-      // 待发货订单数 (状态: PAID)
-      pendingItems[0].count = statusCounts['PAID'] || 0
-      
-      console.log('仪表盘-订单状态统计:', statusCounts)
+      console.log('仪表盘-订单状态统计:', stats)
     }
     
     // 获取库存不足商品数

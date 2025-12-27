@@ -180,7 +180,7 @@ import {
   Bell
 } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
-import { getDashboardStats, getSalesTrend, getUserDistribution } from '@/api/admin'
+import { getDashboardStats, getSalesTrend, getUserDistribution, getRecentOrders, getPendingItems } from '@/api/admin'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -234,8 +234,8 @@ const statsData = reactive([
     icon: Document
   },
   {
-    key: 'revenue',
-    label: '总收入',
+    key: 'transactionAmount',
+    label: '交易额',
     value: '¥0',
     trend: 0,
     color: '#f5222d',
@@ -470,8 +470,8 @@ const loadDashboardStats = async () => {
       statsData[1].trend = response.data.merchantsTrend || 0
       statsData[2].value = response.data.totalOrders || 0
       statsData[2].trend = response.data.ordersTrend || 0
-      statsData[3].value = `¥${response.data.totalRevenue || 0}`
-      statsData[3].trend = response.data.revenueTrend || 0
+      statsData[3].value = `¥${response.data.totalTransactionAmount || 0}`
+      statsData[3].trend = response.data.transactionTrend || 0
     }
   } catch (error) {
     console.error('Load dashboard stats error:', error)
@@ -528,6 +528,85 @@ const loadUserDistribution = async () => {
   }
 }
 
+// 加载最近订单数据
+const loadRecentOrders = async () => {
+  try {
+    const response = await getRecentOrders({ limit: 10 })
+    if (response.data) {
+      recentOrders.length = 0
+      response.data.forEach(order => {
+        recentOrders.push(order)
+      })
+    }
+  } catch (error) {
+    console.error('Load recent orders error:', error)
+  }
+}
+
+// 加载待处理事项数据
+const loadPendingItems = async () => {
+  try {
+    const response = await getPendingItems()
+    if (response.data) {
+      pendingItems.length = 0
+      
+      // 待审核商家
+      if (response.data.pendingMerchants > 0) {
+        pendingItems.push({
+          id: 1,
+          title: '待审核商家',
+          description: '有新的商家入驻申请需要审核',
+          count: response.data.pendingMerchants,
+          color: '#1890ff',
+          icon: Shop,
+          action: 'merchant-audit'
+        })
+      }
+      
+      // 待审核商品
+      if (response.data.pendingProducts > 0) {
+        pendingItems.push({
+          id: 2,
+          title: '待审核商品',
+          description: '有商品需要审核上架',
+          count: response.data.pendingProducts,
+          color: '#52c41a',
+          icon: Document,
+          action: 'product-audit'
+        })
+      }
+      
+      // 待处理退款（需要客服介入的退款纠纷）
+      if (response.data.pendingRefunds > 0) {
+        pendingItems.push({
+          id: 3,
+          title: '待处理退款',
+          description: '有退款申请需要客服介入处理',
+          count: response.data.pendingRefunds,
+          color: '#faad14',
+          icon: Money,
+          action: 'refund-process'
+        })
+      }
+      
+      // 用户举报/投诉
+      if (response.data.userReports > 0) {
+        pendingItems.push({
+          id: 4,
+          title: '用户投诉',
+          description: '有用户投诉需要处理',
+          count: response.data.userReports,
+          color: '#f5222d',
+          icon: Bell,
+          action: 'user-report'
+        })
+      }
+    }
+  } catch (error) {
+    console.error('Load pending items error:', error)
+  }
+}
+
 // 组件挂载后初始化
 onMounted(async () => {
   await nextTick()
@@ -539,6 +618,8 @@ onMounted(async () => {
   loadDashboardStats()
   loadSalesTrend()
   loadUserDistribution()
+  loadRecentOrders()
+  loadPendingItems()
 })
 </script>
 
