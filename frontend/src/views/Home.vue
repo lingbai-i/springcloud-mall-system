@@ -22,7 +22,7 @@
               @mouseleave="logoutVisible = false"
             >
               <a href="#" class="welcome-trigger">
-                欢迎,{{ userInfo.nickname || userInfo.username }}
+                欢迎,{{ displayUserName }}
                 <el-icon class="arrow-icon"><ArrowDown /></el-icon>
               </a>
               <transition name="fade-slide">
@@ -174,11 +174,13 @@
           <div class="quick-entries">
             <div class="user-info-card" v-if="isLoggedIn">
               <div class="user-avatar">
-                <el-avatar :size="50" :src="userInfo.avatar" />
+                <el-avatar :size="50" :src="userInfo.avatar || defaultAvatar">
+                  <el-icon><User /></el-icon>
+                </el-avatar>
               </div>
               <div class="user-details">
-                <p class="username">{{ userInfo.nickname || userInfo.username }}</p>
-                <p class="user-level">会员等级：{{ userInfo.level }}</p>
+                <p class="username">{{ displayUserName }}</p>
+                <p class="user-level">会员等级：{{ userInfo.level || '普通会员' }}</p>
                 <!-- 移动端补充：在用户信息卡片中提供可见的注销入口 -->
                 <button class="logout-option compact" @click="handleLogout" aria-label="退出登录">
                   <el-icon class="logout-icon"><SwitchButton /></el-icon>
@@ -368,7 +370,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 import { logout as apiLogout } from '@/api/auth'
-import { SwitchButton, ArrowDown, Box } from '@element-plus/icons-vue'
+import { SwitchButton, ArrowDown, Box, User } from '@element-plus/icons-vue'
 import * as logger from '@/utils/logger'
 import LoginModal from '@/components/LoginModal.vue'
 import LocalIcon from '@/components/LocalIcon.vue'
@@ -394,6 +396,44 @@ const showLoginModal = ref(false)
 
 // 用户信息 - 直接使用 userStore 的数据保证实时同步
 const userInfo = computed(() => userStore.userInfo)
+
+// 默认头像
+const defaultAvatar = '/images/default-avatar.png'
+
+/**
+ * 显示用户名称
+ * 优先级：昵称 > 格式化的用户名 > 手机号隐藏中间四位 > 默认值
+ */
+const displayUserName = computed(() => {
+  const info = userStore.userInfo
+  if (!info) return '用户'
+  
+  // 优先使用昵称
+  if (info.nickname && info.nickname.trim()) {
+    return info.nickname
+  }
+  
+  // 如果用户名不是 user_ 开头的自动生成格式，使用用户名
+  if (info.username && !info.username.startsWith('user_')) {
+    return info.username
+  }
+  
+  // 如果有手机号，隐藏中间四位显示
+  if (info.phone) {
+    return info.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2')
+  }
+  
+  // 如果用户名是 user_手机号 格式，提取手机号并隐藏中间四位
+  if (info.username && info.username.startsWith('user_')) {
+    const phone = info.username.substring(5)
+    if (phone.length === 11) {
+      return phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2')
+    }
+  }
+  
+  // 最后使用用户名或默认值
+  return info.username || '用户'
+})
 
 // 热门搜索关键词
 const hotKeywords = ref(['iPhone15', '笔记本电脑', '运动鞋', '连衣裙', '护肤品'])
@@ -577,10 +617,10 @@ const goToCategory = (categoryId) => {
 }
 
 /**
- * 跳转到商品详情
+ * 跳转到商品详情（新窗口打开）
  */
 const goToProduct = (productId) => {
-  router.push(`/product/${productId}`)
+  window.open(`/product/${productId}`, '_blank')
 }
 
 /**
@@ -600,18 +640,19 @@ const goToLink = (url) => {
 }
 
 /**
- * 跳转到商家登录页面
+ * 跳转到商家登录页面（新窗口打开）
  */
-const goToMerchantLogin = () => {  showMerchantMenu.value = false
-  router.push('/merchant/login')
+const goToMerchantLogin = () => {
+  showMerchantMenu.value = false
+  window.open('/merchant/login', '_blank')
 }
 
 /**
- * 跳转到商家注册页面
+ * 跳转到商家注册页面（新窗口打开）
  */
 const goToMerchantRegister = () => {
   showMerchantMenu.value = false
-  router.push('/merchant/register')
+  window.open('/merchant/register', '_blank')
 }
 
 /**
@@ -743,9 +784,10 @@ onMounted(async () => {
   if (userStore.isLoggedIn) {
     logger.debug('初始化本地用户会话', userStore.userInfo)
     
-    // 刷新用户信息以确保显示最新数据
+    // 强制刷新用户信息以确保显示最新数据（普通用户首页需要最新的昵称和头像）
+    // 使用 forceRefresh=true 确保即使有 merchantId 也会刷新
     try {
-      await userStore.fetchUserInfo()
+      await userStore.fetchUserInfo(true)
       logger.info('用户信息已刷新', userStore.userInfo)
     } catch (error) {
       logger.warn('刷新用户信息失败', error)

@@ -187,26 +187,47 @@ export const useUserStore = defineStore('user', () => {
    * 修改日志：
    * V1.1 2025-11-09T20:51:07+08:00：新增 fetchUserInfo 方法，统一从后端拉取用户信息并写入本地存储；加入结构化日志与异常分支，避免会话不同步导致的 UI 偏差。
    * V1.2 2025-12-25：根据用户角色调用不同的接口，避免管理员/商家信息被普通用户信息覆盖
+   * V1.3 2025-12-28：增强商家角色判断逻辑，同时检查 localStorage 中的 merchantId，避免页面刷新后商家信息被覆盖
+   * V1.4 2025-12-28：修复普通用户首页刷新后显示手机号的问题，增加 forceRefresh 参数支持强制刷新
    * @author lingbai
+   * @param {boolean} forceRefresh - 是否强制刷新，忽略角色检查
    * @returns {Promise<Object>} 最新的用户信息对象
    * @throws {Error} 当服务端返回异常或会话无效时抛出错误
    */
-  const fetchUserInfo = async () => {
+  const fetchUserInfo = async (forceRefresh = false) => {
     // 防御性：无 token 不发起网络请求，避免无效后端调用
     if (!token.value) {
       logger.warn('fetchUserInfo 被调用，但当前不存在有效 token，已跳过网络请求')
       return userInfo.value
     }
     
-    // 如果是管理员，调用管理员信息接口
-    if (userInfo.value.isAdmin || userInfo.value.role === 'admin') {
+    // 如果是管理员，调用管理员信息接口（除非强制刷新）
+    if (!forceRefresh && (userInfo.value.isAdmin || userInfo.value.role === 'admin')) {
       logger.info('当前用户是管理员，跳过普通用户信息刷新')
       return userInfo.value
     }
     
-    // 如果是商家，调用商家信息接口
-    if (userInfo.value.isMerchant || userInfo.value.role === 'merchant') {
-      logger.info('当前用户是商家，跳过普通用户信息刷新')
+    // 如果是商家，调用商家信息接口（除非强制刷新）
+    // 增强判断：同时检查 localStorage 中的 merchantId，避免页面刷新后状态丢失
+    // 注意：只有当 userInfo 中明确标记为商家时才跳过，避免普通用户首页被误判
+    if (!forceRefresh && (userInfo.value.isMerchant === true || userInfo.value.role === 'merchant')) {
+      const savedMerchantId = localStorage.getItem('merchantId')
+      logger.info('当前用户是商家，跳过普通用户信息刷新', { 
+        isMerchant: userInfo.value.isMerchant, 
+        role: userInfo.value.role,
+        savedMerchantId 
+      })
+      // 如果 userInfo 中缺少商家标识，从 localStorage 恢复
+      if (savedMerchantId && !userInfo.value.merchantId) {
+        userInfo.value = { 
+          ...userInfo.value, 
+          merchantId: parseInt(savedMerchantId, 10),
+          isMerchant: true,
+          role: 'merchant'
+        }
+        localStorage.setItem('userInfo', JSON.stringify(userInfo.value))
+        logger.info('已从 localStorage 恢复商家标识')
+      }
       return userInfo.value
     }
     
@@ -215,9 +236,30 @@ export const useUserStore = defineStore('user', () => {
       const resp = await getUserProfile()
       // 后端约定：{ success: boolean, data: UserInfoResponse }
       if (resp && (resp.success === true || resp.code === 200) && resp.data) {
-        userInfo.value = { ...(userInfo.value || {}), ...(resp.data || {}) }
+        // 保留原有的角色信息，只更新用户基本信息
+        const preservedFields = {
+          isMerchant: userInfo.value.isMerchant,
+          isAdmin: userInfo.value.isAdmin,
+          role: userInfo.value.role,
+          merchantId: userInfo.value.merchantId,
+          shopName: userInfo.value.shopName,
+          logo: userInfo.value.logo
+        }
+        
+        // 合并新数据，但保留角色相关字段
+        userInfo.value = { 
+          ...(userInfo.value || {}), 
+          ...(resp.data || {}),
+          // 如果原来有角色信息，保留它们
+          ...(preservedFields.isMerchant !== undefined ? { isMerchant: preservedFields.isMerchant } : {}),
+          ...(preservedFields.isAdmin !== undefined ? { isAdmin: preservedFields.isAdmin } : {}),
+          ...(preservedFields.role ? { role: preservedFields.role } : {}),
+          ...(preservedFields.merchantId ? { merchantId: preservedFields.merchantId } : {}),
+          ...(preservedFields.shopName ? { shopName: preservedFields.shopName } : {}),
+          ...(preservedFields.logo ? { logo: preservedFields.logo } : {})
+        }
         localStorage.setItem('userInfo', JSON.stringify(userInfo.value))
-        logger.info('用户信息拉取成功并写入本地存储')
+        logger.info('用户信息拉取成功并写入本地存储', { nickname: userInfo.value.nickname, username: userInfo.value.username })
         return userInfo.value
       }
       const message = (resp && resp.message) || '获取用户信息失败'
@@ -262,11 +304,21 @@ export const useUserStore = defineStore('user', () => {
     }
     
     // 如果 userInfo 中没有 merchantId，尝试从独立 key 恢复
-    if (userInfo.value && !userInfo.value.merchantId) {
-      const savedMerchantId = localStorage.getItem('merchantId')
-      if (savedMerchantId) {
-        userInfo.value = { ...userInfo.value, merchantId: parseInt(savedMerchantId, 10) }
-        console.log('从独立 localStorage key 恢复 merchantId:', savedMerchantId)
+    // 同时确保商家标识 (isMerchant, role) 也被正确设置
+    const savedMerchantId = localStorage.getItem('merchantId')
+    if (savedMerchantId) {
+      const merchantIdNum = parseInt(savedMerchantId, 10)
+      if (userInfo.value) {
+        // 确保 merchantId 和商家标识都被正确设置
+        if (!userInfo.value.merchantId || !userInfo.value.isMerchant) {
+          userInfo.value = { 
+            ...userInfo.value, 
+            merchantId: merchantIdNum,
+            isMerchant: true,
+            role: userInfo.value.role || 'merchant'
+          }
+          console.log('从独立 localStorage key 恢复 merchantId 和商家标识:', savedMerchantId)
+        }
       }
     }
     
@@ -288,9 +340,11 @@ export const useUserStore = defineStore('user', () => {
     console.log('用户状态初始化完成:', { 
       hasToken: !!token.value, 
       username: userInfo.value?.username,
+      shopName: userInfo.value?.shopName,
       merchantId: userInfo.value?.merchantId,
       isLoggedIn: isLoggedIn.value,
-      isMerchant: isMerchant.value
+      isMerchant: isMerchant.value,
+      role: userInfo.value?.role
     })
   }
   
