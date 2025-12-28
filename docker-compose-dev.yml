@@ -77,12 +77,36 @@ services:
       retries: 10
       start_period: 60s
 
+  # MinIO对象存储
+  minio:
+    image: minio/minio:latest
+    container_name: mall-minio-dev
+    restart: always
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_dev_data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - mall-dev-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   mysql_dev_data:
     driver: local
   redis_dev_data:
     driver: local
   nacos_dev_logs:
+    driver: local
+  minio_dev_data:
     driver: local
 
 networks:

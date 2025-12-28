@@ -327,12 +327,10 @@ const confirmReceive = async (orderId: number) => {
 }
 
 /**
- * 评价订单
+ * 评价订单 - 新窗口打开
  */
 const evaluateOrder = (orderId: number) => {
-  ElMessage.info('跳转到评价页面...')
-  // 这里应该跳转到评价页面
-  router.push(`/evaluate/${orderId}`)
+  window.open(`/review/${orderId}`, '_blank')
 }
 
 /**

@@ -22,7 +22,15 @@
       <!-- 商品图片区域 -->
       <div class="product-images">
         <div class="main-image">
-          <img :src="currentImage" :alt="product.name" @click="showImagePreview">
+          <ImageMagnifier 
+            :src="currentImage" 
+            :alt="product.name"
+            :zoom-level="2.5"
+            :lens-size="120"
+            :preview-width="450"
+            :preview-height="450"
+            @click="showImagePreview"
+          />
         </div>
         <div class="thumbnail-list" v-if="product.images && product.images.length > 1">
           <div 
@@ -173,35 +181,102 @@
           </div>
         </el-tab-pane>
         <el-tab-pane label="用户评价" name="reviews">
-          <div class="reviews-content" v-if="product">
+          <div class="reviews-content" v-if="product" v-loading="reviewLoading">
+            <!-- 评价统计区域 -->
             <div class="reviews-summary">
               <div class="rating-overview">
-                <div class="rating-score">
-                  <span class="score">{{ product.rating || 5.0 }}</span>
-                  <el-rate 
-                    :model-value="product.rating || 5.0" 
-                    disabled 
-                    show-score
-                    text-color="#ff9900">
-                  </el-rate>
+                <div class="rating-score-section">
+                  <div class="main-score">
+                    <span class="score-number">{{ reviewStatistics.avgRating?.toFixed(1) || '5.0' }}</span>
+                    <span class="score-label">综合评分</span>
+                  </div>
+                  <div class="rating-details">
+                    <div class="rating-item">
+                      <span class="label">描述相符</span>
+                      <el-rate :model-value="reviewStatistics.avgDescriptionRating || 5" disabled size="small" />
+                      <span class="value">{{ reviewStatistics.avgDescriptionRating?.toFixed(1) || '5.0' }}</span>
+                    </div>
+                    <div class="rating-item">
+                      <span class="label">卖家服务</span>
+                      <el-rate :model-value="reviewStatistics.avgServiceRating || 5" disabled size="small" />
+                      <span class="value">{{ reviewStatistics.avgServiceRating?.toFixed(1) || '5.0' }}</span>
+                    </div>
+                    <div class="rating-item">
+                      <span class="label">物流服务</span>
+                      <el-rate :model-value="reviewStatistics.avgLogisticsRating || 5" disabled size="small" />
+                      <span class="value">{{ reviewStatistics.avgLogisticsRating?.toFixed(1) || '5.0' }}</span>
+                    </div>
+                  </div>
                 </div>
-                <div class="rating-count">共 {{ product.reviewCount || 0 }} 条评价</div>
+                <div class="rating-stats">
+                  <div class="stat-item">
+                    <span class="count">{{ reviewStatistics.totalCount || 0 }}</span>
+                    <span class="label">全部评价</span>
+                  </div>
+                  <div class="stat-item good">
+                    <span class="count">{{ reviewStatistics.goodRate || 100 }}%</span>
+                    <span class="label">好评率</span>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 评价筛选标签 -->
+              <div class="rating-filters">
+                <el-button 
+                  :type="reviewRatingType === 'all' ? 'primary' : 'default'"
+                  size="small"
+                  @click="changeRatingType('all')">
+                  全部({{ reviewStatistics.totalCount || 0 }})
+                </el-button>
+                <el-button 
+                  :type="reviewRatingType === 'good' ? 'primary' : 'default'"
+                  size="small"
+                  @click="changeRatingType('good')">
+                  好评({{ reviewStatistics.goodCount || 0 }})
+                </el-button>
+                <el-button 
+                  :type="reviewRatingType === 'medium' ? 'primary' : 'default'"
+                  size="small"
+                  @click="changeRatingType('medium')">
+                  中评({{ reviewStatistics.mediumCount || 0 }})
+                </el-button>
+                <el-button 
+                  :type="reviewRatingType === 'bad' ? 'primary' : 'default'"
+                  size="small"
+                  @click="changeRatingType('bad')">
+                  差评({{ reviewStatistics.badCount || 0 }})
+                </el-button>
+                <el-button 
+                  :type="reviewRatingType === 'withImage' ? 'primary' : 'default'"
+                  size="small"
+                  @click="changeRatingType('withImage')">
+                  有图({{ reviewStatistics.withImageCount || 0 }})
+                </el-button>
               </div>
             </div>
             
+            <!-- 评价列表 -->
             <div class="reviews-list" v-if="reviews.length > 0">
               <div v-for="review in reviews" :key="review.id" class="review-item">
                 <div class="review-header">
                   <div class="user-info">
-                    <img :src="review.userAvatar" :alt="review.userName" class="user-avatar">
-                    <span class="user-name">{{ review.userName }}</span>
+                    <img 
+                      :src="review.userAvatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'" 
+                      :alt="review.userName" 
+                      class="user-avatar">
+                    <div class="user-details">
+                      <span class="user-name">{{ review.userName || '匿名用户' }}</span>
+                      <div class="review-rating">
+                        <el-rate :model-value="review.rating" disabled size="small" />
+                      </div>
+                    </div>
                   </div>
-                  <div class="review-rating">
-                    <el-rate v-model="review.rating" disabled size="small"></el-rate>
-                    <span class="review-date">{{ formatDate(review.createTime) }}</span>
-                  </div>
+                  <span class="review-date">{{ formatDate(review.createTime) }}</span>
                 </div>
+                
                 <div class="review-content">{{ review.content }}</div>
+                
+                <!-- 评价图片 -->
                 <div class="review-images" v-if="review.images && review.images.length > 0">
                   <img 
                     v-for="(img, index) in review.images" 
@@ -209,13 +284,55 @@
                     :src="img" 
                     :alt="`评价图片${index + 1}`"
                     class="review-image"
-                    @click="previewImage(img)">
+                    @click="previewImage(img)"
+                    @error="handleReviewImageError"
+                    loading="lazy">
                 </div>
+                
+                <!-- 多维度评分 -->
+                <div class="review-ratings" v-if="review.descriptionRating || review.serviceRating || review.logisticsRating">
+                  <span class="rating-tag">描述相符: {{ review.descriptionRating }}星</span>
+                  <span class="rating-tag">卖家服务: {{ review.serviceRating }}星</span>
+                  <span class="rating-tag">物流服务: {{ review.logisticsRating }}星</span>
+                </div>
+                
+                <!-- 商家回复 -->
+                <div class="merchant-reply" v-if="review.merchantReply">
+                  <div class="reply-header">
+                    <span class="reply-label">商家回复</span>
+                    <span class="reply-time">{{ formatDate(review.merchantReplyTime) }}</span>
+                  </div>
+                  <div class="reply-content">{{ review.merchantReply }}</div>
+                </div>
+                
+                <!-- 操作按钮 -->
+                <div class="review-actions">
+                  <el-button 
+                    type="text" 
+                    size="small"
+                    :disabled="likedReviewIds.has(review.id)"
+                    :class="{ 'is-liked': likedReviewIds.has(review.id) }"
+                    @click="handleLikeReview(review)">
+                    <el-icon><Star /></el-icon>
+                    {{ likedReviewIds.has(review.id) ? '已点赞' : '有用' }}({{ review.likeCount || 0 }})
+                  </el-button>
+                </div>
+              </div>
+              
+              <!-- 分页 -->
+              <div class="reviews-pagination" v-if="reviewTotal > reviewSize">
+                <el-pagination
+                  v-model:current-page="reviewPage"
+                  :page-size="reviewSize"
+                  :total="reviewTotal"
+                  layout="prev, pager, next"
+                  @current-change="handleReviewPageChange"
+                />
               </div>
             </div>
             
             <div v-else class="no-reviews">
-              <el-empty description="暂无评价"></el-empty>
+              <el-empty description="暂无评价，快来抢沙发吧~"></el-empty>
             </div>
           </div>
           <div v-else class="loading-state">
@@ -239,10 +356,12 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Star } from '@element-plus/icons-vue'
 import { useCartStore } from '@/stores/cart'
 import { useUserStore } from '@/stores/user'
 import LocalIcon from '@/components/LocalIcon.vue'
-import { getProductDetail, getProductReviews } from '@/api/product'
+import ImageMagnifier from '@/components/ImageMagnifier.vue'
+import { getProductDetail, getProductReviews, addProductReview, likeReview } from '@/api/product'
 import { addToCart as addToCartApi } from '@/api/cart'
 const route = useRoute()
 const router = useRouter()
@@ -260,6 +379,27 @@ const showPreview = ref(false)
 const previewImages = ref([])
 const previewIndex = ref(0)
 const reviews = ref([])
+
+// 评价相关数据
+const reviewStatistics = ref({
+  totalCount: 0,
+  avgRating: 5.0,
+  avgDescriptionRating: 5.0,
+  avgServiceRating: 5.0,
+  avgLogisticsRating: 5.0,
+  goodCount: 0,
+  mediumCount: 0,
+  badCount: 0,
+  withImageCount: 0,
+  goodRate: 100
+})
+const reviewPage = ref(1)
+const reviewSize = ref(10)
+const reviewTotal = ref(0)
+const reviewRatingType = ref('all')
+const reviewLoading = ref(false)
+// 已点赞的评价ID集合（防止重复点赞）
+const likedReviewIds = ref(new Set())
 
 // 计算属性
 const currentStock = computed(() => {
@@ -372,19 +512,113 @@ const loadProductDetail = async () => {
 
 const loadReviews = async () => {
   try {
+    reviewLoading.value = true
     const productId = route.params.id
     
-    // 优先使用真实API
-    try {
-      const response = await getProductReviews(productId)
-      reviews.value = response.data
-    } catch (apiError) {
-      // 评价接口不存在时静默处理，不输出错误
-      reviews.value = []
+    const response = await getProductReviews(productId, {
+      page: reviewPage.value,
+      size: reviewSize.value,
+      ratingType: reviewRatingType.value
+    })
+    
+    if (response.data) {
+      // 更新统计信息
+      if (response.data.statistics) {
+        reviewStatistics.value = {
+          ...reviewStatistics.value,
+          ...response.data.statistics
+        }
+      }
+      
+      // 更新评价列表
+      reviews.value = (response.data.list || []).map(review => ({
+        ...review,
+        // 处理图片字段
+        images: review.images ? review.images.split(',').filter(img => img) : []
+      }))
+      
+      reviewTotal.value = response.data.total || 0
     }
   } catch (error) {
+    console.warn('加载评价失败:', error)
     reviews.value = []
+  } finally {
+    reviewLoading.value = false
   }
+}
+
+// 切换评价类型
+const changeRatingType = (type) => {
+  reviewRatingType.value = type
+  reviewPage.value = 1
+  loadReviews()
+}
+
+// 评价分页变化
+const handleReviewPageChange = (page) => {
+  reviewPage.value = page
+  loadReviews()
+}
+
+// 点赞评价
+const handleLikeReview = async (review) => {
+  if (!userStore.isLoggedIn) {
+    ElMessage.warning('请先登录')
+    return
+  }
+  
+  // 检查是否已点赞
+  if (likedReviewIds.value.has(review.id)) {
+    ElMessage.warning('您已经点赞过了')
+    return
+  }
+  
+  try {
+    await likeReview(review.id, userStore.userInfo?.id)
+    review.likeCount = (review.likeCount || 0) + 1
+    // 记录已点赞
+    likedReviewIds.value.add(review.id)
+    // 保存到localStorage
+    saveLikedReviews()
+    ElMessage.success('点赞成功')
+  } catch (error) {
+    if (error.response?.data?.msg?.includes('已点赞')) {
+      likedReviewIds.value.add(review.id)
+      saveLikedReviews()
+      ElMessage.warning('您已经点赞过了')
+    } else {
+      ElMessage.error('点赞失败')
+    }
+  }
+}
+
+// 保存已点赞记录到localStorage
+const saveLikedReviews = () => {
+  const userId = userStore.userInfo?.id
+  if (userId) {
+    localStorage.setItem(`liked_reviews_${userId}`, JSON.stringify([...likedReviewIds.value]))
+  }
+}
+
+// 加载已点赞记录
+const loadLikedReviews = () => {
+  const userId = userStore.userInfo?.id
+  if (userId) {
+    const saved = localStorage.getItem(`liked_reviews_${userId}`)
+    if (saved) {
+      try {
+        likedReviewIds.value = new Set(JSON.parse(saved))
+      } catch (e) {
+        likedReviewIds.value = new Set()
+      }
+    }
+  }
+}
+
+// 处理评价图片加载错误
+const handleReviewImageError = (event) => {
+  event.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iODAiIGhlaWdodD0iODAiIGZpbGw9IiNGNUY1RjUiLz48cGF0aCBkPSJNMzIgMjhIMjhWNTJINTJWNDhINTZWMjRIMzJWMjhaIiBmaWxsPSIjRTBFMEUwIi8+PHBhdGggZD0iTTM2IDM2QzM3LjEwNDYgMzYgMzggMzUuMTA0NiAzOCAzNEMzOCAzMi44OTU0IDM3LjEwNDYgMzIgMzYgMzJDMzQuODk1NCAzMiAzNCAzMi44OTU0IDM0IDM0QzM0IDM1LjEwNDYgMzQuODk1NCAzNiAzNiAzNloiIGZpbGw9IiNFMEUwRTAiLz48cGF0aCBkPSJNMzIgNDRMNDAgMzZMNDQgNDBMNTIgMzJWNDhIMzJWNDRaIiBmaWxsPSIjRTBFMEUwIi8+PC9zdmc+'
+  event.target.classList.add('image-error')
 }
 
 const addToCart = async () => {
@@ -477,6 +711,7 @@ watch(selectedSpec, () => {
 
 // 生命周期
 onMounted(() => {
+  loadLikedReviews()
   loadProductDetail()
 })
 </script>
@@ -533,19 +768,21 @@ onMounted(() => {
   aspect-ratio: 1;
   border: 1px solid #ebeef5;
   border-radius: 8px;
-  overflow: hidden;
-  cursor: pointer;
+  overflow: visible;
+  position: relative;
 }
 
-.main-image img {
+/* 放大镜组件内的图片样式 */
+.main-image :deep(.magnifier-image) {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.3s;
+  border-radius: 8px;
 }
 
-.main-image:hover img {
-  transform: scale(1.05);
+/* 放大镜预览区域位置调整 */
+.main-image :deep(.magnifier-preview) {
+  border-radius: 8px;
 }
 
 .thumbnail-list {
@@ -735,8 +972,93 @@ onMounted(() => {
 
 .rating-overview {
   display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 30px;
+  margin-bottom: 20px;
+}
+
+.rating-score-section {
+  display: flex;
+  gap: 40px;
+}
+
+.main-score {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 20px;
+  padding: 10px 20px;
+}
+
+.score-number {
+  font-size: 48px;
+  font-weight: 600;
+  color: #ff9900;
+  line-height: 1;
+}
+
+.score-label {
+  font-size: 14px;
+  color: #909399;
+  margin-top: 8px;
+}
+
+.rating-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rating-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rating-item .label {
+  font-size: 14px;
+  color: #606266;
+  width: 70px;
+}
+
+.rating-item .value {
+  font-size: 14px;
+  color: #ff9900;
+  font-weight: 500;
+}
+
+.rating-stats {
+  display: flex;
+  gap: 30px;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 20px;
+}
+
+.stat-item .count {
+  font-size: 28px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.stat-item.good .count {
+  color: #67c23a;
+}
+
+.stat-item .label {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 5px;
+}
+
+.rating-filters {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .rating-score {
@@ -767,25 +1089,33 @@ onMounted(() => {
 .review-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
+  align-items: flex-start;
+  margin-bottom: 12px;
 }
 
 .user-info {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .user-avatar {
   width: 40px;
   height: 40px;
   border-radius: 50%;
+  object-fit: cover;
+}
+
+.user-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .user-name {
   font-weight: 500;
   color: #303133;
+  font-size: 14px;
 }
 
 .review-rating {
@@ -802,12 +1132,15 @@ onMounted(() => {
 .review-content {
   color: #606266;
   line-height: 1.6;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+  font-size: 14px;
 }
 
 .review-images {
   display: flex;
   gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
 }
 
 .review-image {
@@ -816,6 +1149,81 @@ onMounted(() => {
   object-fit: cover;
   border-radius: 4px;
   cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.review-image:hover {
+  transform: scale(1.05);
+}
+
+.review-image.image-error {
+  background-color: #f5f5f5;
+  object-fit: contain;
+}
+
+/* 已点赞按钮样式 */
+.review-actions .is-liked {
+  color: #ff9900 !important;
+  cursor: not-allowed;
+}
+
+.review-actions .is-liked:hover {
+  color: #ff9900 !important;
+}
+
+.review-ratings {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 12px;
+}
+
+.rating-tag {
+  font-size: 12px;
+  color: #909399;
+  background: #f5f7fa;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.merchant-reply {
+  background: #fef0f0;
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 12px;
+}
+
+.reply-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.reply-label {
+  font-size: 12px;
+  color: #f56c6c;
+  font-weight: 500;
+}
+
+.reply-time {
+  font-size: 12px;
+  color: #909399;
+}
+
+.reply-content {
+  font-size: 14px;
+  color: #606266;
+  line-height: 1.5;
+}
+
+.review-actions {
+  margin-top: 12px;
+}
+
+.reviews-pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
 }
 
 .no-reviews {
@@ -865,8 +1273,13 @@ onMounted(() => {
     width: 100%;
   }
 
-  .main-image img {
+  .main-image :deep(.magnifier-image) {
     height: 350px;
+  }
+  
+  /* 平板上隐藏放大镜预览，改用点击预览 */
+  .main-image :deep(.magnifier-preview) {
+    display: none;
   }
 
   .thumbnail-list {
@@ -901,8 +1314,14 @@ onMounted(() => {
     padding: 10px;
   }
 
-  .main-image img {
+  .main-image :deep(.magnifier-image) {
     height: 300px;
+  }
+  
+  /* 移动端隐藏放大镜，改用点击预览 */
+  .main-image :deep(.magnifier-lens),
+  .main-image :deep(.magnifier-preview) {
+    display: none;
   }
 
   .thumbnail-list {
@@ -977,7 +1396,7 @@ onMounted(() => {
     padding: 5px;
   }
 
-  .main-image img {
+  .main-image :deep(.magnifier-image) {
     height: 250px;
   }
 

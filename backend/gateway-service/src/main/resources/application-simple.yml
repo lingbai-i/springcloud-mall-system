@@ -46,13 +46,15 @@ spring:
           filters:
             - StripPrefix=2
         # 商品服务兼容路由（支持前端/api/product-service/**路径）
-        # 路由到 product-service 的 /api/** 接口
+        # 路由到 product-service 的 /** 接口（product-service 接口路径不带 /api 前缀）
         - id: product-service-compat
           uri: lb://product-service
           predicates:
             - Path=/api/product-service/**
           filters:
-            - RewritePath=/api/product-service/(?<segment>.*), /api/${segment}
+            - name: StripPrefix
+              args:
+                parts: 2
         # 购物车服务
         - id: cart-service
           uri: lb://cart-service

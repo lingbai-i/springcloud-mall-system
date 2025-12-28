@@ -11,6 +11,17 @@
     <div class="user-layout">
       <!-- 左侧导航菜单 -->
       <div class="sidebar">
+        <!-- 返回商城首页按钮 -->
+        <el-button 
+          type="primary" 
+          plain 
+          class="back-home-btn"
+          @click="goToHome"
+        >
+          <el-icon><HomeFilled /></el-icon>
+          返回商城首页
+        </el-button>
+
         <!-- 用户信息卡片 -->
         <el-card class="user-info-card" shadow="hover">
           <div class="user-header">
@@ -120,10 +131,11 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, reactive, onMounted, computed, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { HomeFilled } from '@element-plus/icons-vue'
 import LocalIcon from '@/components/LocalIcon.vue'
 import ProfileView from './profile.vue'
 import SecurityView from './security.vue'
@@ -141,13 +153,16 @@ import * as logger from '@/utils/logger'
  * - 显示用户基本信息
  * - 提供功能菜单导航
  * - 头像上传功能
+ * - 路由同步：支持直接访问子路由
  * 
  * @author lingbai
- * @version 1.0
+ * @version 1.1
  * @since 2025-10-21
+ * @updated 2025-12-28 - 添加路由同步功能
  */
 
 const router = useRouter()
+const route = useRoute()
 const userStore = useUserStore()
 
 // 响应式数据
@@ -155,7 +170,43 @@ const userInfo = computed(() => userStore.userInfo || {})
 const showAvatarUpload = ref(false)
 const previewAvatar = ref('')
 const uploading = ref(false)
-const activeMenu = ref('profile') // 当前激活的菜单
+
+// 路由路径到菜单key的映射
+const routeToMenuMap = {
+  '/user/profile': 'profile',
+  '/user/security': 'security',
+  '/user/orders': 'orders',
+  '/user/addresses': 'addresses',
+  '/user/favorites': 'favorites',
+  '/user/settings': 'settings',
+  '/user/password': 'security'
+}
+
+// 菜单key到路由路径的映射
+const menuToRouteMap = {
+  'profile': '/user/profile',
+  'security': '/user/security',
+  'orders': '/user/orders',
+  'addresses': '/user/addresses',
+  'favorites': '/user/favorites',
+  'settings': '/user/settings'
+}
+
+// 根据当前路由初始化激活菜单
+const getActiveMenuFromRoute = () => {
+  const path = route.path
+  return routeToMenuMap[path] || 'profile'
+}
+
+const activeMenu = ref(getActiveMenuFromRoute())
+
+// 监听路由变化，同步更新激活菜单
+watch(() => route.path, (newPath) => {
+  const menuKey = routeToMenuMap[newPath]
+  if (menuKey && menuKey !== activeMenu.value) {
+    activeMenu.value = menuKey
+  }
+}, { immediate: true })
 
 // 功能菜单配置
 const menuList = reactive([
@@ -217,13 +268,29 @@ onMounted(async () => {
       ElMessage.error('获取用户信息失败')
     }
   }
+  
+  // 如果当前路由是 /user，重定向到 /user/profile
+  if (route.path === '/user' || route.path === '/user/') {
+    router.replace('/user/profile')
+  }
 })
 
 /**
- * 处理菜单选择
+ * 处理菜单选择 - 同时更新路由
  */
 const handleMenuSelect = (key) => {
   activeMenu.value = key
+  const targetRoute = menuToRouteMap[key]
+  if (targetRoute && route.path !== targetRoute) {
+    router.push(targetRoute)
+  }
+}
+
+/**
+ * 返回商城首页
+ */
+const goToHome = () => {
+  router.push('/home')
 }
 
 /**
@@ -372,6 +439,17 @@ const handleAvatarDialogClose = () => {
 .sidebar {
   width: 260px;
   flex-shrink: 0;
+}
+
+.back-home-btn {
+  width: 100%;
+  margin-bottom: 16px;
+  height: 44px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .user-info-card {

@@ -162,6 +162,15 @@ const routes = [
           title: '订单详情',
           requiresAuth: true
         }
+      },
+      {
+        path: '/review/:orderId',
+        name: 'Review',
+        component: () => import('@/views/review/index.vue'),
+        meta: {
+          title: '商品评价',
+          requiresAuth: true
+        }
       }
     ]
   },

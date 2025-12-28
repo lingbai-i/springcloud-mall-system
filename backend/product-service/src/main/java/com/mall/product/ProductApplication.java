@@ -1,9 +1,11 @@
 package com.mall.product;
 
+import com.mall.common.core.minio.MinioConfig;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.openfeign.EnableFeignClients;
+import org.springframework.context.annotation.Import;
 
 /**
  * 商品服务启动类
@@ -15,6 +17,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 @SpringBootApplication
 @MapperScan("com.mall.product.mapper")
 @EnableFeignClients
+@Import(MinioConfig.class)
 public class ProductApplication {
 
     /**

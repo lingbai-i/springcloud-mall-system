@@ -87,3 +87,12 @@ management:
   endpoint:
     health:
       show-details: always
+
+
+# MinIO配置
+minio:
+  endpoint: http://localhost:9000
+  access-key: minioadmin
+  secret-key: minioadmin123
+  bucket-name: mall-files
+  public-url: http://localhost:9000

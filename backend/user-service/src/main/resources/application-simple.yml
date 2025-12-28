@@ -83,7 +83,7 @@ management:
 minio:
   endpoint: http://localhost:9000
   access-key: minioadmin
-  secret-key: minioadmin
+  secret-key: minioadmin123
   bucket-name: mall-avatars
   # 文件访问基础URL（对外访问）
   public-url: http://localhost:9000

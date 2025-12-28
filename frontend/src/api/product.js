@@ -19,9 +19,10 @@ export function getProductList(params) {
 
 // 获取商品详情
 // V2.0 2025-12-02: 迁移到 product-service，商品数据统一从 product-service 获取
+// V2.1 2025-12-28: 修复API路径，ProductController使用/api前缀
 export function getProductDetail(id) {
   return request({
-    url: `/product-service/${id}`,
+    url: `/product-service/api/${id}`,
     method: 'get'
   })
 }
@@ -77,38 +78,53 @@ export function searchProducts(params) {
   })
 }
 
-// 获取商品评价
-// TODO: 临时返回空数据,后续product-service实现评论功能后再调用真实接口
-export function getProductReviews(productId, params) {
-  // 临时返回空数据
-  return Promise.resolve({
-    code: 200,
-    message: '操作成功',
-    data: {
-      total: 0,
-      list: []
+// 获取商品评价（含统计信息）
+export function getProductReviews(productId, params = {}) {
+  return request({
+    url: `/product-service/products/${productId}/reviews`,
+    method: 'get',
+    params: {
+      page: params.page || 1,
+      size: params.size || 10,
+      ratingType: params.ratingType || 'all'
     }
   })
-  // return request({
-  //   url: `/product-service/products/${productId}/reviews`,
-  //   method: 'get',
-  //   params
-  // })
 }
 
 // 添加商品评价
-// TODO: 临时返回成功,后续product-service实现评论功能后再调用真实接口
 export function addProductReview(productId, data) {
-  // 临时返回成功
-  return Promise.resolve({
-    code: 200,
-    message: '评价成功'
+  return request({
+    url: `/product-service/products/${productId}/reviews`,
+    method: 'post',
+    data
   })
-  // return request({
-  //   url: `/product-service/products/${productId}/reviews`,
-  //   method: 'post',
-  //   data
-  // })
+}
+
+// 商家回复评价
+export function replyReview(reviewId, reply) {
+  return request({
+    url: `/product-service/products/reviews/${reviewId}/reply`,
+    method: 'post',
+    data: { reply }
+  })
+}
+
+// 点赞评价
+export function likeReview(reviewId, userId) {
+  return request({
+    url: `/product-service/products/reviews/${reviewId}/like`,
+    method: 'post',
+    params: userId ? { userId } : {}
+  })
+}
+
+// 检查是否已评价
+export function checkReviewed(productId, orderId, userId) {
+  return request({
+    url: `/product-service/products/${productId}/reviews/check`,
+    method: 'get',
+    params: { orderId, userId }
+  })
 }
 
 // 收藏商品
@@ -180,6 +196,9 @@ export const productApi = {
   searchProducts,
   getProductReviews,
   addProductReview,
+  replyReview,
+  likeReview,
+  checkReviewed,
   favoriteProduct,
   unfavoriteProduct,
   getFavoriteProducts,
