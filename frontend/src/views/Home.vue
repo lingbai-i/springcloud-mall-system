@@ -157,17 +157,11 @@
         <!-- 轮播图和侧边栏 -->
         <div class="banner-section">
           <div class="banner-carousel">
-            <el-carousel height="400px" indicator-position="outside" arrow="hover">
-              <el-carousel-item v-for="banner in banners" :key="banner.id">
-                <div class="banner-item" @click="goToBanner(banner.link)">
-                  <img :src="banner.image" :alt="banner.title" />
-                  <div class="banner-overlay">
-                    <h3>{{ banner.title }}</h3>
-                    <p>{{ banner.subtitle }}</p>
-                  </div>
-                </div>
-              </el-carousel-item>
-            </el-carousel>
+            <HomeBannerCarousel 
+              height="400px"
+              :autoplay-interval="5000"
+              @click="handleBannerCarouselClick"
+            />
           </div>
 
           <!-- 右侧快捷入口 -->
@@ -374,6 +368,7 @@ import { SwitchButton, ArrowDown, Box, User } from '@element-plus/icons-vue'
 import * as logger from '@/utils/logger'
 import LoginModal from '@/components/LoginModal.vue'
 import LocalIcon from '@/components/LocalIcon.vue'
+import HomeBannerCarousel from '@/components/HomeBannerCarousel.vue'
 import { getCartCount } from '@/api/cart'
 import { getHotProducts, searchProducts } from '@/api/product'
 
@@ -629,6 +624,14 @@ const goToProduct = (productId) => {
 const goToBanner = (link) => {
   ElMessage.info(`跳转到: ${link}`)
   // router.push(link)
+}
+
+/**
+ * 处理轮播图点击事件
+ * @param {Object} payload 点击数据 { banner, index }
+ */
+const handleBannerCarouselClick = (payload) => {
+  console.log('轮播图点击:', payload)
 }
 
 /**

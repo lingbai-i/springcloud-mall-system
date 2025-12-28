@@ -126,6 +126,12 @@ spring:
             - name: StripPrefix
               args:
                 parts: 2
+        # 轮播图展示服务（用户端，通过product-service）
+        # 注意：BannerController路径包含/api前缀，因此不需要StripPrefix
+        - id: banner-display
+          uri: lb://product-service
+          predicates:
+            - Path=/api/banner/**
       globalcors:
         cors-configurations:
           "[/**]":

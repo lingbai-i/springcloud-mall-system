@@ -12,10 +12,10 @@ import java.io.ByteArrayInputStream;
 import java.util.Base64;
 
 /**
- * MinIO 文件存储服务
+ * MinIO 文件存储服务 - 用户头像专用
  */
 @Slf4j
-@Service
+@Service("userMinioService")
 @RequiredArgsConstructor
 public class MinioService {
 

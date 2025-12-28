@@ -307,4 +307,26 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             "GROUP BY oi.productId, oi.productName " +
             "ORDER BY SUM(oi.quantity) DESC")
     List<Object[]> getMerchantHotProducts(@Param("merchantId") Long merchantId, Pageable pageable);
+
+    /**
+     * 统计商家指定日期范围内的订单数量
+     * 
+     * @param merchantId 商家ID
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     * @return 订单数量
+     */
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.merchantId = :merchantId AND o.createTime >= :startTime AND o.createTime < :endTime")
+    long countMerchantOrdersBetween(@Param("merchantId") Long merchantId, @Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
+
+    /**
+     * 统计商家指定日期范围内的有效交易额（已付款、已发货、已完成订单）
+     * 
+     * @param merchantId 商家ID
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     * @return 有效交易额
+     */
+    @Query("SELECT COALESCE(SUM(o.payAmount), 0) FROM Order o WHERE o.merchantId = :merchantId AND o.status IN ('PAID', 'SHIPPED', 'COMPLETED') AND o.createTime >= :startTime AND o.createTime < :endTime")
+    java.math.BigDecimal sumMerchantValidTransactionAmountBetween(@Param("merchantId") Long merchantId, @Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
 }

@@ -177,10 +177,12 @@ import {
   Money,
   ArrowUp,
   ArrowDown,
-  Bell
+  Bell,
+  PictureFilled
 } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import { getDashboardStats, getSalesTrend, getUserDistribution, getRecentOrders, getPendingItems } from '@/api/admin'
+import { getPendingBannerCount } from '@/api/admin/banner'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -313,6 +315,9 @@ const handlePendingItem = (item) => {
       break
     case 'refund-process':
       router.push('/admin/orders/refunds')
+      break
+    case 'banner-review':
+      router.push('/admin/banner/review')
       break
     case 'user-report':
       ElMessage.info('用户举报功能开发中...')
@@ -602,8 +607,31 @@ const loadPendingItems = async () => {
         })
       }
     }
+    
+    // 加载待审核轮播图数量
+    await loadPendingBanners()
   } catch (error) {
     console.error('Load pending items error:', error)
+  }
+}
+
+// 加载待审核轮播图数量
+const loadPendingBanners = async () => {
+  try {
+    const response = await getPendingBannerCount()
+    if (response.success && response.data > 0) {
+      pendingItems.push({
+        id: 5,
+        title: '待审核轮播图',
+        description: '有商家轮播图申请需要审核',
+        count: response.data,
+        color: '#722ed1',
+        icon: PictureFilled,
+        action: 'banner-review'
+      })
+    }
+  } catch (error) {
+    console.error('Load pending banners error:', error)
   }
 }
 

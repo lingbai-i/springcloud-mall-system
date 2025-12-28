@@ -42,20 +42,27 @@ public class ProductReviewServiceImpl extends ServiceImpl<ProductReviewMapper, P
         Map<String, Object> stats = baseMapper.getReviewStatistics(productId);
         if (stats == null) {
             stats = new HashMap<>();
-            stats.put("totalCount", 0L);
-            stats.put("avgRating", 0.0);
-            stats.put("avgDescriptionRating", 0.0);
-            stats.put("avgServiceRating", 0.0);
-            stats.put("avgLogisticsRating", 0.0);
-            stats.put("goodCount", 0L);
-            stats.put("mediumCount", 0L);
-            stats.put("badCount", 0L);
-            stats.put("withImageCount", 0L);
         }
         
+        // 确保所有字段都有默认值，处理null情况
+        stats.putIfAbsent("totalCount", 0L);
+        stats.putIfAbsent("avgRating", 0.0);
+        stats.putIfAbsent("avgDescriptionRating", 0.0);
+        stats.putIfAbsent("avgServiceRating", 0.0);
+        stats.putIfAbsent("avgLogisticsRating", 0.0);
+        stats.putIfAbsent("goodCount", 0L);
+        stats.putIfAbsent("mediumCount", 0L);
+        stats.putIfAbsent("badCount", 0L);
+        stats.putIfAbsent("withImageCount", 0L);
+        
+        // 处理可能为null的值
+        Object totalCountObj = stats.get("totalCount");
+        Object goodCountObj = stats.get("goodCount");
+        
+        Long totalCount = totalCountObj != null ? ((Number) totalCountObj).longValue() : 0L;
+        Long goodCount = goodCountObj != null ? ((Number) goodCountObj).longValue() : 0L;
+        
         // 计算好评率
-        Long totalCount = ((Number) stats.getOrDefault("totalCount", 0L)).longValue();
-        Long goodCount = ((Number) stats.getOrDefault("goodCount", 0L)).longValue();
         double goodRate = totalCount > 0 ? (goodCount * 100.0 / totalCount) : 100.0;
         stats.put("goodRate", Math.round(goodRate * 10) / 10.0);
         

@@ -181,21 +181,24 @@ const cancelling = ref(false)
 const confirming = ref(false)
 
 // 订单状态映射
+// 数字状态来自 merchant-service 的 MerchantOrderServiceImpl.convertStatusToInt 方法
+// 映射关系：PENDING→1, PAID→2, SHIPPED→3, COMPLETED→5, CANCELLED→6, REFUNDING→7, REFUNDED→8
 const statusMap = {
+  0: { text: '待付款', desc: '请在10分钟内完成支付', color: '#E6A23C', icon: Clock },
   1: { text: '待付款', desc: '请在10分钟内完成支付', color: '#E6A23C', icon: Clock },
   2: { text: '待发货', desc: '商家正在准备您的商品', color: '#409EFF', icon: Box },
-  3: { text: '待收货', desc: '商品正在配送中', color: '#67C23A', icon: Van },
+  3: { text: '已发货', desc: '商品正在配送中', color: '#67C23A', icon: Van },
   4: { text: '待评价', desc: '订单已完成', color: '#67C23A', icon: Check },
   5: { text: '已完成', desc: '感谢您的购买', color: '#67C23A', icon: CircleCheck },
   6: { text: '已取消', desc: '订单已取消', color: '#909399', icon: Close },
-  7: { text: '退款中', desc: '退款申请处理中', color: '#E6A23C', icon: Warning },
+  7: { text: '待退款', desc: '退款申请处理中', color: '#E6A23C', icon: Warning },
   8: { text: '已退款', desc: '退款已完成', color: '#909399', icon: Check },
   'PENDING': { text: '待付款', desc: '请在10分钟内完成支付', color: '#E6A23C', icon: Clock },
   'PAID': { text: '待发货', desc: '商家正在准备您的商品', color: '#409EFF', icon: Box },
   'SHIPPED': { text: '已发货', desc: '商品正在配送中', color: '#67C23A', icon: Van },
   'COMPLETED': { text: '已完成', desc: '感谢您的购买', color: '#67C23A', icon: CircleCheck },
   'CANCELLED': { text: '已取消', desc: '订单已取消', color: '#909399', icon: Close },
-  'REFUND_PENDING': { text: '退款中', desc: '退款申请处理中', color: '#E6A23C', icon: Warning },
+  'REFUNDING': { text: '待退款', desc: '退款申请处理中', color: '#E6A23C', icon: Warning },
   'REFUNDED': { text: '已退款', desc: '退款已完成', color: '#909399', icon: Check }
 }
 

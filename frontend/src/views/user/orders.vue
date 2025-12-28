@@ -293,14 +293,30 @@ const cancelOrder = async (orderId: number) => {
       type: 'warning'
     })
     
-    // 模拟取消订单
-    const order = orders.value.find(o => o.id === orderId)
-    if (order) {
-      order.status = 'cancelled'
+    const userId = userStore.userId || localStorage.getItem('userId')
+    const response = await fetch(`/api/order-service/orders/${orderId}/cancel?userId=${userId}&reason=用户主动取消`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    })
+    
+    const result = await response.json()
+    if (result.success || result.code === 200) {
+      // 更新本地订单状态
+      const order = orders.value.find(o => o.id === orderId)
+      if (order) {
+        order.status = 'cancelled'
+      }
       ElMessage.success('订单取消成功')
+    } else {
+      throw new Error(result.message || '取消订单失败')
     }
   } catch (error) {
-    // 用户取消操作
+    if (error !== 'cancel' && error?.toString() !== 'cancel') {
+      ElMessage.error(error.message || '取消订单失败')
+    }
   }
 }
 
@@ -315,14 +331,30 @@ const confirmReceive = async (orderId: number) => {
       type: 'info'
     })
     
-    // 模拟确认收货
-    const order = orders.value.find(o => o.id === orderId)
-    if (order) {
-      order.status = 'completed'
+    const userId = userStore.userId || localStorage.getItem('userId')
+    const response = await fetch(`/api/order-service/orders/${orderId}/confirm?userId=${userId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    })
+    
+    const result = await response.json()
+    if (result.success || result.code === 200) {
+      // 更新本地订单状态
+      const order = orders.value.find(o => o.id === orderId)
+      if (order) {
+        order.status = 'completed'
+      }
       ElMessage.success('收货确认成功')
+    } else {
+      throw new Error(result.message || '确认收货失败')
     }
   } catch (error) {
-    // 用户取消操作
+    if (error !== 'cancel' && error?.toString() !== 'cancel') {
+      ElMessage.error(error.message || '确认收货失败')
+    }
   }
 }
 

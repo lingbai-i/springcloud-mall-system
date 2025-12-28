@@ -2,6 +2,7 @@ package com.mall.merchant.service.impl;
 
 import com.mall.common.core.domain.PageResult;
 import com.mall.common.core.domain.R;
+import com.mall.merchant.client.OrderServiceClient;
 import com.mall.merchant.domain.entity.MerchantStatistics;
 import com.mall.merchant.repository.MerchantStatisticsRepository;
 import com.mall.merchant.service.MerchantStatisticsService;
@@ -30,8 +31,11 @@ import java.util.stream.Collectors;
  * 实现商家统计相关的业务逻辑处理
  * 
  * @author lingbai
- * @version 1.0
+ * @version 1.1
  * @since 2025-01-27
+ * 
+ * 修改日志：
+ * V1.1 2025-12-29：添加 OrderServiceClient 依赖，当本地统计表无数据时通过 Feign 调用 order-service 实时获取统计数据
  */
 @Slf4j
 @Service
@@ -41,10 +45,12 @@ public class MerchantStatisticsServiceImpl implements MerchantStatisticsService 
     private static final Logger log = LoggerFactory.getLogger(MerchantStatisticsServiceImpl.class);
     
     private final MerchantStatisticsRepository statisticsRepository;
+    private final OrderServiceClient orderServiceClient;
     
     /**
      * 获取商家总览统计数据
      * 包含订单、销售、商品、访问量等关键指标
+     * 优先从本地统计表获取，如果没有数据则通过 Feign 调用 order-service 实时获取
      * 
      * @param merchantId 商家ID
      * @return 总览统计数据
@@ -65,8 +71,28 @@ public class MerchantStatisticsServiceImpl implements MerchantStatisticsService 
                 overview.put("todayVisits", stats.getUniqueVisitors());
                 overview.put("todayViews", stats.getPageViews());
             } else {
-                overview.put("todayOrders", 0);
-                overview.put("todaySales", BigDecimal.ZERO);
+                // 本地统计表没有数据，从 order-service 实时获取
+                log.info("本地统计表无数据，从 order-service 实时获取总览数据，商家ID：{}", merchantId);
+                try {
+                    R<Map<String, Object>> orderStatsResult = orderServiceClient.getMerchantOrderStats(merchantId);
+                    if (orderStatsResult != null && orderStatsResult.isSuccess() && orderStatsResult.getData() != null) {
+                        Map<String, Object> orderStats = orderStatsResult.getData();
+                        overview.put("todayOrders", extractLong(orderStats, "todayOrders", 0L));
+                        BigDecimal todaySales = extractBigDecimal(orderStats, "todaySales", BigDecimal.ZERO);
+                        if (todaySales.equals(BigDecimal.ZERO)) {
+                            todaySales = extractBigDecimal(orderStats, "todayTransactionAmount", BigDecimal.ZERO);
+                        }
+                        overview.put("todaySales", todaySales);
+                        overview.put("totalOrders", extractLong(orderStats, "totalOrders", 0L));
+                    } else {
+                        overview.put("todayOrders", 0);
+                        overview.put("todaySales", BigDecimal.ZERO);
+                    }
+                } catch (Exception e) {
+                    log.warn("从 order-service 获取统计数据失败，商家ID：{}，错误：{}", merchantId, e.getMessage());
+                    overview.put("todayOrders", 0);
+                    overview.put("todaySales", BigDecimal.ZERO);
+                }
                 overview.put("todayVisits", 0);
                 overview.put("todayViews", 0);
             }
@@ -102,6 +128,7 @@ public class MerchantStatisticsServiceImpl implements MerchantStatisticsService 
     
     /**
      * 获取今日统计数据
+     * 优先从本地统计表获取，如果没有数据则通过 Feign 调用 order-service 实时计算
      * 
      * @param merchantId 商家ID
      * @return 今日统计数据
@@ -118,12 +145,10 @@ public class MerchantStatisticsServiceImpl implements MerchantStatisticsService 
             if (statisticsOpt.isPresent()) {
                 return R.ok(statisticsOpt.get());
             } else {
-                // 如果没有今日数据，返回空的统计对象
-                MerchantStatistics emptyStats = new MerchantStatistics();
-                emptyStats.setMerchantId(merchantId);
-                emptyStats.setStatDate(today);
-                emptyStats.setStatType(1);
-                return R.ok(emptyStats);
+                // 本地统计表没有数据，通过 Feign 调用 order-service 实时获取
+                log.info("本地统计表无今日数据，从 order-service 实时获取，商家ID：{}", merchantId);
+                MerchantStatistics stats = fetchTodayStatsFromOrderService(merchantId, today);
+                return R.ok(stats);
             }
             
         } catch (Exception e) {
@@ -133,7 +158,107 @@ public class MerchantStatisticsServiceImpl implements MerchantStatisticsService 
     }
     
     /**
+     * 从 order-service 获取今日统计数据
+     */
+    private MerchantStatistics fetchTodayStatsFromOrderService(Long merchantId, LocalDate date) {
+        MerchantStatistics stats = new MerchantStatistics();
+        stats.setMerchantId(merchantId);
+        stats.setStatDate(date);
+        stats.setStatType(1);
+        
+        try {
+            // 调用 order-service 获取商家订单统计
+            R<Map<String, Object>> result = orderServiceClient.getMerchantOrderStats(merchantId);
+            
+            if (result != null && result.isSuccess() && result.getData() != null) {
+                Map<String, Object> orderStats = result.getData();
+                
+                // 提取今日订单数
+                Long todayOrders = extractLong(orderStats, "todayOrders", 0L);
+                stats.setTotalOrders(todayOrders.intValue());
+                
+                // 提取今日销售额
+                BigDecimal todaySales = extractBigDecimal(orderStats, "todaySales", BigDecimal.ZERO);
+                if (todaySales.equals(BigDecimal.ZERO)) {
+                    todaySales = extractBigDecimal(orderStats, "todayTransactionAmount", BigDecimal.ZERO);
+                }
+                stats.setTotalSales(todaySales);
+                
+                // 提取各状态订单数
+                stats.setCompletedOrders(extractLong(orderStats, "completed", 0L).intValue());
+                stats.setCancelledOrders(extractLong(orderStats, "cancelled", 0L).intValue());
+                
+                log.info("从 order-service 获取今日统计成功，商家ID：{}，订单数：{}，销售额：{}", 
+                        merchantId, todayOrders, todaySales);
+            } else {
+                log.warn("从 order-service 获取统计数据失败或为空，商家ID：{}", merchantId);
+                // 设置默认值
+                stats.setTotalOrders(0);
+                stats.setTotalSales(BigDecimal.ZERO);
+            }
+            
+            // 同时获取每日销售统计来补充数据
+            String dateStr = date.toString();
+            R<List<Map<String, Object>>> dailySalesResult = orderServiceClient.getMerchantDailySales(
+                    merchantId, dateStr, dateStr);
+            
+            if (dailySalesResult != null && dailySalesResult.isSuccess() && dailySalesResult.getData() != null 
+                    && !dailySalesResult.getData().isEmpty()) {
+                Map<String, Object> todayData = dailySalesResult.getData().get(0);
+                
+                // 如果之前没有获取到数据，从每日销售统计中获取
+                if (stats.getTotalOrders() == null || stats.getTotalOrders() == 0) {
+                    stats.setTotalOrders(extractLong(todayData, "totalOrders", 0L).intValue());
+                }
+                if (stats.getTotalSales() == null || stats.getTotalSales().equals(BigDecimal.ZERO)) {
+                    stats.setTotalSales(extractBigDecimal(todayData, "totalSales", BigDecimal.ZERO));
+                }
+            }
+            
+        } catch (Exception e) {
+            log.error("从 order-service 获取统计数据异常，商家ID：{}，错误：{}", merchantId, e.getMessage());
+            // 返回空统计对象
+            stats.setTotalOrders(0);
+            stats.setTotalSales(BigDecimal.ZERO);
+        }
+        
+        return stats;
+    }
+    
+    /**
+     * 从 Map 中提取 Long 值
+     */
+    private Long extractLong(Map<String, Object> map, String key, Long defaultValue) {
+        Object value = map.get(key);
+        if (value == null) return defaultValue;
+        if (value instanceof Long) return (Long) value;
+        if (value instanceof Integer) return ((Integer) value).longValue();
+        if (value instanceof Number) return ((Number) value).longValue();
+        try {
+            return Long.parseLong(value.toString());
+        } catch (NumberFormatException e) {
+            return defaultValue;
+        }
+    }
+    
+    /**
+     * 从 Map 中提取 BigDecimal 值
+     */
+    private BigDecimal extractBigDecimal(Map<String, Object> map, String key, BigDecimal defaultValue) {
+        Object value = map.get(key);
+        if (value == null) return defaultValue;
+        if (value instanceof BigDecimal) return (BigDecimal) value;
+        if (value instanceof Number) return new BigDecimal(value.toString());
+        try {
+            return new BigDecimal(value.toString());
+        } catch (NumberFormatException e) {
+            return defaultValue;
+        }
+    }
+    
+    /**
      * 获取昨日统计数据
+     * 优先从本地统计表获取，如果没有数据则通过 Feign 调用 order-service 实时计算
      * 
      * @param merchantId 商家ID
      * @return 昨日统计数据
@@ -150,18 +275,55 @@ public class MerchantStatisticsServiceImpl implements MerchantStatisticsService 
             if (statisticsOpt.isPresent()) {
                 return R.ok(statisticsOpt.get());
             } else {
-                // 如果没有昨日数据，返回空的统计对象
-                MerchantStatistics emptyStats = new MerchantStatistics();
-                emptyStats.setMerchantId(merchantId);
-                emptyStats.setStatDate(yesterday);
-                emptyStats.setStatType(1);
-                return R.ok(emptyStats);
+                // 本地统计表没有数据，通过 Feign 调用 order-service 实时获取
+                log.info("本地统计表无昨日数据，从 order-service 实时获取，商家ID：{}", merchantId);
+                MerchantStatistics stats = fetchYesterdayStatsFromOrderService(merchantId, yesterday);
+                return R.ok(stats);
             }
             
         } catch (Exception e) {
             log.error("获取昨日统计数据失败，商家ID：{}，错误信息：{}", merchantId, e.getMessage(), e);
             return R.fail("获取昨日统计数据失败");
         }
+    }
+    
+    /**
+     * 从 order-service 获取昨日统计数据
+     */
+    private MerchantStatistics fetchYesterdayStatsFromOrderService(Long merchantId, LocalDate date) {
+        MerchantStatistics stats = new MerchantStatistics();
+        stats.setMerchantId(merchantId);
+        stats.setStatDate(date);
+        stats.setStatType(1);
+        
+        try {
+            // 获取昨日销售统计
+            String dateStr = date.toString();
+            R<List<Map<String, Object>>> dailySalesResult = orderServiceClient.getMerchantDailySales(
+                    merchantId, dateStr, dateStr);
+            
+            if (dailySalesResult != null && dailySalesResult.isSuccess() && dailySalesResult.getData() != null 
+                    && !dailySalesResult.getData().isEmpty()) {
+                Map<String, Object> yesterdayData = dailySalesResult.getData().get(0);
+                
+                stats.setTotalOrders(extractLong(yesterdayData, "totalOrders", 0L).intValue());
+                stats.setTotalSales(extractBigDecimal(yesterdayData, "totalSales", BigDecimal.ZERO));
+                
+                log.info("从 order-service 获取昨日统计成功，商家ID：{}，订单数：{}，销售额：{}", 
+                        merchantId, stats.getTotalOrders(), stats.getTotalSales());
+            } else {
+                log.warn("从 order-service 获取昨日统计数据失败或为空，商家ID：{}", merchantId);
+                stats.setTotalOrders(0);
+                stats.setTotalSales(BigDecimal.ZERO);
+            }
+            
+        } catch (Exception e) {
+            log.error("从 order-service 获取昨日统计数据异常，商家ID：{}，错误：{}", merchantId, e.getMessage());
+            stats.setTotalOrders(0);
+            stats.setTotalSales(BigDecimal.ZERO);
+        }
+        
+        return stats;
     }
     
     /**

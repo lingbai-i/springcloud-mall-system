@@ -118,9 +118,13 @@
                   <span class="amount">¥{{ row.totalAmount }}</span>
                 </template>
               </el-table-column>
-              <el-table-column prop="status" label="状态" width="80">
+              <el-table-column prop="status" label="状态" width="90">
                 <template #default="{ row }">
-                  <el-tag :type="getOrderStatusType(row.status)" size="small">
+                  <el-tag 
+                    :type="getOrderStatusType(row.status)" 
+                    :class="'status-' + row.status"
+                    size="small"
+                  >
                     {{ getOrderStatusText(row.status) }}
                   </el-tag>
                 </template>
@@ -452,24 +456,56 @@ const initProductChart = () => {
 }
 
 const getOrderStatusType = (status) => {
+  // 订单状态颜色映射 - 使用不同颜色区分各种状态
   const statusMap = {
-    'pending_payment': 'warning',
-    'pending_shipment': 'primary',
-    'shipped': 'info',
-    'completed': 'success',
-    'cancelled': 'danger'
+    // 前端标准状态
+    'pending_payment': 'warning',    // 橙色 - 待付款
+    'pending_shipment': 'primary',   // 蓝色 - 待发货
+    'shipped': '',                   // 青色 - 已发货 (使用自定义样式)
+    'completed': 'success',          // 绿色 - 已完成
+    'cancelled': 'danger',           // 红色 - 已取消
+    'refunding': 'warning',          // 橙色 - 待退款
+    'refunded': 'info',              // 灰色 - 已退款
+    // 后端枚举状态（大写）
+    'PENDING': 'warning',
+    'PENDING_PAYMENT': 'warning',
+    'PAID': 'primary',
+    'SHIPPED': '',
+    'COMPLETED': 'success',
+    'CANCELLED': 'danger',
+    'REFUNDING': 'warning',
+    'REFUNDED': 'info'
   }
   return statusMap[status] || 'info'
 }
 
 const getOrderStatusText = (status) => {
+  // 订单状态文本映射
   const statusMap = {
+    // 前端标准状态
     'pending_payment': '待付款',
     'pending_shipment': '待发货',
     'shipped': '已发货',
     'completed': '已完成',
-    'cancelled': '已取消'
+    'cancelled': '已取消',
+    'refunding': '待退款',
+    'refunded': '已退款',
+    // 后端枚举状态（大写）
+    'PENDING': '待付款',
+    'PENDING_PAYMENT': '待付款',
+    'PAID': '待发货',
+    'SHIPPED': '已发货',
+    'COMPLETED': '已完成',
+    'CANCELLED': '已取消',
+    'REFUNDING': '待退款',
+    'REFUNDED': '已退款'
   }
+  
+  // 记录未知状态用于调试
+  if (!statusMap[status]) {
+    console.warn('未知订单状态:', status, typeof status)
+  }
+  
   return statusMap[status] || '未知'
 }
 
@@ -801,7 +837,12 @@ const loadRecentOrders = async () => {
   loading.recentOrders = true
   const merchantId = userStore.merchantId || localStorage.getItem('merchantId')
   
+  // 调试日志：显示当前使用的 merchantId
+  console.log('仪表盘-加载最近订单，merchantId:', merchantId, 
+    '(来源:', userStore.merchantId ? 'userStore' : 'localStorage', ')')
+  
   if (!merchantId) {
+    console.warn('仪表盘-最近订单: merchantId 为空，跳过加载')
     loading.recentOrders = false
     return
   }
@@ -809,6 +850,9 @@ const loadRecentOrders = async () => {
   try {
     // 通过 merchant-service API 获取最近订单
     const response = await getRecentOrders(merchantId, 10)
+    
+    // 调试日志：显示 API 响应
+    console.log('仪表盘-最近订单 API 响应:', response)
     
     if (response?.data && Array.isArray(response.data)) {
       // 清空并重新填充数组
@@ -827,7 +871,7 @@ const loadRecentOrders = async () => {
       console.log('仪表盘-最近订单加载成功:', recentOrders.length, '条')
     } else {
       recentOrders.length = 0
-      console.log('仪表盘-最近订单: 无数据')
+      console.log('仪表盘-最近订单: 无数据，响应格式:', typeof response?.data)
     }
   } catch (error) {
     console.error('加载最近订单失败:', error)
@@ -839,18 +883,118 @@ const loadRecentOrders = async () => {
 
 /**
  * 映射后端状态到前端状态
+ * 支持多种状态格式：数字、大写字符串、小写字符串
+ * 
+ * 订单状态流程图：
+ * ┌─────────────┐
+ * │   PENDING   │ ← 创建订单
+ * │  (待付款)   │
+ * └──────┬──────┘
+ *        │ 支付成功
+ *        ▼
+ * ┌─────────────┐
+ * │    PAID     │
+ * │  (待发货)   │
+ * └──────┬──────┘
+ *        │ 商家发货
+ *        ▼
+ * ┌─────────────┐
+ * │   SHIPPED   │
+ * │  (已发货)   │
+ * └──────┬──────┘
+ *        │ 确认收货
+ *        ▼
+ * ┌─────────────┐
+ * │  COMPLETED  │
+ * │  (已完成)   │
+ * └─────────────┘
+ * 
+ * 可能触发"未知"状态的场景：
+ * 1. 后端返回 null 或 undefined
+ * 2. 后端返回数字但映射表中没有对应值
+ * 3. 后端返回新增的状态但前端未更新
+ * 4. 数据库中存储了非法状态值
  */
 const mapStatusToFrontend = (status) => {
-  const statusMap = {
+  // 记录原始状态用于调试
+  console.log('订单状态映射 - 原始值:', status, '类型:', typeof status)
+  
+  // 处理 null/undefined
+  if (status === null || status === undefined) {
+    console.warn('订单状态为空，使用默认值')
+    return 'pending_payment'
+  }
+  
+  // 处理数字状态码
+  // 注意：这些数字来自 merchant-service 的 MerchantOrderServiceImpl.convertStatusToInt 方法
+  // 映射关系：PENDING→1, PAID→2, SHIPPED→3, COMPLETED→5, CANCELLED→6, REFUNDING→7, REFUNDED→8
+  const numericStatusMap = {
+    0: 'pending_payment',    // 默认/未知状态
+    1: 'pending_payment',    // PENDING - 待付款
+    2: 'pending_shipment',   // PAID - 待发货（已付款）
+    3: 'shipped',            // SHIPPED - 已发货
+    4: 'completed',          // 已收货（兼容旧系统）
+    5: 'completed',          // COMPLETED - 已完成
+    6: 'cancelled',          // CANCELLED - 已取消
+    7: 'refunding',          // REFUNDING - 待退款
+    8: 'refunded'            // REFUNDED - 已退款
+  }
+  
+  // 处理字符串状态（后端枚举名称）
+  const stringStatusMap = {
+    // 后端枚举名称（大写）
     'PENDING': 'pending_payment',
+    'PENDING_PAYMENT': 'pending_payment',
     'PAID': 'pending_shipment',
     'SHIPPED': 'shipped',
     'COMPLETED': 'completed',
     'CANCELLED': 'cancelled',
     'REFUNDING': 'refunding',
-    'REFUNDED': 'refunded'
+    'REFUNDED': 'refunded',
+    // 后端枚举 code 值（小写）
+    'pending': 'pending_payment',
+    'paid': 'pending_shipment',
+    'shipped': 'shipped',
+    'completed': 'completed',
+    'cancelled': 'cancelled',
+    'refunding': 'refunding',
+    'refunded': 'refunded',
+    // 前端状态（直接返回）
+    'pending_payment': 'pending_payment',
+    'pending_shipment': 'pending_shipment'
   }
-  return statusMap[status] || status?.toLowerCase() || 'pending_payment'
+  
+  // 如果是数字，使用数字映射
+  if (typeof status === 'number') {
+    const mapped = numericStatusMap[status]
+    if (mapped) {
+      return mapped
+    }
+    console.warn('未知数字状态码:', status)
+    return 'pending_payment'
+  }
+  
+  // 如果是字符串，使用字符串映射
+  if (typeof status === 'string') {
+    // 先尝试直接匹配
+    if (stringStatusMap[status]) {
+      return stringStatusMap[status]
+    }
+    // 尝试大写匹配
+    if (stringStatusMap[status.toUpperCase()]) {
+      return stringStatusMap[status.toUpperCase()]
+    }
+    // 尝试小写匹配
+    if (stringStatusMap[status.toLowerCase()]) {
+      return stringStatusMap[status.toLowerCase()]
+    }
+    console.warn('未知字符串状态:', status)
+    return 'pending_payment'
+  }
+  
+  // 其他类型，记录警告并返回默认值
+  console.warn('订单状态类型异常:', typeof status, status)
+  return 'pending_payment'
 }
 
 /**
@@ -1182,6 +1326,56 @@ const loadAnalyticsData = async () => {
 .analysis-desc {
   font-size: 12px;
   color: #52c41a;
+}
+
+/* 订单状态标签颜色 - 使用不同颜色区分各种状态 */
+.status-card :deep(.el-tag) {
+  font-weight: 500;
+  border-radius: 4px;
+}
+
+/* 待付款状态 - 橙色 */
+.status-card :deep(.el-tag--warning) {
+  background-color: #fff7e6 !important;
+  border-color: #ffd591 !important;
+  color: #fa8c16 !important;
+}
+
+/* 待发货状态 - 蓝色 */
+.status-card :deep(.el-tag--primary) {
+  background-color: #e6f7ff !important;
+  border-color: #91d5ff !important;
+  color: #1890ff !important;
+}
+
+/* 已发货状态 - 青色 (type为空时) */
+.status-card :deep(.el-tag:not([class*="el-tag--"])),
+.status-card :deep(.status-shipped),
+.status-card :deep(.status-SHIPPED) {
+  background-color: #e6fffb !important;
+  border-color: #87e8de !important;
+  color: #13c2c2 !important;
+}
+
+/* 已完成状态 - 绿色 */
+.status-card :deep(.el-tag--success) {
+  background-color: #f6ffed !important;
+  border-color: #b7eb8f !important;
+  color: #52c41a !important;
+}
+
+/* 已取消状态 - 红色 */
+.status-card :deep(.el-tag--danger) {
+  background-color: #fff2f0 !important;
+  border-color: #ffccc7 !important;
+  color: #ff4d4f !important;
+}
+
+/* 已退款状态 - 灰色 */
+.status-card :deep(.el-tag--info) {
+  background-color: #fafafa !important;
+  border-color: #d9d9d9 !important;
+  color: #8c8c8c !important;
 }
 
 /* 响应式设计 */

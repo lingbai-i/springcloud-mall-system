@@ -49,10 +49,14 @@
           <el-menu-item index="/merchant/shop/decoration">店铺装修</el-menu-item>
         </el-sub-menu>
         
-        <el-menu-item index="/merchant/marketing">
-          <el-icon><Present /></el-icon>
-          <template #title>营销工具</template>
-        </el-menu-item>
+        <el-sub-menu index="marketing">
+          <template #title>
+            <el-icon><Present /></el-icon>
+            <span>营销工具</span>
+          </template>
+          <el-menu-item index="/merchant/marketing">营销概览</el-menu-item>
+          <el-menu-item index="/merchant/banner/list">轮播图投流</el-menu-item>
+        </el-sub-menu>
         
         <el-menu-item index="/merchant/analytics">
           <el-icon><TrendCharts /></el-icon>

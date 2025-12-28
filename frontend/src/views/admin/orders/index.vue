@@ -29,7 +29,7 @@
             <el-option label="已发货" value="SHIPPED" />
             <el-option label="已完成" value="COMPLETED" />
             <el-option label="已取消" value="CANCELLED" />
-            <el-option label="退款中" value="REFUND_PENDING" />
+            <el-option label="待退款" value="REFUNDING" />
             <el-option label="已退款" value="REFUNDED" />
           </el-select>
         </el-form-item>
@@ -70,10 +70,10 @@
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
             <el-button text type="primary" size="small" @click="viewOrder(row.id)">查看</el-button>
-            <el-button v-if="row.status === 'REFUND_PENDING'" text type="success" size="small" @click="handleRefund(row.id, true)">
+            <el-button v-if="row.status === 'REFUNDING'" text type="success" size="small" @click="handleRefund(row.id, true)">
               同意退款
             </el-button>
-            <el-button v-if="row.status === 'REFUND_PENDING'" text type="danger" size="small" @click="handleRefund(row.id, false)">
+            <el-button v-if="row.status === 'REFUNDING'" text type="danger" size="small" @click="handleRefund(row.id, false)">
               拒绝退款
             </el-button>
           </template>
@@ -128,7 +128,7 @@ const orderStats = reactive([
   { key: 'paid', label: '待发货', value: 0, status: 'PAID' },
   { key: 'shipped', label: '已发货', value: 0, status: 'SHIPPED' },
   { key: 'completed', label: '已完成', value: 0, status: 'COMPLETED' },
-  { key: 'refund', label: '退款中', value: 0, status: 'REFUND_PENDING' }
+  { key: 'refund', label: '待退款', value: 0, status: 'REFUNDING' }
 ])
 
 // 状态映射
@@ -138,7 +138,7 @@ const statusMap = {
   'SHIPPED': { text: '已发货', type: 'success' },
   'COMPLETED': { text: '已完成', type: 'success' },
   'CANCELLED': { text: '已取消', type: 'info' },
-  'REFUND_PENDING': { text: '退款中', type: 'warning' },
+  'REFUNDING': { text: '待退款', type: 'warning' },
   'REFUNDED': { text: '已退款', type: 'info' }
 }
 

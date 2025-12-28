@@ -113,6 +113,11 @@ spring:
             - Path=/api/admin/**
           filters:
             - StripPrefix=1
+        # 轮播图展示服务（用户端，通过product-service）
+        - id: banner-display
+          uri: lb://product-service
+          predicates:
+            - Path=/api/banner/**
         # SMS服务
         - id: sms-service
           uri: lb://sms-service

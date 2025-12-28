@@ -7,6 +7,7 @@ export {}
 
 declare module 'vue' {
   export interface GlobalComponents {
+    BannerPreview: typeof import('./src/components/BannerPreview.vue')['default']
     CaptchaFallback: typeof import('./src/components/CaptchaFallback.vue')['default']
     CaptchaSlider: typeof import('./src/components/CaptchaSlider.vue')['default']
     ElAlert: typeof import('element-plus/es')['ElAlert']
@@ -58,6 +59,7 @@ declare module 'vue' {
     ElScrollbar: typeof import('element-plus/es')['ElScrollbar']
     ElSelect: typeof import('element-plus/es')['ElSelect']
     ElSkeleton: typeof import('element-plus/es')['ElSkeleton']
+    ElSkeletonItem: typeof import('element-plus/es')['ElSkeletonItem']
     ElStep: typeof import('element-plus/es')['ElStep']
     ElSteps: typeof import('element-plus/es')['ElSteps']
     ElSubMenu: typeof import('element-plus/es')['ElSubMenu']
@@ -71,6 +73,8 @@ declare module 'vue' {
     ElTimelineItem: typeof import('element-plus/es')['ElTimelineItem']
     ElTooltip: typeof import('element-plus/es')['ElTooltip']
     ElUpload: typeof import('element-plus/es')['ElUpload']
+    HomeBannerCarousel: typeof import('./src/components/HomeBannerCarousel.vue')['default']
+    ImageCropper: typeof import('./src/components/ImageCropper.vue')['default']
     ImageMagnifier: typeof import('./src/components/ImageMagnifier.vue')['default']
     LocalIcon: typeof import('./src/components/LocalIcon.vue')['default']
     LoginModal: typeof import('./src/components/LoginModal.vue')['default']

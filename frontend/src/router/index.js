@@ -373,6 +373,27 @@ const routes = [
           requiresAuth: true,
           requiresAdmin: true
         }
+      },
+      // 轮播图审核
+      {
+        path: 'banner/review',
+        name: 'AdminBannerReview',
+        component: () => import('@/views/admin/banner/review.vue'),
+        meta: {
+          title: '轮播图审核',
+          requiresAuth: true,
+          requiresAdmin: true
+        }
+      },
+      {
+        path: 'banner/detail/:id',
+        name: 'AdminBannerDetail',
+        component: () => import('@/views/admin/banner/detail.vue'),
+        meta: {
+          title: '审核详情',
+          requiresAuth: true,
+          requiresAdmin: true
+        }
       }
     ]
   },
@@ -494,6 +515,47 @@ const routes = [
         component: () => import('@/views/merchant/marketing/index.vue'),
         meta: {
           title: '营销工具',
+          requiresAuth: true,
+          requiresMerchant: true
+        }
+      },
+      // 轮播图投流
+      {
+        path: 'banner/list',
+        name: 'MerchantBannerList',
+        component: () => import('@/views/merchant/banner/list.vue'),
+        meta: {
+          title: '轮播图投流',
+          requiresAuth: true,
+          requiresMerchant: true
+        }
+      },
+      {
+        path: 'banner/apply',
+        name: 'MerchantBannerApply',
+        component: () => import('@/views/merchant/banner/apply.vue'),
+        meta: {
+          title: '提交轮播图申请',
+          requiresAuth: true,
+          requiresMerchant: true
+        }
+      },
+      {
+        path: 'banner/apply/:id',
+        name: 'MerchantBannerEdit',
+        component: () => import('@/views/merchant/banner/apply.vue'),
+        meta: {
+          title: '编辑轮播图申请',
+          requiresAuth: true,
+          requiresMerchant: true
+        }
+      },
+      {
+        path: 'banner/detail/:id',
+        name: 'MerchantBannerDetail',
+        component: () => import('@/views/merchant/banner/detail.vue'),
+        meta: {
+          title: '申请详情',
           requiresAuth: true,
           requiresMerchant: true
         }

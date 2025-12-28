@@ -58,6 +58,14 @@
           <el-menu-item index="/admin/orders/refunds">退款处理</el-menu-item>
         </el-sub-menu>
         
+        <el-sub-menu index="banner">
+          <template #title>
+            <el-icon><PictureFilled /></el-icon>
+            <span>轮播图管理</span>
+          </template>
+          <el-menu-item index="/admin/banner/review">轮播图审核</el-menu-item>
+        </el-sub-menu>
+        
         <el-menu-item index="/admin/statistics">
           <el-icon><TrendCharts /></el-icon>
           <template #title>数据统计</template>
@@ -145,7 +153,8 @@ import {
   Fold,
   Expand,
   FullScreen,
-  ArrowDown
+  ArrowDown,
+  PictureFilled
 } from '@element-plus/icons-vue'
 
 const route = useRoute()

@@ -1068,6 +1068,40 @@ public class OrderServiceImpl implements OrderService {
         // 统计总订单数
         stats.put("totalOrders", orderRepository.countByMerchantId(merchantId));
 
+        // 计算今日统计
+        LocalDateTime todayStart = LocalDateTime.now().toLocalDate().atStartOfDay();
+        LocalDateTime todayEnd = todayStart.plusDays(1);
+        long todayOrders = orderRepository.countMerchantOrdersBetween(merchantId, todayStart, todayEnd);
+        BigDecimal todaySales = orderRepository.sumMerchantValidTransactionAmountBetween(merchantId, todayStart, todayEnd);
+        stats.put("todayOrders", todayOrders);
+        stats.put("todaySales", todaySales != null ? todaySales : BigDecimal.ZERO);
+
+        // 计算昨日统计（用于趋势计算）
+        LocalDateTime yesterdayStart = todayStart.minusDays(1);
+        long yesterdayOrders = orderRepository.countMerchantOrdersBetween(merchantId, yesterdayStart, todayStart);
+        BigDecimal yesterdaySales = orderRepository.sumMerchantValidTransactionAmountBetween(merchantId, yesterdayStart, todayStart);
+        stats.put("yesterdayOrders", yesterdayOrders);
+        stats.put("yesterdaySales", yesterdaySales != null ? yesterdaySales : BigDecimal.ZERO);
+
+        // 计算趋势百分比
+        if (yesterdayOrders > 0) {
+            double ordersTrend = ((double)(todayOrders - yesterdayOrders) / yesterdayOrders) * 100;
+            stats.put("ordersTrend", Math.round(ordersTrend * 100.0) / 100.0);
+        } else {
+            stats.put("ordersTrend", todayOrders > 0 ? 100.0 : 0.0);
+        }
+
+        if (yesterdaySales != null && yesterdaySales.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal todayAmount = todaySales != null ? todaySales : BigDecimal.ZERO;
+            double salesTrend = todayAmount.subtract(yesterdaySales)
+                    .divide(yesterdaySales, 4, java.math.RoundingMode.HALF_UP)
+                    .multiply(new BigDecimal(100))
+                    .doubleValue();
+            stats.put("salesTrend", Math.round(salesTrend * 100.0) / 100.0);
+        } else {
+            stats.put("salesTrend", (todaySales != null && todaySales.compareTo(BigDecimal.ZERO) > 0) ? 100.0 : 0.0);
+        }
+
         return stats;
     }
 
