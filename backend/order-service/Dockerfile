@@ -6,7 +6,7 @@ COPY target/order-service-1.0.0.jar order-service.jar
 
 EXPOSE 8083
 
-ENV JAVA_OPTS="-Xms512m -Xmx512m"
+ENV JAVA_OPTS="-Xms512m -Xmx512m -Duser.timezone=Asia/Shanghai"
 
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar order-service.jar"]
 

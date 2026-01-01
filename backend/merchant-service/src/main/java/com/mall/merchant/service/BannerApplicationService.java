@@ -9,7 +9,7 @@ import org.springframework.data.domain.Page;
  * 轮播图申请服务接口
  * 提供商家端轮播图申请相关的业务操作
  * 
- * @author system
+ * @author lingbai
  * @version 1.0
  * @since 2025-12-28
  */

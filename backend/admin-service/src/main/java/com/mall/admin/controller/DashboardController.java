@@ -14,7 +14,7 @@ import java.util.*;
 /**
  * 仪表盘控制器
  * 
- * @author system
+ * @author lingbai
  * @since 2025-11-13
  */
 @Slf4j
@@ -134,10 +134,35 @@ public class DashboardController {
 
     Map<String, Object> result = new HashMap<>();
 
-    // 返回空数据结构
-    result.put("regionDistribution", new ArrayList<>());
-    result.put("ageDistribution", new ArrayList<>());
+    try {
+      R<Map<String, Object>> userDistribution = userServiceClient.getUserDistribution();
+      if (userDistribution != null && userDistribution.isSuccess() && userDistribution.getData() != null) {
+        log.info("User Service distribution data: {}", userDistribution.getData());
+        result.putAll(userDistribution.getData());
+      } else {
+        log.warn("User Service distribution data is empty or failed: {}", userDistribution);
+      }
+    } catch (Exception e) {
+      log.error("获取用户分布失败", e);
+    }
 
+    try {
+      R<java.util.List<Map<String, Object>>> consumeDistribution = orderServiceClient.getConsumeDistribution();
+      if (consumeDistribution != null && consumeDistribution.isSuccess() && consumeDistribution.getData() != null) {
+        log.info("Order Service consume distribution data: {}", consumeDistribution.getData());
+        result.put("consumeDistribution", consumeDistribution.getData());
+      } else {
+        log.warn("Order Service consume distribution data is empty or failed: {}", consumeDistribution);
+      }
+    } catch (Exception e) {
+      log.error("获取消费分布失败", e);
+    }
+
+    result.putIfAbsent("activeDistribution", new ArrayList<>());
+    result.putIfAbsent("registerDistribution", new ArrayList<>());
+    result.putIfAbsent("consumeDistribution", new ArrayList<>());
+
+    log.info("Final Dashboard Distribution Result: {}", result);
     return R.ok(result);
   }
 

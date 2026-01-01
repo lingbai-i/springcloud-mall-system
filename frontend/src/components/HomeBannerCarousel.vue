@@ -16,7 +16,7 @@
       :height="height"
       :interval="autoplayInterval"
       :autoplay="autoplay && displayBanners.length > 1"
-      indicator-position="outside"
+      indicator-position="none"
       arrow="hover"
       @change="handleCarouselChange"
     >
@@ -362,7 +362,7 @@ defineExpose({
 :deep(.el-carousel__indicator--outside.is-active button) {
   width: 24px;
   border-radius: 5px;
-  background-color: #e3101e;
+  background-color: var(--theme-primary);
 }
 
 /* 响应式设计 */

@@ -248,8 +248,17 @@ textarea {
 }
 
 /* 颜色工具类 */
+:root {
+  --theme-primary: #5d7e68; /* 竹青色 */
+  --theme-secondary: #d4a373; /* 木色 */
+  --theme-accent: #b23a3a; /* 丹红 */
+  --theme-bg-light: rgba(255, 255, 255, 0.9);
+  --theme-text-main: #2c3e50;
+  --theme-text-light: #5a6c7d;
+}
+
 .text-primary {
-  color: #409eff;
+  color: var(--theme-primary);
 }
 
 .text-success {
@@ -257,11 +266,11 @@ textarea {
 }
 
 .text-warning {
-  color: #e6a23c;
+  color: var(--theme-secondary);
 }
 
 .text-danger {
-  color: #f56c6c;
+  color: var(--theme-accent);
 }
 
 .text-info {
@@ -273,7 +282,7 @@ textarea {
 }
 
 .bg-primary {
-  background-color: #409eff;
+  background-color: var(--theme-primary);
 }
 
 .bg-success {
@@ -281,15 +290,44 @@ textarea {
 }
 
 .bg-warning {
-  background-color: #e6a23c;
+  background-color: var(--theme-secondary);
 }
 
 .bg-danger {
-  background-color: #f56c6c;
+  background-color: var(--theme-accent);
 }
 
 .bg-info {
   background-color: #909399;
+}
+
+/* Guofeng Theme Utilities */
+.guofeng-card {
+  background: var(--theme-bg-light);
+  border-radius: 16px; /* 调大圆角，使其更圆润 */
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.guofeng-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+
+.guofeng-btn {
+  background: linear-gradient(135deg, var(--theme-primary), #4a6b5a);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 20px;
+  transition: all 0.3s ease;
+}
+
+.guofeng-btn:hover {
+  filter: brightness(1.1);
+  transform: scale(1.02);
 }
 
 /* 边框工具类 */

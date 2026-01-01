@@ -93,6 +93,54 @@
         />
       </div>
     </el-card>
+    <!-- 订单详情弹窗 -->
+    <el-dialog v-model="dialogVisible" title="订单详情" width="60%">
+      <div v-loading="detailLoading" class="order-detail">
+        <el-descriptions title="基本信息" :column="2" border>
+          <el-descriptions-item label="订单号">{{ orderDetail.orderNo }}</el-descriptions-item>
+          <el-descriptions-item label="状态">
+            <el-tag :type="getStatusType(orderDetail.status)" size="small">
+              {{ getStatusText(orderDetail.status) }}
+            </el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="下单时间">{{ formatTime(orderDetail.createTime) }}</el-descriptions-item>
+          <el-descriptions-item label="支付金额">
+            <span class="amount">¥{{ orderDetail.payAmount }}</span>
+          </el-descriptions-item>
+        </el-descriptions>
+        
+        <div class="divider"></div>
+        
+        <el-descriptions title="收货信息" :column="2" border>
+          <el-descriptions-item label="收货人">{{ orderDetail.receiverName }}</el-descriptions-item>
+          <el-descriptions-item label="联系电话">{{ orderDetail.receiverPhone }}</el-descriptions-item>
+          <el-descriptions-item label="收货地址" :span="2">
+            {{ orderDetail.receiverProvince }} {{ orderDetail.receiverCity }} {{ orderDetail.receiverRegion }} {{ orderDetail.receiverDetailAddress }}
+          </el-descriptions-item>
+        </el-descriptions>
+
+        <div class="divider"></div>
+
+        <div class="section-title">商品信息</div>
+        <el-table :data="orderDetail.orderItems || []" border style="width: 100%">
+          <el-table-column prop="productPic" label="图片" width="80">
+            <template #default="{ row }">
+              <el-image :src="row.productPic" fit="cover" style="width: 50px; height: 50px" />
+            </template>
+          </el-table-column>
+          <el-table-column prop="productName" label="商品名称" show-overflow-tooltip />
+          <el-table-column prop="productPrice" label="单价" width="120">
+            <template #default="{ row }">¥{{ row.productPrice }}</template>
+          </el-table-column>
+          <el-table-column prop="quantity" label="数量" width="80" align="center" />
+          <el-table-column prop="subtotal" label="小计" width="120">
+             <template #default="{ row }">
+               <span class="amount">¥{{ row.subtotal || (row.productPrice * row.quantity).toFixed(2) }}</span>
+             </template>
+          </el-table-column>
+        </el-table>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -108,6 +156,11 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 
 const loading = ref(false)
 const orderList = ref([])
+
+// 订单详情弹窗
+const dialogVisible = ref(false)
+const detailLoading = ref(false)
+const orderDetail = ref({})
 
 // 搜索表单
 const searchForm = reactive({
@@ -214,8 +267,28 @@ const loadOrderStats = async () => {
 /**
  * 查看订单详情
  */
-const viewOrder = (orderId) => {
-  window.open(`/order/${orderId}`, '_blank')
+const viewOrder = async (orderId) => {
+  dialogVisible.value = true
+  detailLoading.value = true
+  orderDetail.value = {}
+  
+  try {
+    const response = await fetch(`/api/order-service/orders/admin/${orderId}`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    })
+    const result = await response.json()
+    
+    if (result.success && result.data) {
+      orderDetail.value = result.data
+    } else {
+      ElMessage.error(result.message || '获取订单详情失败')
+    }
+  } catch (error) {
+    console.error('获取详情失败:', error)
+    ElMessage.error('获取订单详情失败')
+  } finally {
+    detailLoading.value = false
+  }
 }
 
 /**

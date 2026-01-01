@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
  * 轮播图申请VO
  * 用于返回轮播图申请详情
  * 
- * @author system
+ * @author lingbai
  * @version 1.0
  * @since 2025-12-28
  */

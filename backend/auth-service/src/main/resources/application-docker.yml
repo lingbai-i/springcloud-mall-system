@@ -1,0 +1,96 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: auth-service
+
+  # Redis配置 - Docker环境
+  data:
+    redis:
+      host: redis
+      port: 6379
+      password: ""
+      database: 1  # 使用数据库1，避免与其他服务冲突
+      timeout: 10000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-wait: -1ms
+          max-idle: 8
+          min-idle: 0
+
+  # Nacos服务注册与发现
+  cloud:
+    nacos:
+      discovery:
+        server-addr: nacos:8848
+        namespace: docker
+        group: DEFAULT_GROUP
+      config:
+        server-addr: nacos:8848
+        namespace: docker
+        import-check:
+          enabled: false
+
+# JWT配置
+jwt:
+  # 密钥（生产环境必须使用强密钥并妥善保管）
+  secret: mallSecretKeyForJWTTokenGenerationAndValidation2025ThisIsAVeryLongSecretKeyThatMeetsTheMinimumRequirementOf256BitsAndEvenMoreToEnsureSecurityCompliance
+  # 访问令牌有效期（15分钟）
+  access-token-expiration: 900000
+  # 刷新令牌有效期（7天）
+  refresh-token-expiration: 604800000
+  # 签发者
+  issuer: mall-auth-service
+
+# 安全配置
+security:
+  # 允许匿名访问的路径
+  permit-all-paths:
+    - /auth/login
+    - /auth/register
+    - /auth/refresh
+    - /swagger-ui/**
+    - /v3/api-docs/**
+    - /actuator/health
+  # 是否启用CSRF保护（开发环境建议关闭）
+  csrf-enabled: false
+
+# 用户服务配置（用于验证用户凭据）
+user-service:
+  url: http://user-service:8082
+
+# 日志配置
+logging:
+  level:
+    com.mall.auth: INFO
+    org.springframework.security: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{50} - %msg%n"
+
+# Knife4j配置
+knife4j:
+  enable: true
+  openapi:
+    title: 认证服务API文档
+    description: 统一身份认证与令牌管理接口
+    version: 1.0.0
+    concat-contact: lingbai
+    contact-email: lingbai@example.com
+    contact-url: https://github.com/lingbai
+  setting:
+    language: zh_cn
+    enable-swagger-models: true
+    enable-document-manage: true
+    swagger-model-name: 实体类列表
+
+# 管理端点配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when_authorized

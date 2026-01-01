@@ -16,7 +16,6 @@ import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -49,9 +48,6 @@ public class UserController {
 
     @Autowired
     private JwtUtils jwtUtils;
-
-    @Value("${security.jwt.enabled:true}")
-    private boolean jwtEnabled;
 
     /**
      * 测试端点 - 验证代码是否被加载
@@ -194,44 +190,32 @@ public class UserController {
         Map<String, Object> response = new HashMap<>();
 
         try {
-            String username = null;
+            // 从 token 中获取用户名
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                logger.warn("未提供有效的认证令牌");
+                response.put("success", false);
+                response.put("message", "未提供有效的认证令牌");
+                return ResponseEntity.status(401).body(response);
+            }
 
-            // 开发模式：直接使用测试用户
-            if (!jwtEnabled) {
-                username = "user_17698275192"; // 默认测试用户
-                logger.info("开发模式：使用默认测试用户: {}", username);
-            } else {
-                // 生产模式：从 token 中获取用户名
-                String authHeader = request.getHeader("Authorization");
-                if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                    logger.warn("未提供有效的认证令牌");
+            String token = authHeader.substring(7);
+            String username;
+            try {
+                username = jwtUtils.getUsernameFromToken(token);
+                boolean isValid = jwtUtils.validateToken(token);
+
+                if (username == null || !isValid) {
+                    logger.warn("无效的认证令牌");
                     response.put("success", false);
-                    response.put("message", "未提供有效的认证令牌");
+                    response.put("message", "无效的认证令牌");
                     return ResponseEntity.status(401).body(response);
                 }
-
-                String token = authHeader.substring(7);
-                logger.info("获取到的token: {}", token.substring(0, Math.min(20, token.length())) + "...");
-
-                try {
-                    username = jwtUtils.getUsernameFromToken(token);
-                    logger.info("从token中解析的用户名: {}", username);
-
-                    boolean isValid = jwtUtils.validateToken(token);
-                    logger.info("token验证结果: {}", isValid);
-
-                    if (username == null || !isValid) {
-                        logger.warn("无效的认证令牌");
-                        response.put("success", false);
-                        response.put("message", "无效的认证令牌");
-                        return ResponseEntity.status(401).body(response);
-                    }
-                } catch (Exception e) {
-                    logger.error("JWT token解析失败: {}", e.getMessage(), e);
-                    response.put("success", false);
-                    response.put("message", "令牌解析失败: " + e.getMessage());
-                    return ResponseEntity.status(401).body(response);
-                }
+            } catch (Exception e) {
+                logger.error("JWT token解析失败: {}", e.getMessage(), e);
+                response.put("success", false);
+                response.put("message", "令牌解析失败: " + e.getMessage());
+                return ResponseEntity.status(401).body(response);
             }
 
             UserInfoResponse userInfo = null;
@@ -284,33 +268,21 @@ public class UserController {
         Map<String, Object> response = new HashMap<>();
 
         try {
-            String username = null;
+            // 从JWT中获取用户名
+            String authHeader = httpRequest.getHeader("Authorization");
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                response.put("success", false);
+                response.put("message", "未提供有效的认证令牌");
+                return ResponseEntity.badRequest().body(response);
+            }
 
-            // 开发模式：从请求体中获取用户名
-            if (!jwtEnabled) {
-                username = request.getUsername();
-                if (username == null) {
-                    // 如果请求中没有username，使用默认测试用户
-                    username = "user_17698275192";
-                }
-                logger.info("开发模式：更新用户信息 username={}", username);
-            } else {
-                // 生产模式：从JWT中获取用户名
-                String authHeader = httpRequest.getHeader("Authorization");
-                if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                    response.put("success", false);
-                    response.put("message", "未提供有效的认证令牌");
-                    return ResponseEntity.badRequest().body(response);
-                }
+            String token = authHeader.substring(7);
+            String username = jwtUtils.getUsernameFromToken(token);
 
-                String token = authHeader.substring(7);
-                username = jwtUtils.getUsernameFromToken(token);
-
-                if (username == null || !jwtUtils.validateToken(token)) {
-                    response.put("success", false);
-                    response.put("message", "无效的认证令牌");
-                    return ResponseEntity.badRequest().body(response);
-                }
+            if (username == null || !jwtUtils.validateToken(token)) {
+                response.put("success", false);
+                response.put("message", "无效的认证令牌");
+                return ResponseEntity.badRequest().body(response);
             }
 
             // 设置用户名到请求中
@@ -696,12 +668,6 @@ public class UserController {
      * 获取当前用户名
      */
     private String getCurrentUsername(HttpServletRequest request) {
-        // 开发模式：使用默认测试用户
-        if (!jwtEnabled) {
-            return "user_17698275192";
-        }
-
-        // 生产模式：从 token 中获取
         String authHeader = request.getHeader("Authorization");
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             return null;
@@ -825,6 +791,25 @@ public class UserController {
         } catch (Exception e) {
             logger.error("获取用户统计数据失败", e);
             return com.mall.common.core.domain.R.fail("获取统计数据失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取用户分布数据
+     * 供 admin-service Feign 调用
+     * 返回活跃度分布和注册时间分布
+     */
+    @GetMapping("/distribution")
+    @Operation(summary = "获取用户分布数据", description = "获取用户活跃度和注册时间分布统计")
+    public com.mall.common.core.domain.R<Map<String, Object>> getUserDistribution() {
+        logger.info("获取用户分布数据请求");
+
+        try {
+            Map<String, Object> distribution = ((UserServiceImpl) userService).getUserDistribution();
+            return com.mall.common.core.domain.R.ok(distribution);
+        } catch (Exception e) {
+            logger.error("获取用户分布数据失败", e);
+            return com.mall.common.core.domain.R.fail("获取用户分布数据失败: " + e.getMessage());
         }
     }
 

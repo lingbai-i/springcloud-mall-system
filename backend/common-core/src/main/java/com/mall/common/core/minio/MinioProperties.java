@@ -6,7 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 /**
  * MinIO配置属性
  * 
- * @author mall
+ * @author lingbai
  * @since 2025-12-28
  */
 @Data

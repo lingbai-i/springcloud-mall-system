@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 /**
  * 短信服务配置属性
  *
- * @author SMS Service
+ * @author lingbai
  * @since 2024-01-01
  */
 @Data

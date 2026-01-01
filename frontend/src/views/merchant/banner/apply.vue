@@ -101,7 +101,7 @@
                   :value="product.id"
                 >
                   <div class="product-option">
-                    <img :src="product.mainImage || product.images" class="product-thumb" />
+                    <img :src="getFirstImage(product.mainImage || product.images)" class="product-thumb" />
                     <div class="product-info">
                       <span class="product-name">{{ product.productName }}</span>
                       <span class="product-price">¥{{ product.price }}</span>
@@ -310,6 +310,19 @@ const formRules = {
       trigger: 'change'
     }
   ]
+}
+
+/**
+ * 获取第一张图片URL（处理逗号分隔的多图片URL）
+ * @param imageUrl 图片URL字符串，可能包含逗号分隔的多个URL
+ * @returns 第一张图片的URL
+ */
+const getFirstImage = (imageUrl) => {
+  if (!imageUrl) return ''
+  if (imageUrl.includes(',')) {
+    return imageUrl.split(',')[0].trim()
+  }
+  return imageUrl
 }
 
 // 处理商品下拉框打开

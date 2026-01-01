@@ -8,7 +8,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 /**
  * Admin Service 启动类
  *
- * @author Mall Team
+ * @author lingbai
  */
 @SpringBootApplication
 @EnableDiscoveryClient

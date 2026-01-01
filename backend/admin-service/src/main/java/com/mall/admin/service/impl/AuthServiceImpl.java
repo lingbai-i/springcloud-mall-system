@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 /**
  * 管理员认证服务实现
  * 
- * @author system
+ * @author lingbai
  * @since 2025-01-09
  */
 @Slf4j

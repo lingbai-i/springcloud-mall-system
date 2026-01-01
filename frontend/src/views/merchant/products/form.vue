@@ -78,15 +78,17 @@
             v-model:file-list="mainImageFileList"
             action="/api/merchant/products/upload-image"
             list-type="picture-card"
+            :multiple="true"
+            :auto-upload="true"
             :on-success="handleMainImageUploadSuccess"
             :on-error="handleUploadError"
             :on-remove="handleMainImageRemove"
-            :limit="1"
+            :before-upload="beforeImageUpload"
             accept="image/*"
           >
             <el-icon><Plus /></el-icon>
           </el-upload>
-          <div class="upload-tip">主图用于列表展示，建议尺寸800x800，单张不超过5MB</div>
+          <div class="upload-tip">主图用于列表展示，可上传多张，建议尺寸800x800，单张不超过5MB</div>
         </el-form-item>
 
         <el-form-item label="详情图片" prop="images">
@@ -94,15 +96,17 @@
             v-model:file-list="detailImageFileList"
             action="/api/merchant/products/upload-image"
             list-type="picture-card"
+            :multiple="true"
+            :auto-upload="true"
             :on-success="handleDetailImageUploadSuccess"
             :on-error="handleUploadError"
             :on-remove="handleDetailImageRemove"
-            :limit="9"
+            :before-upload="beforeImageUpload"
             accept="image/*"
           >
             <el-icon><Plus /></el-icon>
           </el-upload>
-          <div class="upload-tip">详情图片用于商品详情页展示，最多上传9张，建议尺寸800x800，单张不超过5MB</div>
+          <div class="upload-tip">详情图片用于商品详情页展示，建议尺寸800x800，单张不超过5MB</div>
         </el-form-item>
 
         <el-form-item label="商品描述" prop="description">
@@ -289,7 +293,7 @@ const formRef = ref(null)
 const submitLoading = ref(false)
 const enableSpecs = ref(false)
 const mainImageFileList = ref([])  // 主图文件列表
-const mainImageUrl = ref('')  // 主图URL
+const mainImageUrls = ref([])  // 主图URL列表（支持多张）
 const detailImageFileList = ref([])  // 详情图片文件列表
 const detailImageUrls = ref([])  // 详情图片URL列表
 
@@ -342,11 +346,27 @@ const handleAddSpec = () => {
   ElMessage.info('规格管理功能开发中...')
 }
 
+// 图片上传前校验
+const beforeImageUpload = (file) => {
+  const isImage = file.type.startsWith('image/')
+  const isLt5M = file.size / 1024 / 1024 < 5
+
+  if (!isImage) {
+    ElMessage.error('只能上传图片文件!')
+    return false
+  }
+  if (!isLt5M) {
+    ElMessage.error('图片大小不能超过 5MB!')
+    return false
+  }
+  return true
+}
+
 // 主图上传成功
 const handleMainImageUploadSuccess = (response, file, fileList) => {
   console.log('主图上传成功:', response)
   if (response.code === 200 && response.data && response.data.url) {
-    mainImageUrl.value = response.data.url
+    mainImageUrls.value.push(response.data.url)
     ElMessage.success('主图上传成功')
   } else {
     ElMessage.error(response.msg || '主图上传失败')
@@ -372,7 +392,19 @@ const handleUploadError = (error, file, fileList) => {
 
 // 删除主图
 const handleMainImageRemove = (file, fileList) => {
-  mainImageUrl.value = ''
+  // 从已上传列表中移除
+  if (file.response && file.response.data && file.response.data.url) {
+    const index = mainImageUrls.value.indexOf(file.response.data.url)
+    if (index > -1) {
+      mainImageUrls.value.splice(index, 1)
+    }
+  } else if (file.url) {
+    // 编辑模式下，已有图片的url直接在file.url中
+    const index = mainImageUrls.value.indexOf(file.url)
+    if (index > -1) {
+      mainImageUrls.value.splice(index, 1)
+    }
+  }
 }
 
 // 删除详情图片
@@ -406,7 +438,7 @@ const handleSubmit = async () => {
     const submitData = {
       merchantId: userStore.merchantId,
       productName: formData.name,  // 字段映射: name -> productName
-      categoryId: parseInt(formData.category) || null,  // 字段映射: category -> categoryId
+      categoryId: parseInt(formData.category),  // 字段映射: category -> categoryId（必填）
       sku: formData.sku,
       description: formData.description,
       price: parseFloat(formData.price),
@@ -417,8 +449,8 @@ const handleSubmit = async () => {
       status: formData.status === 'on_sale' ? 1 : 0,  // 状态转换: on_sale/off_sale -> 1/0
       isRecommended: formData.isRecommended ? 1 : 0,  // boolean -> Integer
       isNew: formData.isNew ? 1 : 0,  // boolean -> Integer
-      limitBuy: parseInt(formData.limitBuy),
-      mainImage: mainImageUrl.value || null,  // 主图
+      limitBuy: parseInt(formData.limitBuy) || 0,
+      mainImage: mainImageUrls.value.length > 0 ? mainImageUrls.value.join(',') : null,  // 主图（支持多张，用逗号分隔）
       images: detailImageUrls.value.length > 0 ? detailImageUrls.value.join(',') : null  // 详情图片用逗号分隔
     }
     
@@ -467,13 +499,14 @@ const loadProductData = async () => {
         limitBuy: response.data.limitBuy ? response.data.limitBuy.toString() : '0'
       })
       
-      // 加载主图
+      // 加载主图（支持多张）
       if (response.data.mainImage) {
-        mainImageUrl.value = response.data.mainImage
-        mainImageFileList.value = [{
-          name: 'main_image',
-          url: response.data.mainImage
-        }]
+        const mainImages = response.data.mainImage.split(',')
+        mainImageUrls.value = mainImages
+        mainImageFileList.value = mainImages.map((url, index) => ({
+          name: `main_image_${index}`,
+          url: url
+        }))
       }
       
       // 加载详情图片

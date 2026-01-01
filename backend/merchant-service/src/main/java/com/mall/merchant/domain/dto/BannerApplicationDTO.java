@@ -10,7 +10,7 @@ import java.time.LocalDate;
  * 轮播图申请DTO
  * 用于商家提交轮播图投流申请
  * 
- * @author system
+ * @author lingbai
  * @version 1.0
  * @since 2025-12-28
  */

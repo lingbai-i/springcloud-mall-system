@@ -9,9 +9,10 @@ Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$backendDir = Join-Path $scriptDir "backend"
-$frontendDir = Join-Path $scriptDir "frontend"
-$logsDir = Join-Path $scriptDir "logs"
+$projectRoot = Split-Path -Parent $scriptDir
+$backendDir = Join-Path $projectRoot "backend"
+$frontendDir = Join-Path $projectRoot "frontend"
+$logsDir = Join-Path $projectRoot "logs"
 
 # 确保日志目录存在
 if (-not (Test-Path $logsDir)) {
@@ -40,7 +41,8 @@ $dockerContainers = docker ps --filter "name=mall-" --format "{{.Names}}" 2>$nul
 if ($dockerContainers) {
     Write-Host "  ✓ 检测到运行中的Docker容器:" -ForegroundColor Green
     $dockerContainers | ForEach-Object { Write-Host "    - $_" -ForegroundColor Gray }
-} else {
+}
+else {
     Write-Host "  ✗ 未检测到Docker容器运行" -ForegroundColor Red
     Write-Host "    请先运行 start-docker.bat 启动基础设施" -ForegroundColor Yellow
     exit 1
@@ -58,7 +60,7 @@ foreach ($service in $services) {
     $pomFile = Join-Path $servicePath "pom.xml"
     
     if (-not (Test-Path $pomFile)) {
-        Write-Host "  [跳过] $($service.Name) - 目录不存在" -ForegroundColor Yellow
+        Write-Host "  [跳过] $($service.Name) - 目录不存在 ($servicePath)" -ForegroundColor Yellow
         continue
     }
     
@@ -103,7 +105,8 @@ if (Test-Path (Join-Path $frontendDir "package.json")) {
         npm install 2>&1 | Out-Null
         if ($LASTEXITCODE -eq 0) {
             Write-Host "  ✓ 依赖安装完成" -ForegroundColor Green
-        } else {
+        }
+        else {
             Write-Host "  ! 依赖安装可能失败，继续启动..." -ForegroundColor Yellow
         }
     }
@@ -118,7 +121,8 @@ if (Test-Path (Join-Path $frontendDir "package.json")) {
     
     Write-Host "  ✓ 前端服务已启动" -ForegroundColor Green
     Write-Host "    日志文件: $frontendLog" -ForegroundColor Gray
-} else {
+}
+else {
     Write-Host "  ! 未找到前端项目" -ForegroundColor Yellow
 }
 

@@ -14,7 +14,7 @@ import org.springframework.context.annotation.Configuration;
 /**
  * MinIO自动配置类
  * 
- * @author mall
+ * @author lingbai
  * @since 2025-12-28
  */
 @Slf4j

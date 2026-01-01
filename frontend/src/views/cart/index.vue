@@ -55,7 +55,7 @@
           
           <!-- 商品信息 -->
           <div class="item-info">
-            <img :src="item.productImage" :alt="item.productName" class="product-image">
+            <img :src="getFirstImage(item.productImage)" :alt="item.productName" class="product-image">
             <div class="product-details">
               <h4 class="product-name">{{ item.productName }}</h4>
               <p class="product-specs" v-if="item.specifications">{{ item.specifications }}</p>
@@ -137,6 +137,15 @@ import { useRouter } from 'vue-router'
 
 const cartStore = useCartStore()
 const router = useRouter()
+
+// 获取第一张图片URL（处理逗号分隔的多图片URL）
+const getFirstImage = (imageUrl) => {
+  if (!imageUrl) return ''
+  if (imageUrl.includes(',')) {
+    return imageUrl.split(',')[0].trim()
+  }
+  return imageUrl
+}
 
 // 响应式数据
 const cartItems = ref([])

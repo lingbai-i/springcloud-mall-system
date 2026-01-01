@@ -7,7 +7,7 @@ import lombok.Data;
 /**
  * 轮播图拒绝请求DTO
  * 
- * @author system
+ * @author lingbai
  * @version 1.0
  * @since 2025-12-28
  */

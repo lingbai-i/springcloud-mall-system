@@ -20,7 +20,7 @@ import java.util.List;
  * 轮播图展示控制器
  * 提供首页轮播图展示相关的REST API接口
  * 
- * @author system
+ * @author lingbai
  * @version 1.0
  * @since 2025-12-28
  */

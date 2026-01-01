@@ -11,7 +11,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 /**
  * CORS跨域配置
  * 
- * @author SMS Service
+ * @author lingbai
  * @since 2024-01-01
  */
 @Configuration

@@ -17,7 +17,7 @@ import java.util.Map;
  * 商家申请管理接口（供管理员使用）
  * 简化版：直接在merchant-service中实现，避免跨服务调用
  * 
- * @author system
+ * @author lingbai
  * @since 2025-11-11
  */
 @Slf4j

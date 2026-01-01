@@ -16,7 +16,7 @@ import java.util.UUID;
  * MinIO文件存储服务
  * 提供通用的文件上传、删除功能
  * 
- * @author mall
+ * @author lingbai
  * @since 2025-12-28
  */
 @Slf4j

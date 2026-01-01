@@ -1,0 +1,162 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway-service
+  main:
+    web-application-type: reactive
+  cloud:
+    nacos:
+      discovery:
+        server-addr: nacos:8848
+        namespace: docker
+        enabled: true
+      config:
+        enabled: false
+        import-check:
+          enabled: false
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        # 用户服务
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/users/**
+          filters:
+            - StripPrefix=1
+        # 用户服务兼容路由（支持前端/api/user-service/**路径）
+        - id: user-service-compat
+          uri: lb://user-service
+          predicates:
+            - Path=/api/user-service/**
+          filters:
+            - name: StripPrefix
+              args:
+                parts: 2
+        # 用户收藏服务路由
+        - id: user-favorites
+          uri: lb://user-service
+          predicates:
+            - Path=/api/favorites/**
+          filters:
+            - name: StripPrefix
+              args:
+                parts: 1
+        # 商品服务
+        - id: product-service
+          uri: lb://product-service
+          predicates:
+            - Path=/api/product/**
+          filters:
+            - StripPrefix=2
+        # 商品服务兼容路由
+        - id: product-service-compat
+          uri: lb://product-service
+          predicates:
+            - Path=/api/product-service/**
+          filters:
+            - name: StripPrefix
+              args:
+                parts: 2
+        # 购物车服务
+        - id: cart-service
+          uri: lb://cart-service
+          predicates:
+            - Path=/api/cart/**
+          filters:
+            - StripPrefix=1
+        # 购物车服务兼容路由
+        - id: cart-service-compat
+          uri: lb://cart-service
+          predicates:
+            - Path=/api/cart-service/**
+          filters:
+            - name: StripPrefix
+              args:
+                parts: 2
+        # 订单服务
+        - id: order-service
+          uri: lb://order-service
+          predicates:
+            - Path=/api/order/**
+          filters:
+            - StripPrefix=2
+        # 订单服务兼容路由
+        - id: order-service-compat
+          uri: lb://order-service
+          predicates:
+            - Path=/api/order-service/**
+          filters:
+            - RewritePath=/api/order-service/(?<segment>.*), /${segment}
+        # 支付服务
+        - id: payment-service
+          uri: lb://payment-service
+          predicates:
+            - Path=/api/payment/**
+          filters:
+            - StripPrefix=2
+        # 商家服务（单数）
+        - id: merchant-service
+          uri: lb://merchant-service
+          predicates:
+            - Path=/api/merchant/**
+        # 商家服务（复数）
+        - id: merchant-service-plural
+          uri: lb://merchant-service
+          predicates:
+            - Path=/api/merchants/**
+        # 管理服务
+        - id: admin-service
+          uri: lb://admin-service
+          predicates:
+            - Path=/api/admin/**
+          filters:
+            - StripPrefix=1
+        # 管理员-商家管理服务
+        - id: admin-merchants
+          uri: lb://merchant-service
+          predicates:
+            - Path=/api/admin/merchants/**
+        # SMS服务
+        - id: sms-service
+          uri: lb://sms-service
+          predicates:
+            - Path=/api/sms/**
+          filters:
+            - name: StripPrefix
+              args:
+                parts: 2
+        # 轮播图展示服务
+        - id: banner-display
+          uri: lb://product-service
+          predicates:
+            - Path=/api/banner/**
+      globalcors:
+        cors-configurations:
+          "[/**]":
+            allowedOriginPatterns: "*"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+            allowCredentials: true
+            exposedHeaders: "Content-Disposition,Content-Type,Cache-Control"
+
+# 日志配置
+logging:
+  level:
+    com.mall.gateway: debug
+    org.springframework.cloud.gateway: debug
+
+# 管理端点
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always

@@ -2,7 +2,7 @@
  * @Author: lingbai
  * @Date: 2025-01-27 15:30:00
  * @LastEditTime: 2025-11-08 09:13:29 +08:00
- * @Description: 登录弹窗组件 - 参考京东登录弹窗设计，支持密码登录和验证码登录
+ * @Description: 登录弹窗组件 - 支持密码登录和验证码登录
  * @FilePath: /frontend/src/components/LoginModal.vue
 -->
 <template>
@@ -391,12 +391,13 @@ watch(visible, (newVal) => {
 <style scoped>
 /* 弹窗样式 */
 .login-modal {
-  --el-dialog-border-radius: 8px;
+  --el-dialog-border-radius: 12px;
 }
 
 .login-modal :deep(.el-dialog) {
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
+  background: #f0f9f4; /* 适配主题的浅绿色背景 */
 }
 
 .login-modal :deep(.el-dialog__header) {
@@ -408,18 +409,17 @@ watch(visible, (newVal) => {
   padding: 0;
 }
 
-
-
 /* 内容区域 */
 .login-content {
   padding: 24px 16px 16px 16px;
+  background: #f0f9f4;
 }
 
 /* 登录方式切换 */
 .login-tabs {
   display: flex;
   margin-bottom: 16px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #e0eee0;
 }
 
 .tab-item {
@@ -436,12 +436,13 @@ watch(visible, (newVal) => {
 }
 
 .tab-item:hover {
-  color: #ff4142;
+  color: #5d7e68; /* 主题色 */
 }
 
 .tab-item.active {
-  color: #ff4142;
-  border-bottom-color: #ff4142;
+  color: #5d7e68; /* 主题色 */
+  border-bottom-color: #5d7e68;
+  font-weight: bold;
 }
 
 .tab-item .local-icon {
@@ -458,16 +459,27 @@ watch(visible, (newVal) => {
 }
 
 .login-form :deep(.el-input__wrapper) {
-  border-radius: 6px;
+  border-radius: 8px;
   box-shadow: 0 0 0 1px #dcdfe6 inset;
+  background-color: #fff;
 }
 
 .login-form :deep(.el-input__wrapper:hover) {
-  box-shadow: 0 0 0 1px #c0c4cc inset;
+  box-shadow: 0 0 0 1px #5d7e68 inset;
 }
 
 .login-form :deep(.el-input.is-focus .el-input__wrapper) {
-  box-shadow: 0 0 0 1px #ff4142 inset;
+  box-shadow: 0 0 0 1px #5d7e68 inset !important;
+}
+
+/* 复选框主题化 */
+.login-form :deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
+  background-color: #5d7e68;
+  border-color: #5d7e68;
+}
+
+.login-form :deep(.el-checkbox__input.is-checked + .el-checkbox__label) {
+  color: #5d7e68;
 }
 
 /* 短信验证码输入组 */
@@ -482,13 +494,13 @@ watch(visible, (newVal) => {
 
 .sms-btn {
   white-space: nowrap;
-  color: #ff4142;
+  color: #5d7e68;
   font-size: 14px;
   padding: 0 12px;
 }
 
 .sms-btn:hover:not(:disabled) {
-  color: #ff6b6c;
+  color: #4a6654;
 }
 
 .sms-btn:disabled {
@@ -504,13 +516,14 @@ watch(visible, (newVal) => {
 }
 
 .forgot-password {
-  color: #ff4142;
+  color: #5d7e68;
   text-decoration: none;
   font-size: 14px;
 }
 
 .forgot-password:hover {
-  color: #ff6b6c;
+  color: #4a6654;
+  text-decoration: underline;
 }
 
 /* 登录按钮 */
@@ -519,13 +532,15 @@ watch(visible, (newVal) => {
   height: 44px;
   font-size: 16px;
   font-weight: 500;
-  border-radius: 6px;
-  background: linear-gradient(135deg, #ff4142 0%, #ff6b6c 100%);
+  border-radius: 8px;
+  background: linear-gradient(135deg, #5d7e68 0%, #7da38a 100%) !important;
   border: none;
+  color: white !important;
 }
 
 .login-btn:hover {
-  background: linear-gradient(135deg, #ff6b6c 0%, #ff4142 100%);
+  background: linear-gradient(135deg, #4a6654 0%, #5d7e68 100%) !important;
+  opacity: 0.9;
 }
 
 /* 注册链接 */
@@ -537,24 +552,24 @@ watch(visible, (newVal) => {
 }
 
 .register-link a {
-  color: #ff4142;
+  color: #5d7e68;
   text-decoration: none;
   margin-left: 4px;
 }
 
 .register-link a:hover {
-  color: #ff6b6c;
+  color: #4a6654;
 }
 
 /* 桌面端优化样式 */
 @media (min-width: 1024px) {
   .login-modal :deep(.el-dialog) {
-    max-width: 260px;
+    max-width: 320px; /* 稍微加宽一点更美观 */
     width: 29%;
   }
   
   .login-content {
-    padding: 32px 20px 20px 20px;
+    padding: 32px 24px 24px 24px;
   }
   
   .login-form {

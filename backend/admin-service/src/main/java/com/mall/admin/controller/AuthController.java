@@ -16,7 +16,7 @@ import jakarta.servlet.http.HttpServletRequest;
 /**
  * 管理员认证控制器
  * 
- * @author system
+ * @author lingbai
  * @since 2025-01-09
  */
 @Slf4j

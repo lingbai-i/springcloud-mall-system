@@ -20,7 +20,7 @@ import jakarta.validation.constraints.NotNull;
  * 轮播图管理员内部API控制器
  * 提供给admin-service通过Feign调用的内部接口
  * 
- * @author system
+ * @author lingbai
  * @version 1.0
  * @since 2025-12-28
  */

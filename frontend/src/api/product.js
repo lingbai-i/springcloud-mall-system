@@ -72,7 +72,7 @@ export function searchProducts(params) {
     method: 'get',
     params: {
       keyword: params.keyword,
-      current: params.current || params.page || 1,
+      page: params.current || params.page || 1,
       size: params.size || 12
     }
   })

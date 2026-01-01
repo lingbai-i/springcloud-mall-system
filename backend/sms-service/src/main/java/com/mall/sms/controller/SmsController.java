@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 /**
  * SMS服务控制器
  *
- * @author SMS Service
+ * @author lingbai
  * @since 2025-11-09
  */
 @Slf4j

@@ -1,0 +1,44 @@
+spring:
+  # 数据源配置
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://mysql:3306/mall_product?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: 123456
+
+  # Redis配置 - Docker环境
+  redis:
+    host: redis
+    port: 6379
+    password: ""
+    database: 1
+    timeout: 3000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+        max-wait: -1ms
+
+  # Nacos配置
+  cloud:
+    nacos:
+      discovery:
+        server-addr: nacos:8848
+        namespace: docker
+        group: DEFAULT_GROUP
+        enabled: true
+
+# MinIO配置 - Docker环境
+minio:
+  endpoint: http://minio:9000
+  access-key: minioadmin
+  secret-key: minioadmin
+  bucket-name: mall-files
+  public-url: http://localhost:9000
+
+# 日志配置
+logging:
+  level:
+    com.mall.product: DEBUG
+    com.mall.product.mapper: DEBUG

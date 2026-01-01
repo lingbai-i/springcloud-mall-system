@@ -1,14 +1,29 @@
 <template>
   <div class="merchant-dashboard">
+    <!-- 服务器时间显示 -->
+    <div class="server-time-header">
+      <ServerTime :auto-sync="true" />
+    </div>
+
     <!-- 欢迎区域 -->
     <div class="welcome-section">
       <el-card shadow="never" class="welcome-card">
         <div class="welcome-content">
           <div class="welcome-info">
-            <h2>欢迎回来，{{ userStore.userInfo?.shopName || userStore.userInfo?.nickname || userStore.userInfo?.username || '商家' }}！</h2>
+            <h2>
+              欢迎回来，{{
+                userStore.userInfo?.shopName ||
+                userStore.userInfo?.nickname ||
+                userStore.userInfo?.username ||
+                "商家"
+              }}！
+            </h2>
             <p class="welcome-desc">今天是 {{ currentDate }}，祝您生意兴隆！</p>
             <div class="quick-actions">
-              <el-button type="primary" @click="$router.push('/merchant/products/add')">
+              <el-button
+                type="primary"
+                @click="$router.push('/merchant/products/add')"
+              >
                 <el-icon><Plus /></el-icon>
                 添加商品
               </el-button>
@@ -23,8 +38,15 @@
             </div>
           </div>
           <div class="welcome-avatar">
-            <el-avatar :size="80" :src="userStore.userInfo?.avatar || userStore.userInfo?.logo">
-              <el-icon><User /></el-icon>
+            <el-avatar
+              :size="80"
+              :src="
+                userStore.userInfo?.avatar ||
+                userStore.userInfo?.logo ||
+                userStore.userInfo?.shopLogo
+              "
+            >
+              <el-icon :size="40"><Shop /></el-icon>
             </el-avatar>
           </div>
         </div>
@@ -34,10 +56,19 @@
     <!-- 数据概览 -->
     <div class="overview-section">
       <el-row :gutter="20">
-        <el-col :xs="24" :sm="12" :md="6" v-for="item in overviewData" :key="item.key">
+        <el-col
+          :xs="24"
+          :sm="12"
+          :md="6"
+          v-for="item in overviewData"
+          :key="item.key"
+        >
           <el-card shadow="hover" class="overview-card">
             <div class="overview-content">
-              <div class="overview-icon" :style="{ backgroundColor: item.color }">
+              <div
+                class="overview-icon"
+                :style="{ backgroundColor: item.color }"
+              >
                 <el-icon :size="24">
                   <component :is="item.icon" />
                 </el-icon>
@@ -45,7 +76,10 @@
               <div class="overview-info">
                 <div class="overview-value">{{ item.value }}</div>
                 <div class="overview-label">{{ item.label }}</div>
-                <div class="overview-trend" :class="item.trend > 0 ? 'positive' : 'negative'">
+                <div
+                  class="overview-trend"
+                  :class="item.trend > 0 ? 'positive' : 'negative'"
+                >
                   <el-icon>
                     <component :is="item.trend > 0 ? 'ArrowUp' : 'ArrowDown'" />
                   </el-icon>
@@ -99,7 +133,11 @@
             <template #header>
               <div class="card-header">
                 <span>最新订单</span>
-                <el-button text type="primary" @click="$router.push('/merchant/orders')">
+                <el-button
+                  text
+                  type="primary"
+                  @click="$router.push('/merchant/orders')"
+                >
                   查看全部
                 </el-button>
               </div>
@@ -112,7 +150,11 @@
                   </el-button>
                 </template>
               </el-table-column>
-              <el-table-column prop="customerName" label="客户" width="100"></el-table-column>
+              <el-table-column
+                prop="customerName"
+                label="客户"
+                width="100"
+              ></el-table-column>
               <el-table-column prop="totalAmount" label="金额" width="80">
                 <template #default="{ row }">
                   <span class="amount">¥{{ row.totalAmount }}</span>
@@ -120,8 +162,8 @@
               </el-table-column>
               <el-table-column prop="status" label="状态" width="90">
                 <template #default="{ row }">
-                  <el-tag 
-                    :type="getOrderStatusType(row.status)" 
+                  <el-tag
+                    :type="getOrderStatusType(row.status)"
                     :class="'status-' + row.status"
                     size="small"
                   >
@@ -129,7 +171,11 @@
                   </el-tag>
                 </template>
               </el-table-column>
-              <el-table-column prop="createTime" label="下单时间" min-width="120">
+              <el-table-column
+                prop="createTime"
+                label="下单时间"
+                min-width="120"
+              >
                 <template #default="{ row }">
                   {{ formatTime(row.createTime) }}
                 </template>
@@ -145,8 +191,15 @@
               <span>待处理事项</span>
             </template>
             <div class="pending-items">
-              <div class="pending-item" v-for="item in pendingItems" :key="item.type">
-                <div class="pending-icon" :style="{ backgroundColor: item.color }">
+              <div
+                class="pending-item"
+                v-for="item in pendingItems"
+                :key="item.type"
+              >
+                <div
+                  class="pending-icon"
+                  :style="{ backgroundColor: item.color }"
+                >
                   <el-icon>
                     <component :is="item.icon" />
                   </el-icon>
@@ -155,7 +208,11 @@
                   <div class="pending-title">{{ item.title }}</div>
                   <div class="pending-count">{{ item.count }} 项</div>
                 </div>
-                <el-button text type="primary" @click="handlePendingItem(item.type)">
+                <el-button
+                  text
+                  type="primary"
+                  @click="handlePendingItem(item.type)"
+                >
                   处理
                 </el-button>
               </div>
@@ -172,7 +229,13 @@
           <span>店铺数据分析</span>
         </template>
         <el-row :gutter="20">
-          <el-col :xs="24" :sm="12" :md="6" v-for="item in analysisData" :key="item.key">
+          <el-col
+            :xs="24"
+            :sm="12"
+            :md="6"
+            v-for="item in analysisData"
+            :key="item.key"
+          >
             <div class="analysis-item">
               <div class="analysis-label">{{ item.label }}</div>
               <div class="analysis-value">{{ item.value }}</div>
@@ -186,12 +249,14 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, nextTick, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import { useUserStore } from '@/stores/user'
-import { getLowStockProducts } from '@/api/merchant/product'
-import { 
-  getKeyMetrics, 
+import { ref, reactive, onMounted, nextTick, watch } from "vue";
+import { useRouter } from "vue-router";
+import { useUserStore } from "@/stores/user";
+import { getLowStockProducts } from "@/api/merchant/product";
+import ServerTime from "@/components/ServerTime.vue";
+import serverTimeManager from "@/utils/serverTime";
+import {
+  getKeyMetrics,
   getOverviewStatistics,
   getTodayStatistics,
   getYesterdayStatistics,
@@ -199,17 +264,30 @@ import {
   getRecentOrders,
   getOrderStatusStatistics,
   getHotProducts,
-  getDailySalesStatistics
-} from '@/api/merchant/dashboard'
-import * as echarts from 'echarts'
-import { ElMessage } from 'element-plus'
+  getDailySalesStatistics,
+} from "@/api/merchant/dashboard";
+import * as echarts from "echarts";
+import { ElMessage } from "element-plus";
 import {
-  Plus, List, Setting, User, ShoppingBag, Money, TrendCharts, Star,
-  ArrowUp, ArrowDown, Clock, Warning, Document, Van
-} from '@element-plus/icons-vue'
+  Plus,
+  List,
+  Setting,
+  User,
+  ShoppingBag,
+  Money,
+  TrendCharts,
+  Star,
+  ArrowUp,
+  ArrowDown,
+  Clock,
+  Warning,
+  Document,
+  Van,
+  Shop,
+} from "@element-plus/icons-vue";
 
-const router = useRouter()
-const userStore = useUserStore()
+const router = useRouter();
+const userStore = useUserStore();
 
 // 加载状态
 const loading = reactive({
@@ -218,319 +296,324 @@ const loading = reactive({
   hotProducts: false,
   recentOrders: false,
   pendingItems: false,
-  analytics: false
-})
+  analytics: false,
+});
 
 // 响应式数据
-const currentDate = ref('')
-const salesPeriod = ref('7days')
-const salesChartRef = ref()
-const productChartRef = ref()
-let salesChart = null
-let productChart = null
+const salesPeriod = ref("7days");
+const salesChartRef = ref();
+const productChartRef = ref();
+let salesChart = null;
+let productChart = null;
+
+// 当前日期（使用服务器时间）
+const currentDate = ref("");
 
 // 数据概览
 const overviewData = reactive([
   {
-    key: 'todaySales',
-    label: '今日销售额',
-    value: '¥0',
-    icon: 'Money',
-    color: '#52c41a',
-    trend: 0
+    key: "todaySales",
+    label: "今日销售额",
+    value: "¥0",
+    icon: "Money",
+    color: "#52c41a",
+    trend: 0,
   },
   {
-    key: 'todayOrders',
-    label: '今日订单',
-    value: '0',
-    icon: 'ShoppingBag',
-    color: '#1890ff',
-    trend: 0
+    key: "todayOrders",
+    label: "今日订单",
+    value: "0",
+    icon: "ShoppingBag",
+    color: "#1890ff",
+    trend: 0,
   },
   {
-    key: 'totalProducts',
-    label: '商品总数',
-    value: '0',
-    icon: 'List',
-    color: '#722ed1',
-    trend: 0
+    key: "totalProducts",
+    label: "商品总数",
+    value: "0",
+    icon: "List",
+    color: "#722ed1",
+    trend: 0,
   },
   {
-    key: 'shopRating',
-    label: '店铺评分',
-    value: '0',
-    icon: 'Star',
-    color: '#fa8c16',
-    trend: 0
-  }
-])
+    key: "shopRating",
+    label: "店铺评分",
+    value: "0",
+    icon: "Star",
+    color: "#fa8c16",
+    trend: 0,
+  },
+]);
 
 // 最新订单
-const recentOrders = reactive([])
+const recentOrders = reactive([]);
 
 // 待处理事项
 const pendingItems = reactive([
   {
-    type: 'pending_orders',
-    title: '待发货订单',
+    type: "pending_orders",
+    title: "待发货订单",
     count: 0,
-    icon: 'Van',
-    color: '#fa541c'
+    icon: "Van",
+    color: "#fa541c",
   },
   {
-    type: 'low_stock',
-    title: '库存不足',
+    type: "low_stock",
+    title: "库存不足",
     count: 0,
-    icon: 'Warning',
-    color: '#faad14'
+    icon: "Warning",
+    color: "#faad14",
   },
   {
-    type: 'pending_reviews',
-    title: '待回复评价',
+    type: "pending_reviews",
+    title: "待回复评价",
     count: 0,
-    icon: 'Document',
-    color: '#13c2c2'
+    icon: "Document",
+    color: "#13c2c2",
   },
   {
-    type: 'expired_products',
-    title: '即将下架',
+    type: "expired_products",
+    title: "即将下架",
     count: 0,
-    icon: 'Clock',
-    color: '#eb2f96'
-  }
-])
+    icon: "Clock",
+    color: "#eb2f96",
+  },
+]);
 
 // 店铺数据分析
 const analysisData = reactive([
   {
-    key: 'conversion_rate',
-    label: '转化率',
-    value: '0%',
-    desc: '暂无数据'
+    key: "conversion_rate",
+    label: "转化率",
+    value: "0%",
+    desc: "暂无数据",
   },
   {
-    key: 'avg_order_value',
-    label: '客单价',
-    value: '¥0',
-    desc: '暂无数据'
+    key: "avg_order_value",
+    label: "客单价",
+    value: "¥0",
+    desc: "暂无数据",
   },
   {
-    key: 'return_rate',
-    label: '退货率',
-    value: '0%',
-    desc: '暂无数据'
+    key: "return_rate",
+    label: "退货率",
+    value: "0%",
+    desc: "暂无数据",
   },
   {
-    key: 'customer_satisfaction',
-    label: '客户满意度',
-    value: '0%',
-    desc: '暂无数据'
-  }
-])
+    key: "customer_satisfaction",
+    label: "客户满意度",
+    value: "0%",
+    desc: "暂无数据",
+  },
+]);
 
 // 方法
 const initCurrentDate = () => {
-  const now = new Date()
+  // 使用服务器时间
+  const now = serverTimeManager.isSynced()
+    ? serverTimeManager.nowDate()
+    : new Date();
   const options = {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    weekday: 'long'
-  }
-  currentDate.value = now.toLocaleDateString('zh-CN', options)
-}
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    weekday: "long",
+  };
+  currentDate.value = now.toLocaleDateString("zh-CN", options);
+};
 
 const initSalesChart = () => {
-  if (!salesChartRef.value) return
-  
-  salesChart = echarts.init(salesChartRef.value)
-  
+  if (!salesChartRef.value) return;
+
+  salesChart = echarts.init(salesChartRef.value);
+
   const option = {
     tooltip: {
-      trigger: 'axis',
+      trigger: "axis",
       axisPointer: {
-        type: 'cross'
-      }
+        type: "cross",
+      },
     },
     legend: {
-      data: ['销售额', '订单量']
+      data: ["销售额", "订单量"],
     },
     grid: {
-      left: '3%',
-      right: '4%',
-      bottom: '3%',
-      containLabel: true
+      left: "3%",
+      right: "4%",
+      bottom: "3%",
+      containLabel: true,
     },
     xAxis: {
-      type: 'category',
-      data: []
+      type: "category",
+      data: [],
     },
     yAxis: [
       {
-        type: 'value',
-        name: '销售额(元)',
-        position: 'left'
+        type: "value",
+        name: "销售额(元)",
+        position: "left",
       },
       {
-        type: 'value',
-        name: '订单量',
-        position: 'right'
-      }
+        type: "value",
+        name: "订单量",
+        position: "right",
+      },
     ],
     series: [
       {
-        name: '销售额',
-        type: 'line',
+        name: "销售额",
+        type: "line",
         smooth: true,
         data: [],
         itemStyle: {
-          color: '#52c41a'
-        }
+          color: "#52c41a",
+        },
       },
       {
-        name: '订单量',
-        type: 'bar',
+        name: "订单量",
+        type: "bar",
         yAxisIndex: 1,
         data: [],
         itemStyle: {
-          color: '#1890ff'
-        }
-      }
-    ]
-  }
-  
-  salesChart.setOption(option)
-  
+          color: "#1890ff",
+        },
+      },
+    ],
+  };
+
+  salesChart.setOption(option);
+
   // 响应式调整
-  window.addEventListener('resize', () => {
-    salesChart?.resize()
-  })
-}
+  window.addEventListener("resize", () => {
+    salesChart?.resize();
+  });
+};
 
 const initProductChart = () => {
-  if (!productChartRef.value) return
-  
-  productChart = echarts.init(productChartRef.value)
-  
+  if (!productChartRef.value) return;
+
+  productChart = echarts.init(productChartRef.value);
+
   const option = {
     tooltip: {
-      trigger: 'item',
-      formatter: '{b}: {c} ({d}%)'
+      trigger: "item",
+      formatter: "{b}: {c} ({d}%)",
     },
     legend: {
-      orient: 'vertical',
-      left: 'left',
-      top: 'center'
+      orient: "vertical",
+      left: "left",
+      top: "center",
     },
     series: [
       {
-        type: 'pie',
-        radius: ['40%', '70%'],
-        center: ['60%', '50%'],
+        type: "pie",
+        radius: ["40%", "70%"],
+        center: ["60%", "50%"],
         avoidLabelOverlap: false,
         label: {
           show: false,
-          position: 'center'
+          position: "center",
         },
         emphasis: {
           label: {
             show: true,
-            fontSize: '16',
-            fontWeight: 'bold'
-          }
+            fontSize: "16",
+            fontWeight: "bold",
+          },
         },
         labelLine: {
-          show: false
+          show: false,
         },
-        data: []
-      }
-    ]
-  }
-  
-  productChart.setOption(option)
-  
+        data: [],
+      },
+    ],
+  };
+
+  productChart.setOption(option);
+
   // 响应式调整
-  window.addEventListener('resize', () => {
-    productChart?.resize()
-  })
-}
+  window.addEventListener("resize", () => {
+    productChart?.resize();
+  });
+};
 
 const getOrderStatusType = (status) => {
   // 订单状态颜色映射 - 使用不同颜色区分各种状态
   const statusMap = {
     // 前端标准状态
-    'pending_payment': 'warning',    // 橙色 - 待付款
-    'pending_shipment': 'primary',   // 蓝色 - 待发货
-    'shipped': '',                   // 青色 - 已发货 (使用自定义样式)
-    'completed': 'success',          // 绿色 - 已完成
-    'cancelled': 'danger',           // 红色 - 已取消
-    'refunding': 'warning',          // 橙色 - 待退款
-    'refunded': 'info',              // 灰色 - 已退款
+    pending_payment: "warning", // 橙色 - 待付款
+    pending_shipment: "primary", // 蓝色 - 待发货
+    shipped: "", // 青色 - 已发货 (使用自定义样式)
+    completed: "success", // 绿色 - 已完成
+    cancelled: "danger", // 红色 - 已取消
+    refunding: "warning", // 橙色 - 待退款
+    refunded: "info", // 灰色 - 已退款
     // 后端枚举状态（大写）
-    'PENDING': 'warning',
-    'PENDING_PAYMENT': 'warning',
-    'PAID': 'primary',
-    'SHIPPED': '',
-    'COMPLETED': 'success',
-    'CANCELLED': 'danger',
-    'REFUNDING': 'warning',
-    'REFUNDED': 'info'
-  }
-  return statusMap[status] || 'info'
-}
+    PENDING: "warning",
+    PENDING_PAYMENT: "warning",
+    PAID: "primary",
+    SHIPPED: "",
+    COMPLETED: "success",
+    CANCELLED: "danger",
+    REFUNDING: "warning",
+    REFUNDED: "info",
+  };
+  return statusMap[status] || "info";
+};
 
 const getOrderStatusText = (status) => {
   // 订单状态文本映射
   const statusMap = {
     // 前端标准状态
-    'pending_payment': '待付款',
-    'pending_shipment': '待发货',
-    'shipped': '已发货',
-    'completed': '已完成',
-    'cancelled': '已取消',
-    'refunding': '待退款',
-    'refunded': '已退款',
+    pending_payment: "待付款",
+    pending_shipment: "待发货",
+    shipped: "已发货",
+    completed: "已完成",
+    cancelled: "已取消",
+    refunding: "待退款",
+    refunded: "已退款",
     // 后端枚举状态（大写）
-    'PENDING': '待付款',
-    'PENDING_PAYMENT': '待付款',
-    'PAID': '待发货',
-    'SHIPPED': '已发货',
-    'COMPLETED': '已完成',
-    'CANCELLED': '已取消',
-    'REFUNDING': '待退款',
-    'REFUNDED': '已退款'
-  }
-  
+    PENDING: "待付款",
+    PENDING_PAYMENT: "待付款",
+    PAID: "待发货",
+    SHIPPED: "已发货",
+    COMPLETED: "已完成",
+    CANCELLED: "已取消",
+    REFUNDING: "待退款",
+    REFUNDED: "已退款",
+  };
+
   // 记录未知状态用于调试
   if (!statusMap[status]) {
-    console.warn('未知订单状态:', status, typeof status)
+    console.warn("未知订单状态:", status, typeof status);
   }
-  
-  return statusMap[status] || '未知'
-}
+
+  return statusMap[status] || "未知";
+};
 
 const formatTime = (time) => {
-  return new Date(time).toLocaleString('zh-CN')
-}
+  return new Date(time).toLocaleString("zh-CN");
+};
 
 const viewOrder = (orderId) => {
   // 跳转到订单详情页
-  router.push(`/merchant/orders/${orderId}`)
-}
+  router.push(`/merchant/orders/${orderId}`);
+};
 
 const handlePendingItem = (type) => {
   // 处理待办事项
   const routeMap = {
-    'pending_orders': '/merchant/orders?status=pending_shipment',
-    'low_stock': '/merchant/products?filter=low_stock',
-    'pending_reviews': '/merchant/reviews?status=pending',
-    'expired_products': '/merchant/products?filter=expiring'
-  }
-  
+    pending_orders: "/merchant/orders?status=pending_shipment",
+    low_stock: "/merchant/products?filter=low_stock",
+    pending_reviews: "/merchant/reviews?status=pending",
+    expired_products: "/merchant/products?filter=expiring",
+  };
+
   if (routeMap[type]) {
-    router.push(routeMap[type])
+    router.push(routeMap[type]);
   }
-}
+};
 
 /**
  * 计算趋势百分比
@@ -540,152 +623,165 @@ const handlePendingItem = (type) => {
  */
 const calculateTrend = (today, yesterday) => {
   if (!yesterday || yesterday === 0) {
-    return today > 0 ? 100 : 0
+    return today > 0 ? 100 : 0;
   }
-  return Math.round(((today - yesterday) / yesterday) * 100)
-}
+  return Math.round(((today - yesterday) / yesterday) * 100);
+};
 
 /**
  * 加载数据概览 - 通过 merchant-service API 获取数据
  */
 const loadOverviewData = async () => {
-  loading.overview = true
-  
+  loading.overview = true;
+
   // 调试：打印 userStore 状态
-  console.log('仪表盘-userStore状态:', {
+  console.log("仪表盘-userStore状态:", {
     merchantId: userStore.merchantId,
     userInfo: userStore.userInfo,
     isMerchant: userStore.isMerchant,
-    isLoggedIn: userStore.isLoggedIn
-  })
-  console.log('仪表盘-localStorage:', {
-    merchantId: localStorage.getItem('merchantId'),
-    token: localStorage.getItem('token')?.substring(0, 20) + '...',
-    userInfo: localStorage.getItem('userInfo')
-  })
-  
-  const merchantId = userStore.merchantId || localStorage.getItem('merchantId')
-  
+    isLoggedIn: userStore.isLoggedIn,
+  });
+  console.log("仪表盘-localStorage:", {
+    merchantId: localStorage.getItem("merchantId"),
+    token: localStorage.getItem("token")?.substring(0, 20) + "...",
+    userInfo: localStorage.getItem("userInfo"),
+  });
+
+  const merchantId = userStore.merchantId || localStorage.getItem("merchantId");
+
   if (!merchantId) {
-    console.warn('商家ID不存在，无法加载数据')
-    loading.overview = false
-    return
+    console.warn("商家ID不存在，无法加载数据");
+    loading.overview = false;
+    return;
   }
-  
-  console.log('仪表盘-使用merchantId:', merchantId)
-  
+
+  console.log("仪表盘-使用merchantId:", merchantId);
+
   try {
     // 并行获取今日和昨日统计数据
     const [todayRes, yesterdayRes, overviewRes] = await Promise.allSettled([
       getTodayStatistics(merchantId),
       getYesterdayStatistics(merchantId),
-      getOverviewStatistics(merchantId)
-    ])
-    
-    let todaySales = 0, todayOrders = 0, totalProducts = 0
-    let yesterdaySales = 0, yesterdayOrders = 0
-    
+      getOverviewStatistics(merchantId),
+    ]);
+
+    let todaySales = 0,
+      todayOrders = 0,
+      totalProducts = 0;
+    let yesterdaySales = 0,
+      yesterdayOrders = 0;
+
     // 处理今日统计
-    if (todayRes.status === 'fulfilled' && todayRes.value?.data) {
-      const data = todayRes.value.data
-      todaySales = data.totalSales || data.todaySales || 0
-      todayOrders = data.totalOrders || data.todayOrders || 0
+    if (todayRes.status === "fulfilled" && todayRes.value?.data) {
+      const data = todayRes.value.data;
+      todaySales = data.totalSales || data.todaySales || 0;
+      todayOrders = data.totalOrders || data.todayOrders || 0;
     }
-    
+
     // 处理昨日统计
-    if (yesterdayRes.status === 'fulfilled' && yesterdayRes.value?.data) {
-      const data = yesterdayRes.value.data
-      yesterdaySales = data.totalSales || data.yesterdaySales || 0
-      yesterdayOrders = data.totalOrders || data.yesterdayOrders || 0
+    if (yesterdayRes.status === "fulfilled" && yesterdayRes.value?.data) {
+      const data = yesterdayRes.value.data;
+      yesterdaySales = data.totalSales || data.yesterdaySales || 0;
+      yesterdayOrders = data.totalOrders || data.yesterdayOrders || 0;
     }
-    
+
     // 处理总览统计
-    if (overviewRes.status === 'fulfilled' && overviewRes.value?.data) {
-      const data = overviewRes.value.data
-      totalProducts = data.totalProducts || 0
+    if (overviewRes.status === "fulfilled" && overviewRes.value?.data) {
+      const data = overviewRes.value.data;
+      totalProducts = data.totalProducts || 0;
     }
-    
+
     // 如果 merchant-service API 没有返回数据，尝试从订单统计获取
     if (todaySales === 0 && todayOrders === 0) {
       try {
-        const statsRes = await getOrderStatusStatistics(merchantId)
+        const statsRes = await getOrderStatusStatistics(merchantId);
         if (statsRes?.data) {
-          todayOrders = statsRes.data.todayOrders || 0
-          todaySales = statsRes.data.todaySales || 0
+          todayOrders = statsRes.data.todayOrders || 0;
+          todaySales = statsRes.data.todaySales || 0;
         }
       } catch (e) {
-        console.warn('获取订单统计失败:', e)
+        console.warn("获取订单统计失败:", e);
       }
     }
-    
+
     // 获取商品总数
     if (totalProducts === 0) {
       try {
         const productParams = new URLSearchParams({
           merchantId: merchantId,
           page: 1,
-          size: 1
-        })
-        
-        const productResponse = await fetch(`/api/merchant/products/list?${productParams.toString()}`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          size: 1,
+        });
+
+        const productResponse = await fetch(
+          `/api/merchant/products/list?${productParams.toString()}`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
           }
-        })
-        
-        const productResult = await productResponse.json()
+        );
+
+        const productResult = await productResponse.json();
         if (productResult.success && productResult.data) {
-          totalProducts = productResult.data.total || productResult.data.records?.length || 0
+          totalProducts =
+            productResult.data.total || productResult.data.records?.length || 0;
         }
       } catch (e) {
-        console.warn('获取商品总数失败:', e)
+        console.warn("获取商品总数失败:", e);
       }
     }
-    
-    console.log('仪表盘-数据概览:', { todaySales, todayOrders, yesterdaySales, yesterdayOrders, totalProducts })
-    
+
+    console.log("仪表盘-数据概览:", {
+      todaySales,
+      todayOrders,
+      yesterdaySales,
+      yesterdayOrders,
+      totalProducts,
+    });
+
     // 更新数据概览
-    overviewData[0].value = `¥${todaySales.toFixed(2)}`
-    overviewData[0].trend = calculateTrend(todaySales, yesterdaySales)
-    
-    overviewData[1].value = String(todayOrders)
-    overviewData[1].trend = calculateTrend(todayOrders, yesterdayOrders)
-    
-    overviewData[2].value = String(totalProducts)
-    overviewData[2].trend = 0
-    
+    overviewData[0].value = `¥${todaySales.toFixed(2)}`;
+    overviewData[0].trend = calculateTrend(todaySales, yesterdaySales);
+
+    overviewData[1].value = String(todayOrders);
+    overviewData[1].trend = calculateTrend(todayOrders, yesterdayOrders);
+
+    overviewData[2].value = String(totalProducts);
+    overviewData[2].trend = 0;
+
     // 店铺评分暂时显示为暂无
-    overviewData[3].value = '暂无'
-    overviewData[3].trend = 0
-    
-    console.log('数据概览加载成功')
+    overviewData[3].value = "暂无";
+    overviewData[3].trend = 0;
+
+    console.log("数据概览加载成功");
   } catch (error) {
-    console.error('加载数据概览失败:', error)
-    overviewData[0].value = '¥0'
-    overviewData[1].value = '0'
-    overviewData[2].value = '0'
-    overviewData[3].value = '暂无'
+    console.error("加载数据概览失败:", error);
+    overviewData[0].value = "¥0";
+    overviewData[1].value = "0";
+    overviewData[2].value = "0";
+    overviewData[3].value = "暂无";
   } finally {
-    loading.overview = false
+    loading.overview = false;
   }
-}
+};
 
 // 生命周期
 onMounted(() => {
-  initCurrentDate()
-  
+  initCurrentDate();
+
   nextTick(() => {
-    initSalesChart()
-    initProductChart()
+    initSalesChart();
+    initProductChart();
     // 加载所有仪表盘数据
-    loadDashboardData()
-  })
-})
+    loadDashboardData();
+  });
+});
 
 // 监听销售周期变化
 watch(salesPeriod, () => {
-  loadSalesTrend()
-})
+  loadSalesTrend();
+});
 
 /**
  * 加载所有仪表盘数据
@@ -698,193 +794,220 @@ const loadDashboardData = async () => {
     loadHotProducts(),
     loadRecentOrders(),
     loadPendingItems(),
-    loadAnalyticsData()
-  ])
-}
+    loadAnalyticsData(),
+  ]);
+};
 
 /**
  * 获取销售周期对应的天数
  */
 const getPeriodDays = () => {
   const periodMap = {
-    '7days': 7,
-    '30days': 30,
-    '90days': 90
-  }
-  return periodMap[salesPeriod.value] || 7
-}
+    "7days": 7,
+    "30days": 30,
+    "90days": 90,
+  };
+  return periodMap[salesPeriod.value] || 7;
+};
 
 /**
  * 加载销售趋势数据 - 通过 merchant-service API 获取
  */
 const loadSalesTrend = async () => {
-  loading.salesTrend = true
-  const merchantId = userStore.merchantId || localStorage.getItem('merchantId')
-  
+  loading.salesTrend = true;
+  const merchantId = userStore.merchantId || localStorage.getItem("merchantId");
+
   if (!merchantId) {
-    loading.salesTrend = false
-    return
+    loading.salesTrend = false;
+    return;
   }
-  
+
   try {
-    const days = getPeriodDays()
-    
-    // 计算日期范围
-    const endDate = new Date()
-    const startDate = new Date()
-    startDate.setDate(startDate.getDate() - days + 1)
-    
-    const startDateStr = startDate.toISOString().split('T')[0]
-    const endDateStr = endDate.toISOString().split('T')[0]
-    
+    const days = getPeriodDays();
+
+    // 使用服务器时间计算日期范围，确保与后端时间一致
+    const endDate = serverTimeManager.isSynced()
+      ? serverTimeManager.nowDate()
+      : new Date();
+    const startDate = new Date(endDate.getTime());
+    startDate.setDate(startDate.getDate() - days + 1);
+
+    // 格式化日期为 YYYY-MM-DD 格式
+    const formatDate = (d) => {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    };
+    const startDateStr = formatDate(startDate);
+    const endDateStr = formatDate(endDate);
+
     // 通过 merchant-service API 获取每日销售统计
-    const response = await getDailySalesStatistics(merchantId, startDateStr, endDateStr)
-    
+    const response = await getDailySalesStatistics(
+      merchantId,
+      startDateStr,
+      endDateStr
+    );
+
     if (response?.data && Array.isArray(response.data)) {
-      const dailyData = response.data
-      
+      const dailyData = response.data;
+
       // 转换为图表数据
-      const dates = dailyData.map(d => d.date?.substring(5) || '') // 只显示月-日
-      const salesAmounts = dailyData.map(d => d.totalSales || d.sales || 0)
-      const orderCounts = dailyData.map(d => d.totalOrders || d.orders || 0)
-      
-      updateSalesChart(dates, salesAmounts, orderCounts)
-      console.log('仪表盘-销售趋势加载成功:', { days, dataPoints: dates.length })
+      const dates = dailyData.map((d) => d.date?.substring(5) || ""); // 只显示月-日
+      const salesAmounts = dailyData.map((d) => d.totalSales || d.sales || 0);
+      const orderCounts = dailyData.map((d) => d.totalOrders || d.orders || 0);
+
+      updateSalesChart(dates, salesAmounts, orderCounts);
+      console.log("仪表盘-销售趋势加载成功:", {
+        days,
+        dataPoints: dates.length,
+      });
     } else {
       // 如果 API 没有返回数据，显示空图表
-      updateSalesChart([], [], [])
-      console.log('仪表盘-销售趋势: 无数据')
+      updateSalesChart([], [], []);
+      console.log("仪表盘-销售趋势: 无数据");
     }
   } catch (error) {
-    console.error('加载销售趋势失败:', error)
-    updateSalesChart([], [], [])
+    console.error("加载销售趋势失败:", error);
+    updateSalesChart([], [], []);
   } finally {
-    loading.salesTrend = false
+    loading.salesTrend = false;
   }
-}
+};
 
 /**
  * 更新销售趋势图表
  */
 const updateSalesChart = (dates, salesAmounts, orderCounts) => {
-  if (!salesChart) return
-  
+  if (!salesChart) return;
+
   salesChart.setOption({
     xAxis: {
-      data: dates
+      data: dates,
     },
     series: [
-      { name: '销售额', data: salesAmounts },
-      { name: '订单量', data: orderCounts }
-    ]
-  })
-}
+      { name: "销售额", data: salesAmounts },
+      { name: "订单量", data: orderCounts },
+    ],
+  });
+};
 
 /**
  * 加载热销商品数据 - 通过 merchant-service API 获取
  */
 const loadHotProducts = async () => {
-  loading.hotProducts = true
-  const merchantId = userStore.merchantId || localStorage.getItem('merchantId')
-  
+  loading.hotProducts = true;
+  const merchantId = userStore.merchantId || localStorage.getItem("merchantId");
+
   if (!merchantId) {
-    loading.hotProducts = false
-    return
+    loading.hotProducts = false;
+    return;
   }
-  
+
   try {
     // 通过 merchant-service API 获取热销商品统计
-    const response = await getHotProducts(merchantId, 10)
-    
-    if (response?.data && Array.isArray(response.data) && response.data.length > 0) {
+    const response = await getHotProducts(merchantId, 10);
+
+    if (
+      response?.data &&
+      Array.isArray(response.data) &&
+      response.data.length > 0
+    ) {
       // 转换为饼图数据
-      const chartData = response.data.map(item => ({
-        name: item.productName || item.name || '未知商品',
-        value: item.salesCount || item.quantity || item.value || 0
-      }))
-      
-      updateProductChart(chartData)
-      console.log('仪表盘-热销商品加载成功:', chartData.length, '个商品')
+      const chartData = response.data.map((item) => ({
+        name: item.productName || item.name || "未知商品",
+        value: item.salesCount || item.quantity || item.value || 0,
+      }));
+
+      updateProductChart(chartData);
+      console.log("仪表盘-热销商品加载成功:", chartData.length, "个商品");
     } else {
-      updateProductChart([{ name: '暂无销售数据', value: 1 }])
-      console.log('仪表盘-热销商品: 无数据')
+      updateProductChart([{ name: "暂无销售数据", value: 1 }]);
+      console.log("仪表盘-热销商品: 无数据");
     }
   } catch (error) {
-    console.error('加载热销商品失败:', error)
-    updateProductChart([{ name: '暂无销售数据', value: 1 }])
+    console.error("加载热销商品失败:", error);
+    updateProductChart([{ name: "暂无销售数据", value: 1 }]);
   } finally {
-    loading.hotProducts = false
+    loading.hotProducts = false;
   }
-}
+};
 
 /**
  * 更新商品销量排行图表
  */
 const updateProductChart = (data) => {
-  if (!productChart) return
-  
+  if (!productChart) return;
+
   productChart.setOption({
-    series: [{
-      data: data
-    }]
-  })
-}
+    series: [
+      {
+        data: data,
+      },
+    ],
+  });
+};
 
 /**
  * 加载最近订单 - 通过 merchant-service API 获取
  */
 const loadRecentOrders = async () => {
-  loading.recentOrders = true
-  const merchantId = userStore.merchantId || localStorage.getItem('merchantId')
-  
+  loading.recentOrders = true;
+  const merchantId = userStore.merchantId || localStorage.getItem("merchantId");
+
   // 调试日志：显示当前使用的 merchantId
-  console.log('仪表盘-加载最近订单，merchantId:', merchantId, 
-    '(来源:', userStore.merchantId ? 'userStore' : 'localStorage', ')')
-  
+  console.log(
+    "仪表盘-加载最近订单，merchantId:",
+    merchantId,
+    "(来源:",
+    userStore.merchantId ? "userStore" : "localStorage",
+    ")"
+  );
+
   if (!merchantId) {
-    console.warn('仪表盘-最近订单: merchantId 为空，跳过加载')
-    loading.recentOrders = false
-    return
+    console.warn("仪表盘-最近订单: merchantId 为空，跳过加载");
+    loading.recentOrders = false;
+    return;
   }
-  
+
   try {
     // 通过 merchant-service API 获取最近订单
-    const response = await getRecentOrders(merchantId, 10)
-    
+    const response = await getRecentOrders(merchantId, 10);
+
     // 调试日志：显示 API 响应
-    console.log('仪表盘-最近订单 API 响应:', response)
-    
+    console.log("仪表盘-最近订单 API 响应:", response);
+
     if (response?.data && Array.isArray(response.data)) {
       // 清空并重新填充数组
-      recentOrders.length = 0
-      response.data.slice(0, 10).forEach(order => {
+      recentOrders.length = 0;
+      response.data.slice(0, 10).forEach((order) => {
         recentOrders.push({
           id: order.id || order.orderId,
           orderNo: order.orderNo || order.orderNumber,
-          customerName: order.receiverName || order.customerName || '匿名用户',
+          customerName: order.receiverName || order.customerName || "匿名用户",
           totalAmount: order.totalAmount || order.payableAmount || 0,
           status: mapStatusToFrontend(order.status),
-          createTime: order.createTime
-        })
-      })
-      
-      console.log('仪表盘-最近订单加载成功:', recentOrders.length, '条')
+          createTime: order.createTime,
+        });
+      });
+
+      console.log("仪表盘-最近订单加载成功:", recentOrders.length, "条");
     } else {
-      recentOrders.length = 0
-      console.log('仪表盘-最近订单: 无数据，响应格式:', typeof response?.data)
+      recentOrders.length = 0;
+      console.log("仪表盘-最近订单: 无数据，响应格式:", typeof response?.data);
     }
   } catch (error) {
-    console.error('加载最近订单失败:', error)
-    recentOrders.length = 0
+    console.error("加载最近订单失败:", error);
+    recentOrders.length = 0;
   } finally {
-    loading.recentOrders = false
+    loading.recentOrders = false;
   }
-}
+};
 
 /**
  * 映射后端状态到前端状态
  * 支持多种状态格式：数字、大写字符串、小写字符串
- * 
+ *
  * 订单状态流程图：
  * ┌─────────────┐
  * │   PENDING   │ ← 创建订单
@@ -908,7 +1031,7 @@ const loadRecentOrders = async () => {
  * │  COMPLETED  │
  * │  (已完成)   │
  * └─────────────┘
- * 
+ *
  * 可能触发"未知"状态的场景：
  * 1. 后端返回 null 或 undefined
  * 2. 后端返回数字但映射表中没有对应值
@@ -917,188 +1040,206 @@ const loadRecentOrders = async () => {
  */
 const mapStatusToFrontend = (status) => {
   // 记录原始状态用于调试
-  console.log('订单状态映射 - 原始值:', status, '类型:', typeof status)
-  
+  console.log("订单状态映射 - 原始值:", status, "类型:", typeof status);
+
   // 处理 null/undefined
   if (status === null || status === undefined) {
-    console.warn('订单状态为空，使用默认值')
-    return 'pending_payment'
+    console.warn("订单状态为空，使用默认值");
+    return "pending_payment";
   }
-  
+
   // 处理数字状态码
   // 注意：这些数字来自 merchant-service 的 MerchantOrderServiceImpl.convertStatusToInt 方法
   // 映射关系：PENDING→1, PAID→2, SHIPPED→3, COMPLETED→5, CANCELLED→6, REFUNDING→7, REFUNDED→8
   const numericStatusMap = {
-    0: 'pending_payment',    // 默认/未知状态
-    1: 'pending_payment',    // PENDING - 待付款
-    2: 'pending_shipment',   // PAID - 待发货（已付款）
-    3: 'shipped',            // SHIPPED - 已发货
-    4: 'completed',          // 已收货（兼容旧系统）
-    5: 'completed',          // COMPLETED - 已完成
-    6: 'cancelled',          // CANCELLED - 已取消
-    7: 'refunding',          // REFUNDING - 待退款
-    8: 'refunded'            // REFUNDED - 已退款
-  }
-  
+    0: "pending_payment", // 默认/未知状态
+    1: "pending_payment", // PENDING - 待付款
+    2: "pending_shipment", // PAID - 待发货（已付款）
+    3: "shipped", // SHIPPED - 已发货
+    4: "completed", // 已收货（兼容旧系统）
+    5: "completed", // COMPLETED - 已完成
+    6: "cancelled", // CANCELLED - 已取消
+    7: "refunding", // REFUNDING - 待退款
+    8: "refunded", // REFUNDED - 已退款
+  };
+
   // 处理字符串状态（后端枚举名称）
   const stringStatusMap = {
     // 后端枚举名称（大写）
-    'PENDING': 'pending_payment',
-    'PENDING_PAYMENT': 'pending_payment',
-    'PAID': 'pending_shipment',
-    'SHIPPED': 'shipped',
-    'COMPLETED': 'completed',
-    'CANCELLED': 'cancelled',
-    'REFUNDING': 'refunding',
-    'REFUNDED': 'refunded',
+    PENDING: "pending_payment",
+    PENDING_PAYMENT: "pending_payment",
+    PAID: "pending_shipment",
+    SHIPPED: "shipped",
+    COMPLETED: "completed",
+    CANCELLED: "cancelled",
+    REFUNDING: "refunding",
+    REFUNDED: "refunded",
     // 后端枚举 code 值（小写）
-    'pending': 'pending_payment',
-    'paid': 'pending_shipment',
-    'shipped': 'shipped',
-    'completed': 'completed',
-    'cancelled': 'cancelled',
-    'refunding': 'refunding',
-    'refunded': 'refunded',
+    pending: "pending_payment",
+    paid: "pending_shipment",
+    shipped: "shipped",
+    completed: "completed",
+    cancelled: "cancelled",
+    refunding: "refunding",
+    refunded: "refunded",
     // 前端状态（直接返回）
-    'pending_payment': 'pending_payment',
-    'pending_shipment': 'pending_shipment'
-  }
-  
+    pending_payment: "pending_payment",
+    pending_shipment: "pending_shipment",
+  };
+
   // 如果是数字，使用数字映射
-  if (typeof status === 'number') {
-    const mapped = numericStatusMap[status]
+  if (typeof status === "number") {
+    const mapped = numericStatusMap[status];
     if (mapped) {
-      return mapped
+      return mapped;
     }
-    console.warn('未知数字状态码:', status)
-    return 'pending_payment'
+    console.warn("未知数字状态码:", status);
+    return "pending_payment";
   }
-  
+
   // 如果是字符串，使用字符串映射
-  if (typeof status === 'string') {
+  if (typeof status === "string") {
     // 先尝试直接匹配
     if (stringStatusMap[status]) {
-      return stringStatusMap[status]
+      return stringStatusMap[status];
     }
     // 尝试大写匹配
     if (stringStatusMap[status.toUpperCase()]) {
-      return stringStatusMap[status.toUpperCase()]
+      return stringStatusMap[status.toUpperCase()];
     }
     // 尝试小写匹配
     if (stringStatusMap[status.toLowerCase()]) {
-      return stringStatusMap[status.toLowerCase()]
+      return stringStatusMap[status.toLowerCase()];
     }
-    console.warn('未知字符串状态:', status)
-    return 'pending_payment'
+    console.warn("未知字符串状态:", status);
+    return "pending_payment";
   }
-  
+
   // 其他类型，记录警告并返回默认值
-  console.warn('订单状态类型异常:', typeof status, status)
-  return 'pending_payment'
-}
+  console.warn("订单状态类型异常:", typeof status, status);
+  return "pending_payment";
+};
 
 /**
  * 加载待处理事项 - 通过 merchant-service API 获取
  */
 const loadPendingItems = async () => {
-  loading.pendingItems = true
-  const merchantId = userStore.merchantId || localStorage.getItem('merchantId')
-  
+  loading.pendingItems = true;
+  const merchantId = userStore.merchantId || localStorage.getItem("merchantId");
+
   if (!merchantId) {
-    loading.pendingItems = false
-    return
+    loading.pendingItems = false;
+    return;
   }
-  
+
   try {
     // 通过 merchant-service API 获取订单状态统计
-    const response = await getOrderStatusStatistics(merchantId)
-    
+    const response = await getOrderStatusStatistics(merchantId);
+
     if (response?.data) {
-      const stats = response.data
-      
+      const stats = response.data;
+
       // 待发货订单数 (状态: PAID 或 pending_shipment)
-      pendingItems[0].count = stats.pendingShipment || stats.PAID || stats.paid || 0
-      
-      console.log('仪表盘-订单状态统计:', stats)
+      pendingItems[0].count =
+        stats.pendingShipment || stats.PAID || stats.paid || 0;
+
+      console.log("仪表盘-订单状态统计:", stats);
     }
-    
+
     // 获取库存不足商品数
     try {
-      const lowStockRes = await getLowStockProducts({ merchantId, threshold: 10, page: 1, size: 1 })
+      const lowStockRes = await getLowStockProducts({
+        merchantId,
+        threshold: 10,
+        page: 1,
+        size: 1,
+      });
       if (lowStockRes?.data) {
-        pendingItems[1].count = lowStockRes.data.total || 0
+        pendingItems[1].count = lowStockRes.data.total || 0;
       }
     } catch (e) {
-      console.warn('获取库存不足商品失败:', e)
+      console.warn("获取库存不足商品失败:", e);
     }
-    
+
     // 待回复评价和即将下架暂时设为0
-    pendingItems[2].count = 0
-    pendingItems[3].count = 0
-    
+    pendingItems[2].count = 0;
+    pendingItems[3].count = 0;
   } catch (error) {
-    console.error('加载待处理事项失败:', error)
+    console.error("加载待处理事项失败:", error);
   } finally {
-    loading.pendingItems = false
+    loading.pendingItems = false;
   }
-}
+};
 
 /**
  * 加载店铺数据分析
  */
 const loadAnalyticsData = async () => {
-  loading.analytics = true
-  const merchantId = userStore.merchantId
-  
+  loading.analytics = true;
+  const merchantId = userStore.merchantId;
+
   if (!merchantId) {
-    loading.analytics = false
-    return
+    loading.analytics = false;
+    return;
   }
-  
+
   try {
-    const response = await getKeyMetrics(merchantId)
-    
+    const response = await getKeyMetrics(merchantId);
+
     if (response?.data) {
-      const metrics = response.data
-      
+      const metrics = response.data;
+
       // 转化率
-      const conversionRate = metrics.conversionRate || metrics.conversion_rate || 0
-      analysisData[0].value = `${(conversionRate * 100).toFixed(1)}%`
-      analysisData[0].desc = conversionRate > 0 ? '较上月' : '暂无数据'
-      
+      const conversionRate =
+        metrics.conversionRate || metrics.conversion_rate || 0;
+      analysisData[0].value = `${(conversionRate * 100).toFixed(1)}%`;
+      analysisData[0].desc = conversionRate > 0 ? "较上月" : "暂无数据";
+
       // 客单价
-      const avgOrderValue = metrics.avgOrderValue || metrics.avg_order_value || 0
-      analysisData[1].value = `¥${avgOrderValue.toFixed(2)}`
-      analysisData[1].desc = avgOrderValue > 0 ? '较上月' : '暂无数据'
-      
+      const avgOrderValue =
+        metrics.avgOrderValue || metrics.avg_order_value || 0;
+      analysisData[1].value = `¥${avgOrderValue.toFixed(2)}`;
+      analysisData[1].desc = avgOrderValue > 0 ? "较上月" : "暂无数据";
+
       // 退货率
-      const returnRate = metrics.returnRate || metrics.return_rate || 0
-      analysisData[2].value = `${(returnRate * 100).toFixed(1)}%`
-      analysisData[2].desc = returnRate > 0 ? '较上月' : '暂无数据'
-      
+      const returnRate = metrics.returnRate || metrics.return_rate || 0;
+      analysisData[2].value = `${(returnRate * 100).toFixed(1)}%`;
+      analysisData[2].desc = returnRate > 0 ? "较上月" : "暂无数据";
+
       // 客户满意度
-      const satisfaction = metrics.customerSatisfaction || metrics.customer_satisfaction || 0
-      analysisData[3].value = `${(satisfaction * 100).toFixed(1)}%`
-      analysisData[3].desc = satisfaction > 0 ? '较上月' : '暂无数据'
+      const satisfaction =
+        metrics.customerSatisfaction || metrics.customer_satisfaction || 0;
+      analysisData[3].value = `${(satisfaction * 100).toFixed(1)}%`;
+      analysisData[3].desc = satisfaction > 0 ? "较上月" : "暂无数据";
     }
   } catch (error) {
-    console.error('加载店铺数据分析失败:', error)
+    console.error("加载店铺数据分析失败:", error);
     // 设置默认值
-    analysisData.forEach(item => {
-      item.value = item.key.includes('rate') || item.key.includes('satisfaction') ? '0%' : '¥0'
-      item.desc = '暂无数据'
-    })
+    analysisData.forEach((item) => {
+      item.value =
+        item.key.includes("rate") || item.key.includes("satisfaction")
+          ? "0%"
+          : "¥0";
+      item.desc = "暂无数据";
+    });
   } finally {
-    loading.analytics = false
+    loading.analytics = false;
   }
-}
+};
 </script>
 
 <style scoped>
+/* 服务器时间头部 */
+.server-time-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
+
 .merchant-dashboard {
   padding: 20px;
-  background-color: #f5f5f5;
-  min-height: calc(100vh - 60px);
+  background: transparent !important; /* 强制透明 */
+  min-height: 100%;
 }
 
 /* 欢迎区域 */
@@ -1107,30 +1248,32 @@ const loadAnalyticsData = async () => {
 }
 
 .welcome-card {
-  background: linear-gradient(135deg, #52c41a 0%, #73d13d 100%);
-  color: white;
-}
-
-.welcome-card :deep(.el-card__body) {
-  padding: 30px;
+  border: none;
+  background: linear-gradient(
+    135deg,
+    #e8eee9 0%,
+    #d1dbd3 100%
+  ); /* 改为更有质感的绿色渐变 */
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(58, 80, 68, 0.12);
 }
 
 .welcome-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 8px;
 }
 
 .welcome-info h2 {
   margin: 0 0 8px 0;
+  color: #1e293b;
   font-size: 24px;
-  font-weight: 600;
 }
 
 .welcome-desc {
-  margin: 0 0 20px 0;
-  opacity: 0.9;
-  font-size: 14px;
+  color: #475569;
+  margin: 0 0 24px 0;
 }
 
 .quick-actions {
@@ -1138,18 +1281,24 @@ const loadAnalyticsData = async () => {
   gap: 12px;
 }
 
-.quick-actions .el-button {
-  background-color: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.3);
-  color: white;
+.quick-actions :deep(.el-button--primary) {
+  background: #3a5044 !important;
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(58, 80, 68, 0.2);
 }
 
-.quick-actions .el-button:hover {
-  background-color: rgba(255, 255, 255, 0.3);
-  border-color: rgba(255, 255, 255, 0.4);
+.quick-actions :deep(.el-button:not(.el-button--primary)) {
+  background: rgba(255, 255, 255, 0.5) !important;
+  border: 1px solid rgba(58, 80, 68, 0.1) !important;
+  color: #3a5044 !important;
+  backdrop-filter: blur(4px);
 }
 
 .welcome-avatar {
+  background: rgba(255, 255, 255, 0.4);
+  padding: 8px;
+  border-radius: 50%;
+  backdrop-filter: blur(4px);
   flex-shrink: 0;
 }
 
@@ -1160,11 +1309,16 @@ const loadAnalyticsData = async () => {
 
 .overview-card {
   height: 120px;
-  transition: transform 0.2s;
+  background-color: rgba(255, 255, 255, 0.6) !important;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(58, 80, 68, 0.1);
+  transition: all 0.3s;
 }
 
 .overview-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-5px);
+  box-shadow: 0 8px 24px rgba(58, 80, 68, 0.12);
+  background-color: rgba(255, 255, 255, 0.8) !important;
 }
 
 .overview-content {
@@ -1221,6 +1375,14 @@ const loadAnalyticsData = async () => {
   margin-bottom: 20px;
 }
 
+.chart-card,
+.status-card {
+  background-color: rgba(255, 255, 255, 0.6) !important;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(58, 80, 68, 0.1);
+  border-radius: 12px;
+}
+
 .chart-card {
   height: 400px;
 }
@@ -1260,13 +1422,15 @@ const loadAnalyticsData = async () => {
   display: flex;
   align-items: center;
   padding: 12px;
-  background-color: #fafafa;
+  background-color: rgba(255, 255, 255, 0.5); /* 半透明背景 */
+  border: 1px solid rgba(58, 80, 68, 0.05);
   border-radius: 8px;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
 }
 
 .pending-item:hover {
-  background-color: #f0f0f0;
+  background-color: rgba(255, 255, 255, 0.8);
+  transform: translateX(4px);
 }
 
 .pending-icon {
@@ -1303,7 +1467,7 @@ const loadAnalyticsData = async () => {
 .analysis-item {
   text-align: center;
   padding: 20px;
-  border-right: 1px solid #f0f0f0;
+  border-right: 1px solid rgba(58, 80, 68, 0.05);
 }
 
 .analysis-item:last-child {
@@ -1383,37 +1547,37 @@ const loadAnalyticsData = async () => {
   .merchant-dashboard {
     padding: 16px;
   }
-  
+
   .welcome-content {
     flex-direction: column;
     text-align: center;
     gap: 20px;
   }
-  
+
   .quick-actions {
     flex-wrap: wrap;
     justify-content: center;
   }
-  
+
   .overview-card {
     margin-bottom: 16px;
   }
-  
+
   .chart-card {
     height: 300px;
     margin-bottom: 16px;
   }
-  
+
   .chart-container {
     height: 220px;
   }
-  
+
   .analysis-item {
     border-right: none;
     border-bottom: 1px solid #f0f0f0;
     margin-bottom: 16px;
   }
-  
+
   .analysis-item:last-child {
     border-bottom: none;
     margin-bottom: 0;

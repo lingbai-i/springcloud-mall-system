@@ -69,7 +69,7 @@ mybatis-plus:
 # 短信服务配置
 sms:
   # 服务名称
-  serviceName: baichatmall
+  serviceName: 百物语
 
   # 验证码配置
   code:

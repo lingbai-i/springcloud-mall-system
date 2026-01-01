@@ -162,7 +162,7 @@
     <el-dialog v-model="agreementDialogVisible" title="用户协议" width="600px">
       <div class="agreement-content">
         <h3>用户协议</h3>
-        <p>欢迎使用我们的在线商城服务。在使用本服务前，请仔细阅读以下条款：</p>
+        <p>欢迎使用百物语提供的在线购物服务。在使用本服务前，请仔细阅读以下条款：</p>
         
         <h4>1. 服务条款</h4>
         <p>用户在使用本服务时，必须遵守相关法律法规，不得进行违法违规活动。</p>

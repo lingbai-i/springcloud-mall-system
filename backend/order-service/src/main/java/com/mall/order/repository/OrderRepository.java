@@ -23,7 +23,7 @@ import java.util.Optional;
  */
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
-    
+
     /**
      * 根据订单号查找订单
      * 
@@ -31,36 +31,37 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
      * @return 订单信息
      */
     Optional<Order> findByOrderNo(String orderNo);
-    
+
     /**
      * 根据用户ID分页查询订单
      * 
-     * @param userId 用户ID
+     * @param userId   用户ID
      * @param pageable 分页参数
      * @return 订单分页数据
      */
     Page<Order> findByUserIdOrderByCreateTimeDesc(Long userId, Pageable pageable);
-    
+
     /**
      * 根据用户ID和订单状态分页查询订单
      * 
-     * @param userId 用户ID
-     * @param status 订单状态
+     * @param userId   用户ID
+     * @param status   订单状态
      * @param pageable 分页参数
      * @return 订单分页数据
      */
     Page<Order> findByUserIdAndStatusOrderByCreateTimeDesc(Long userId, OrderStatus status, Pageable pageable);
-    
+
     /**
      * 根据用户ID和订单状态列表分页查询订单
      * 
-     * @param userId 用户ID
+     * @param userId   用户ID
      * @param statuses 订单状态列表
      * @param pageable 分页参数
      * @return 订单分页数据
      */
-    Page<Order> findByUserIdAndStatusInOrderByCreateTimeDesc(Long userId, List<OrderStatus> statuses, Pageable pageable);
-    
+    Page<Order> findByUserIdAndStatusInOrderByCreateTimeDesc(Long userId, List<OrderStatus> statuses,
+            Pageable pageable);
+
     /**
      * 查询指定时间之前创建的待付款订单
      * 用于订单超时处理
@@ -69,7 +70,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
      * @return 超时订单列表
      */
     List<Order> findByStatusAndCreateTimeBefore(OrderStatus status, LocalDateTime createTime);
-    
+
     /**
      * 查询指定时间之前发货的订单
      * 用于自动确认收货
@@ -78,7 +79,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
      * @return 待自动确认的订单列表
      */
     List<Order> findByStatusAndShipTimeBefore(OrderStatus status, LocalDateTime shipTime);
-    
+
     /**
      * 统计用户各状态订单数量
      * 
@@ -87,7 +88,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
      */
     @Query("SELECT o.status, COUNT(o) FROM Order o WHERE o.userId = :userId GROUP BY o.status")
     List<Object[]> countOrdersByUserIdGroupByStatus(@Param("userId") Long userId);
-    
+
     /**
      * 统计用户订单总数
      * 
@@ -95,17 +96,17 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
      * @return 订单总数
      */
     long countByUserId(Long userId);
-    
+
     /**
      * 查询用户最近的订单
      * 
-     * @param userId 用户ID
+     * @param userId   用户ID
      * @param pageable 分页参数
      * @return 最近订单列表
      */
     @Query("SELECT o FROM Order o WHERE o.userId = :userId ORDER BY o.createTime DESC")
     List<Order> findRecentOrdersByUserId(@Param("userId") Long userId, Pageable pageable);
-    
+
     /**
      * 检查订单号是否存在
      * 
@@ -113,7 +114,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
      * @return 是否存在
      */
     boolean existsByOrderNo(String orderNo);
-    
+
     /**
      * 统计用户指定状态的订单数量
      * 
@@ -122,7 +123,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
      * @return 订单数量
      */
     long countByUserIdAndStatus(Long userId, OrderStatus status);
-    
+
     /**
      * 计算用户指定状态订单的总金额
      * 
@@ -131,29 +132,30 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
      * @return 总金额
      */
     @Query("SELECT SUM(o.payAmount) FROM Order o WHERE o.userId = :userId AND o.status = :status")
-    java.math.BigDecimal sumPayableAmountByUserIdAndStatus(@Param("userId") Long userId, @Param("status") OrderStatus status);
-    
+    java.math.BigDecimal sumPayableAmountByUserIdAndStatus(@Param("userId") Long userId,
+            @Param("status") OrderStatus status);
+
     // ==================== 商家订单查询 ====================
-    
+
     /**
      * 根据商家ID分页查询订单
      * 
      * @param merchantId 商家ID
-     * @param pageable 分页参数
+     * @param pageable   分页参数
      * @return 订单分页数据
      */
     Page<Order> findByMerchantIdOrderByCreateTimeDesc(Long merchantId, Pageable pageable);
-    
+
     /**
      * 根据商家ID和订单状态分页查询订单
      * 
      * @param merchantId 商家ID
-     * @param status 订单状态
-     * @param pageable 分页参数
+     * @param status     订单状态
+     * @param pageable   分页参数
      * @return 订单分页数据
      */
     Page<Order> findByMerchantIdAndStatusOrderByCreateTimeDesc(Long merchantId, OrderStatus status, Pageable pageable);
-    
+
     /**
      * 统计商家各状态订单数量
      * 
@@ -162,7 +164,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
      */
     @Query("SELECT o.status, COUNT(o) FROM Order o WHERE o.merchantId = :merchantId GROUP BY o.status")
     List<Object[]> countOrdersByMerchantIdGroupByStatus(@Param("merchantId") Long merchantId);
-    
+
     /**
      * 统计商家订单总数
      * 
@@ -170,9 +172,9 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
      * @return 订单总数
      */
     long countByMerchantId(Long merchantId);
-    
+
     // ==================== 管理员订单查询 ====================
-    
+
     /**
      * 分页查询所有订单（管理员）
      * 
@@ -180,25 +182,25 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
      * @return 订单分页数据
      */
     Page<Order> findAllByOrderByCreateTimeDesc(Pageable pageable);
-    
+
     /**
      * 根据订单状态分页查询所有订单（管理员）
      * 
-     * @param status 订单状态
+     * @param status   订单状态
      * @param pageable 分页参数
      * @return 订单分页数据
      */
     Page<Order> findByStatusOrderByCreateTimeDesc(OrderStatus status, Pageable pageable);
-    
+
     /**
      * 根据订单号模糊查询（管理员）
      * 
-     * @param orderNo 订单号
+     * @param orderNo  订单号
      * @param pageable 分页参数
      * @return 订单分页数据
      */
     Page<Order> findByOrderNoContainingOrderByCreateTimeDesc(String orderNo, Pageable pageable);
-    
+
     /**
      * 统计所有订单各状态数量（管理员）
      * 
@@ -227,27 +229,29 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
      * 计算指定日期范围内已完成订单的总交易额
      * 
      * @param startTime 开始时间
-     * @param endTime 结束时间
+     * @param endTime   结束时间
      * @return 交易额
      */
     @Query("SELECT COALESCE(SUM(o.payAmount), 0) FROM Order o WHERE o.status = 'COMPLETED' AND o.createTime >= :startTime AND o.createTime < :endTime")
-    java.math.BigDecimal sumCompletedOrdersAmountBetween(@Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
+    java.math.BigDecimal sumCompletedOrdersAmountBetween(@Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime);
 
     /**
      * 计算指定日期范围内有效交易额（已付款、已发货、已完成的订单）
      * 
      * @param startTime 开始时间
-     * @param endTime 结束时间
+     * @param endTime   结束时间
      * @return 有效交易额
      */
     @Query("SELECT COALESCE(SUM(o.payAmount), 0) FROM Order o WHERE o.status IN ('PAID', 'SHIPPED', 'COMPLETED') AND o.createTime >= :startTime AND o.createTime < :endTime")
-    java.math.BigDecimal sumValidTransactionAmountBetween(@Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
+    java.math.BigDecimal sumValidTransactionAmountBetween(@Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime);
 
     /**
      * 统计指定日期范围内的订单数量
      * 
      * @param startTime 开始时间
-     * @param endTime 结束时间
+     * @param endTime   结束时间
      * @return 订单数量
      */
     @Query("SELECT COUNT(o) FROM Order o WHERE o.createTime >= :startTime AND o.createTime < :endTime")
@@ -257,11 +261,25 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
      * 按日期统计销售额和订单数（用于趋势图）
      * 
      * @param startTime 开始时间
-     * @param endTime 结束时间
+     * @param endTime   结束时间
      * @return 每日统计数据 [日期, 销售额, 订单数]
      */
-    @Query("SELECT FUNCTION('DATE', o.createTime) as orderDate, COALESCE(SUM(o.payAmount), 0), COUNT(o) FROM Order o WHERE o.createTime >= :startTime AND o.createTime < :endTime GROUP BY FUNCTION('DATE', o.createTime) ORDER BY orderDate")
-    List<Object[]> getDailySalesStatistics(@Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
+    /**
+     * 按日期统计销售额和订单数（用于趋势图）
+     * 销售额只统计有效订单（已付款、已发货、已完成）
+     * 订单数统计所有订单
+     * 
+     * @param startTime 开始时间
+     * @param endTime   结束时间
+     * @return 每日统计数据 [日期, 销售额, 订单数]
+     */
+    @Query("SELECT FUNCTION('DATE', o.createTime) as orderDate, " +
+            "COALESCE(SUM(CASE WHEN o.status IN ('PAID', 'SHIPPED', 'COMPLETED') THEN o.payAmount ELSE 0 END), 0), " +
+            "COUNT(o) " +
+            "FROM Order o WHERE o.createTime >= :startTime AND o.createTime < :endTime " +
+            "GROUP BY FUNCTION('DATE', o.createTime) ORDER BY orderDate")
+    List<Object[]> getDailySalesStatistics(@Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime);
 
     /**
      * 查询最近的订单（管理员）
@@ -284,21 +302,29 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     /**
      * 按日期统计商家销售额和订单数（用于趋势图）
+     * 销售额只统计有效订单（已付款、已发货、已完成）
+     * 订单数统计所有订单
      * 
      * @param merchantId 商家ID
-     * @param startTime 开始时间
-     * @param endTime 结束时间
+     * @param startTime  开始时间
+     * @param endTime    结束时间
      * @return 每日统计数据 [日期, 销售额, 订单数]
      */
-    @Query("SELECT FUNCTION('DATE', o.createTime) as orderDate, COALESCE(SUM(o.payAmount), 0), COUNT(o) FROM Order o WHERE o.merchantId = :merchantId AND o.createTime >= :startTime AND o.createTime < :endTime GROUP BY FUNCTION('DATE', o.createTime) ORDER BY orderDate")
-    List<Object[]> getMerchantDailySalesStatistics(@Param("merchantId") Long merchantId, @Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
+    @Query("SELECT FUNCTION('DATE', o.createTime) as orderDate, " +
+            "COALESCE(SUM(CASE WHEN o.status IN ('PAID', 'SHIPPED', 'COMPLETED') THEN o.payAmount ELSE 0 END), 0), " +
+            "COUNT(o) " +
+            "FROM Order o WHERE o.merchantId = :merchantId AND o.createTime >= :startTime AND o.createTime < :endTime "
+            +
+            "GROUP BY FUNCTION('DATE', o.createTime) ORDER BY orderDate")
+    List<Object[]> getMerchantDailySalesStatistics(@Param("merchantId") Long merchantId,
+            @Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
 
     /**
      * 获取商家热销商品统计
      * 使用 JPQL 查询避免 JSqlParser 版本兼容问题
      * 
      * @param merchantId 商家ID
-     * @param pageable 分页参数
+     * @param pageable   分页参数
      * @return 热销商品数据 [商品ID, 商品名称, 销量, 销售额]
      */
     @Query("SELECT oi.productId, oi.productName, SUM(oi.quantity), SUM(oi.subtotal) " +
@@ -312,21 +338,34 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
      * 统计商家指定日期范围内的订单数量
      * 
      * @param merchantId 商家ID
-     * @param startTime 开始时间
-     * @param endTime 结束时间
+     * @param startTime  开始时间
+     * @param endTime    结束时间
      * @return 订单数量
      */
     @Query("SELECT COUNT(o) FROM Order o WHERE o.merchantId = :merchantId AND o.createTime >= :startTime AND o.createTime < :endTime")
-    long countMerchantOrdersBetween(@Param("merchantId") Long merchantId, @Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
+    long countMerchantOrdersBetween(@Param("merchantId") Long merchantId, @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime);
 
     /**
      * 统计商家指定日期范围内的有效交易额（已付款、已发货、已完成订单）
      * 
      * @param merchantId 商家ID
-     * @param startTime 开始时间
-     * @param endTime 结束时间
+     * @param startTime  开始时间
+     * @param endTime    结束时间
      * @return 有效交易额
      */
     @Query("SELECT COALESCE(SUM(o.payAmount), 0) FROM Order o WHERE o.merchantId = :merchantId AND o.status IN ('PAID', 'SHIPPED', 'COMPLETED') AND o.createTime >= :startTime AND o.createTime < :endTime")
-    java.math.BigDecimal sumMerchantValidTransactionAmountBetween(@Param("merchantId") Long merchantId, @Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
+    java.math.BigDecimal sumMerchantValidTransactionAmountBetween(@Param("merchantId") Long merchantId,
+            @Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
+
+    // ==================== 消费能力分布统计 ====================
+
+    /**
+     * 获取用户消费统计（用于消费能力分布）
+     * 统计每个用户的有效订单总消费额
+     * 
+     * @return 用户消费统计数据 [用户ID, 总消费额]
+     */
+    @Query("SELECT o.userId, COALESCE(SUM(o.payAmount), 0) FROM Order o WHERE o.status IN ('PAID', 'SHIPPED', 'COMPLETED') GROUP BY o.userId")
+    List<Object[]> getUserConsumeStatistics();
 }

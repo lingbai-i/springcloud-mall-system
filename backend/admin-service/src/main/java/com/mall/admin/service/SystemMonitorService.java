@@ -6,7 +6,7 @@ import com.mall.admin.domain.vo.SystemStatisticsVO;
 /**
  * 系统监控服务接口
  * 
- * @author system
+ * @author lingbai
  * @since 2025-01-09
  */
 public interface SystemMonitorService {

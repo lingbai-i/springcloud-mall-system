@@ -2,9 +2,10 @@
   <div class="merchant-login">
     <div class="login-container">
       <div class="login-header">
-        <img src="/logo.png" alt="Logo" class="logo" />
-        <h1 class="title">商家登录</h1>
-        <p class="subtitle">欢迎使用商家管理中心</p>
+        <!-- 修复：使用正确的商标图片路径，统一品牌形象 -->
+        <img src="/商标png.png" alt="Logo" class="logo" />
+        <h1 class="title">商家管理中心</h1>
+        <p class="subtitle">秉承匠心 · 诚就百物</p>
       </div>
       
       <el-form
@@ -283,47 +284,67 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #52c41a 0%, #389e0d 100%);
+  /* 使用与后台主区域一致的浅绿色渐变，营造宁静、专业的氛围 */
+  background: linear-gradient(135deg, #f4f7f5 0%, #d1dbd3 100%);
   position: relative;
   overflow: hidden;
 }
 
 .login-container {
-  width: 400px;
-  padding: 40px;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 16px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(10px);
+  width: 420px;
+  padding: 48px 40px;
+  /* 玻璃拟态效果，透出背景渐变 */
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 20px;
+  box-shadow: 0 20px 50px rgba(58, 80, 68, 0.1);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   position: relative;
   z-index: 1;
 }
 
 .login-header {
   text-align: center;
-  margin-bottom: 32px;
+  margin-bottom: 40px;
 }
 
 .logo {
-  height: 64px;
-  margin-bottom: 16px;
+  height: 80px;
+  margin-bottom: 20px;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.05));
 }
 
 .title {
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 600;
-  color: #52c41a;
-  margin: 0 0 8px 0;
+  /* 使用品牌深绿色 */
+  color: #3a5044;
+  margin: 0 0 10px 0;
+  letter-spacing: 1px;
 }
 
 .subtitle {
   font-size: 14px;
-  color: #666;
+  color: #8a9b8e;
   margin: 0;
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 
 .login-form {
   margin-bottom: 24px;
+}
+
+/* 深度选择器修改 Element Plus 输入框样式 */
+:deep(.el-input__wrapper) {
+  background-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 0 1px rgba(58, 80, 68, 0.1) inset;
+  border-radius: 8px;
+  transition: all 0.3s;
+}
+
+:deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 1px #3a5044 inset !important;
+  background-color: #fff;
 }
 
 .captcha-container {
@@ -334,15 +355,15 @@ onMounted(() => {
 .captcha-image {
   width: 120px;
   height: 40px;
-  border: 1px solid #dcdfe6;
-  border-radius: 4px;
+  border: 1px solid rgba(58, 80, 68, 0.1);
+  border-radius: 8px;
   cursor: pointer;
   position: relative;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f5f7fa;
+  background: rgba(255, 255, 255, 0.5);
 }
 
 .captcha-image img {
@@ -356,7 +377,7 @@ onMounted(() => {
   bottom: 0;
   left: 0;
   right: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(58, 80, 68, 0.8);
   color: white;
   font-size: 10px;
   text-align: center;
@@ -376,21 +397,45 @@ onMounted(() => {
   width: 100%;
 }
 
+:deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
+  background-color: #3a5044;
+  border-color: #3a5044;
+}
+
+:deep(.el-checkbox__input.is-checked + .el-checkbox__label) {
+  color: #3a5044;
+}
+
+:deep(.el-link.el-link--primary) {
+  color: #3a5044;
+}
+
+:deep(.el-link.el-link--primary:hover) {
+  color: #4a6355;
+}
+
 .login-btn {
   width: 100%;
   height: 48px;
   font-size: 16px;
   font-weight: 500;
-  background: linear-gradient(135deg, #52c41a, #389e0d);
+  /* 使用深绿色渐变按钮 */
+  background: linear-gradient(135deg, #4a6355, #3a5044);
   border: none;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(58, 80, 68, 0.2);
+  transition: all 0.3s;
 }
 
 .login-btn:hover {
-  background: linear-gradient(135deg, #73d13d, #52c41a);
+  background: linear-gradient(135deg, #5a7566, #4a6355);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(58, 80, 68, 0.3);
 }
 
 .login-footer {
   text-align: center;
+  margin-top: 24px;
 }
 
 .tips {
@@ -399,7 +444,7 @@ onMounted(() => {
   justify-content: center;
   gap: 8px;
   font-size: 14px;
-  color: #666;
+  color: #6e7d73;
   margin: 0 0 16px 0;
 }
 
@@ -407,11 +452,11 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 
-/* 背景装饰 */
+/* 背景装饰：调整为更柔和的绿色系 */
 .bg-decoration {
   position: absolute;
   top: 0;
@@ -424,31 +469,31 @@ onMounted(() => {
 .circle {
   position: absolute;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  animation: float 6s ease-in-out infinite;
+  background: rgba(58, 80, 68, 0.03);
+  animation: float 8s ease-in-out infinite;
 }
 
 .circle-1 {
-  width: 200px;
-  height: 200px;
-  top: 10%;
-  left: 10%;
+  width: 400px;
+  height: 400px;
+  top: -100px;
+  left: -100px;
   animation-delay: 0s;
 }
 
 .circle-2 {
-  width: 150px;
-  height: 150px;
-  top: 60%;
-  right: 10%;
+  width: 300px;
+  height: 300px;
+  bottom: -50px;
+  right: -50px;
   animation-delay: 2s;
 }
 
 .circle-3 {
-  width: 100px;
-  height: 100px;
-  bottom: 20%;
-  left: 20%;
+  width: 200px;
+  height: 200px;
+  top: 40%;
+  right: 15%;
   animation-delay: 4s;
 }
 

@@ -8,7 +8,7 @@ import java.time.LocalDate;
  * 活跃轮播图VO
  * 用于首页轮播图展示
  * 
- * @author system
+ * @author lingbai
  * @version 1.0
  * @since 2025-12-28
  */

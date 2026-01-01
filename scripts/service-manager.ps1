@@ -1,7 +1,7 @@
 # 在线商城 - 服务管理工具
 # 作者: lingbai
-# 版本: 1.0
-# 更新日期: 2025-11-11
+# 版本: 1.1
+# 更新日期: 2026-01-01
 
 param(
     [Parameter(Position=0)]
@@ -53,7 +53,8 @@ function Show-Header {
 # 扫描所有服务
 function Get-AllServices {
     $services = @()
-    $backendDir = Join-Path $PSScriptRoot 'backend'
+    $projectRoot = Split-Path -Parent $PSScriptRoot
+    $backendDir = Join-Path $projectRoot 'backend'
     
     if (Test-Path $backendDir) {
         Get-ChildItem -Path $backendDir -Directory | ForEach-Object {
@@ -79,7 +80,7 @@ function Get-AllServices {
                             Name = $serviceName
                             Port = $port
                             Path = $_.FullName
-                            LogFile = "logs\$serviceName.log"
+                            LogFile = Join-Path $projectRoot "logs\$serviceName.log"
                         }
                     }
                 }
@@ -321,13 +322,18 @@ function Show-Menu {
         }
         "6" {
             Write-ColorOutput "`n正在启动所有服务..." "Cyan"
-            & "$PSScriptRoot\start-dev-silent.bat"
+            $projectRoot = Split-Path -Parent $PSScriptRoot
+            & "$PSScriptRoot\start-all-services.ps1"
             Read-Host "`n按Enter键继续"
             Show-Menu
         }
         "7" {
             Write-ColorOutput "`n正在停止所有服务..." "Cyan"
-            & "$PSScriptRoot\stop-dev-silent.bat"
+            $services = Get-AllServices
+            foreach ($service in $services) {
+                Stop-MicroService -ServiceName $service.Name
+            }
+            Write-ColorOutput "✓ 所有服务已停止" "Green"
             Read-Host "`n按Enter键继续"
             Show-Menu
         }

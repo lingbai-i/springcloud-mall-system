@@ -16,7 +16,7 @@ import java.util.Map;
 /**
  * 文件上传控制器
  * 
- * @author mall
+ * @author lingbai
  * @since 2025-12-28
  */
 @RestController

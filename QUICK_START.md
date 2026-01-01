@@ -1,27 +1,27 @@
-# 🚀 快速上手指南（5分钟）
+# 🚀 快速上手指南（5 分钟）
 
-欢迎使用**基于Spring Cloud的微服务在线商城系统**！本指南将帮助您在5分钟内快速启动项目并开始开发。
+欢迎使用**基于 Spring Cloud 的微服务在线商城系统**！本指南将帮助您在 5 分钟内快速启动项目并开始开发。
 
 ## 📋 前置要求
 
 确保已安装以下软件：
 
-| 软件 | 版本要求 | 检查命令 |
-|------|---------|---------|
-| ✅ **JDK** | 17+ | `java -version` |
-| ✅ **Maven** | 3.6+ | `mvn -version` |
-| ✅ **Node.js** | 18+ | `node -v` |
-| ✅ **Docker Desktop** | 20+ | `docker --version` |
+| 软件                  | 版本要求 | 检查命令           |
+| --------------------- | -------- | ------------------ |
+| ✅ **JDK**            | 17+      | `java -version`    |
+| ✅ **Maven**          | 3.6+     | `mvn -version`     |
+| ✅ **Node.js**        | 18+      | `node -v`          |
+| ✅ **Docker Desktop** | 20+      | `docker --version` |
 
 ---
 
 ## 🎯 快速启动（推荐）
 
-### 方式一：智能后台启动（全自动 ⭐推荐）
+### 方式一：智能后台启动（全自动 ⭐ 推荐）
 
 **新版智能化启动脚本** - 自动检测所有服务并后台启动！
 
-**Windows用户**：
+**Windows 用户**：
 
 ```bash
 # 双击运行或在命令行执行
@@ -29,6 +29,7 @@ start-dev-silent.bat
 ```
 
 **特性**：
+
 - ✨ **自动服务发现**: 无需手动配置，自动扫描所有微服务
 - 🔄 **智能依赖管理**: 按照服务依赖关系有序启动
 - 📊 **实时状态反馈**: 显示启动进度和服务统计
@@ -36,12 +37,14 @@ start-dev-silent.bat
 - 📝 **完整日志记录**: 所有日志自动保存到 `logs/` 目录
 
 **启动时间**：
-- 基础设施初始化：20秒
-- 微服务自动启动：约60秒（按依赖顺序）
-- 前端开发服务器：10秒
-- **总计**: 约90秒完全启动
+
+- 基础设施初始化：20 秒
+- 微服务自动启动：约 60 秒（按依赖顺序）
+- 前端开发服务器：10 秒
+- **总计**: 约 90 秒完全启动
 
 **启动后验证**：
+
 ```bash
 # 检查所有服务状态
 pwsh -File check-services-silent.ps1
@@ -59,13 +62,15 @@ start-dev.bat
 ```
 
 **按提示选择**：
+
 1. 是否启动后端微服务？→ `Y`
 2. 是否启动前端？→ `Y`
 
 **等待启动完成**：
-- 基础设施：20秒
-- 微服务：30秒
-- 前端：10秒
+
+- 基础设施：20 秒
+- 微服务：30 秒
+- 前端：10 秒
 
 ---
 
@@ -73,18 +78,20 @@ start-dev.bat
 
 适合需要调试特定服务的开发者。
 
-#### 步骤1：启动基础设施
+#### 步骤 1：启动基础设施
 
 ```bash
 docker-compose -f docker-compose-dev.yml up -d
 ```
 
 **验证启动**：
+
 ```bash
 docker-compose -f docker-compose-dev.yml ps
 ```
 
 预期输出：
+
 ```
 NAME                STATUS          PORTS
 mall-mysql-dev      Up (healthy)    0.0.0.0:3307->3306/tcp
@@ -92,11 +99,11 @@ mall-redis-dev      Up (healthy)    0.0.0.0:6379->6379/tcp
 mall-nacos-dev      Up (healthy)    0.0.0.0:8848->8848/tcp
 ```
 
-#### 步骤2：启动后端服务（在IDE中）
+#### 步骤 2：启动后端服务（在 IDE 中）
 
 **推荐使用 IntelliJ IDEA 或 Eclipse**：
 
-1. 打开 `backend` 目录作为Maven项目
+1. 打开 `backend` 目录作为 Maven 项目
 2. 右键运行以下主类：
    - `GatewayServiceApplication` (端口 8080)
    - `UserServiceApplication` (端口 8082)
@@ -120,7 +127,7 @@ cd backend/cart-service
 mvn spring-boot:run
 ```
 
-#### 步骤3：启动前端
+#### 步骤 3：启动前端
 
 ```bash
 cd frontend
@@ -134,13 +141,13 @@ npm run dev
 
 启动完成后，可以访问以下地址：
 
-| 服务 | 地址 | 说明 |
-|------|------|------|
-| 🎨 **前端应用** | http://localhost:5173 | 用户界面 |
-| 📡 **API网关** | http://localhost:8080 | 统一API入口 |
-| 🎯 **Nacos控制台** | http://localhost:8848/nacos | 服务注册中心 (nacos/nacos) |
-| 🗄️ **MySQL** | localhost:3307 | 数据库 (root/123456) |
-| 📊 **Redis** | localhost:6379 | 缓存服务器 |
+| 服务                | 地址                        | 说明                       |
+| ------------------- | --------------------------- | -------------------------- |
+| 🎨 **前端应用**     | http://localhost:5173       | 用户界面                   |
+| 📡 **API 网关**     | http://localhost:8080       | 统一 API 入口              |
+| 🎯 **Nacos 控制台** | http://localhost:8848/nacos | 服务注册中心 (nacos/nacos) |
+| 🗄️ **MySQL**        | localhost:3307              | 数据库 (root/123456)       |
+| 📊 **Redis**        | localhost:6379              | 缓存服务器                 |
 
 ---
 
@@ -148,9 +155,9 @@ npm run dev
 
 系统已预置测试账号供开发测试使用：
 
-| 账号类型 | 用户名 | 密码 | 说明 |
-|---------|--------|------|------|
-| 管理员 | `admin` | `nacos` | 系统管理员账号 |
+| 账号类型 | 用户名      | 密码    | 说明             |
+| -------- | ----------- | ------- | ---------------- |
+| 管理员   | `admin`     | `nacos` | 系统管理员账号   |
 | 测试用户 | `testlogin` | `nacos` | 普通用户测试账号 |
 
 ### 登录方式
@@ -164,13 +171,14 @@ npm run dev
 访问前端首页 http://localhost:5173/home，点击登录按钮，选择"验证码登录"，输入手机号并获取验证码即可登录。
 
 **功能说明**：
+
 - 首次使用手机号登录会自动注册新账号
-- 验证码有效期：3分钟
-- 同一手机号发送间隔：60秒
+- 验证码有效期：3 分钟
+- 同一手机号发送间隔：60 秒
 - 自动生成默认用户名：`user_手机号`
 - 自动生成默认邮箱：`手机号@mall.com`
 
-**测试提示**：验证码会通过第三方推送服务发送，请查看SMS服务日志获取验证码
+**测试提示**：验证码会通过第三方推送服务发送，请查看 SMS 服务日志获取验证码
 
 ---
 
@@ -184,6 +192,7 @@ pwsh -File check-services-silent.ps1
 ```
 
 输出示例：
+
 ```
 ========================================
 在线商城服务状态检查
@@ -235,18 +244,18 @@ pwsh -File restart-service.ps1 gateway-service
 
 当前系统支持的所有微服务（自动检测）：
 
-| 服务名 | 端口 | 说明 | 日志文件 |
-|--------|------|------|----------|
-| gateway-service | 8080 | API网关 | logs/gateway-service.log |
-| auth-service | 8081 | 认证服务 | logs/auth-service.log |
-| user-service | 8082 | 用户服务 | logs/user-service.log |
-| product-service | 8083 | 商品服务 | logs/product-service.log |
-| order-service | 8084 | 订单服务 | logs/order-service.log |
-| payment-service | 8085 | 支付服务 | logs/payment-service.log |
-| admin-service | 8086 | 管理服务 | logs/admin-service.log |
-| merchant-service | 8087 | 商家服务 | logs/merchant-service.log |
-| cart-service | 8088 | 购物车服务 | logs/cart-service.log |
-| sms-service | 8089 | 短信服务 | logs/sms-service.log |
+| 服务名           | 端口 | 说明       | 日志文件                  |
+| ---------------- | ---- | ---------- | ------------------------- |
+| gateway-service  | 8080 | API 网关   | logs/gateway-service.log  |
+| auth-service     | 8081 | 认证服务   | logs/auth-service.log     |
+| user-service     | 8082 | 用户服务   | logs/user-service.log     |
+| product-service  | 8083 | 商品服务   | logs/product-service.log  |
+| order-service    | 8084 | 订单服务   | logs/order-service.log    |
+| payment-service  | 8085 | 支付服务   | logs/payment-service.log  |
+| admin-service    | 8086 | 管理服务   | logs/admin-service.log    |
+| merchant-service | 8087 | 商家服务   | logs/merchant-service.log |
+| cart-service     | 8088 | 购物车服务 | logs/cart-service.log     |
+| sms-service      | 8089 | 短信服务   | logs/sms-service.log      |
 
 > 💡 **提示**: 新增的服务会被自动检测并启动，无需修改启动脚本！
 
@@ -260,14 +269,15 @@ pwsh -File restart-service.ps1 gateway-service
 4. 运行 `start-dev-silent.bat` - 新服务会被自动检测并启动！
 
 示例：
+
 ```yaml
 # application.yml
 server:
-  port: 8090  # 配置服务端口
+  port: 8090 # 配置服务端口
 
 spring:
   application:
-    name: notification-service  # 服务名称
+    name: notification-service # 服务名称
 ```
 
 ---
@@ -283,14 +293,17 @@ stop-dev-silent.bat
 ### 方式二：手动停止
 
 **停止后端服务**：
+
 - 关闭运行微服务的终端窗口
 - 或按 `Ctrl + C` 停止进程
 
 **停止前端**：
+
 - 关闭前端终端窗口
 - 或按 `Ctrl + C` 停止进程
 
 **停止基础设施**：
+
 ```bash
 docker-compose -f docker-compose-dev.yml down
 ```
@@ -307,6 +320,7 @@ docker-compose -f docker-compose-dev.yml down
 ```
 
 预期输出示例：
+
 ```
 ✅ 网关服务 (8080): 运行中
 ✅ 用户服务 (8082): 运行中
@@ -319,7 +333,7 @@ docker-compose -f docker-compose-dev.yml down
 
 访问 http://localhost:5173，应该看到商城首页。
 
-### 3. 测试API
+### 3. 测试 API
 
 ```bash
 # 测试网关健康检查
@@ -347,9 +361,9 @@ netstat -ano | findstr :8080
 taskkill /PID <进程ID> /F
 ```
 
-### 2. Nacos启动失败
+### 2. Nacos 启动失败
 
-**问题**：Nacos容器无法启动或健康检查失败
+**问题**：Nacos 容器无法启动或健康检查失败
 
 **解决方案**：
 
@@ -371,11 +385,13 @@ curl http://localhost:8848/nacos/actuator/health
 **确认以下几点**：
 
 1. **网关服务是否启动**：
+
    ```bash
    curl http://localhost:8080/actuator/health
    ```
 
-2. **服务是否注册到Nacos**：
+2. **服务是否注册到 Nacos**：
+
    - 访问 http://localhost:8848/nacos
    - 登录后查看"服务管理" → "服务列表"
    - 确认 user-service、product-service 等已注册
@@ -384,7 +400,7 @@ curl http://localhost:8848/nacos/actuator/health
    - 打开开发者工具 (F12)
    - 查看 Console 和 Network 标签页
 
-### 4. MySQL连接失败
+### 4. MySQL 连接失败
 
 **问题**：服务启动时报数据库连接错误
 
@@ -406,11 +422,12 @@ docker-compose -f docker-compose-dev.yml restart mysql
 
 ### 5. 首次启动很慢
 
-**原因**：Maven需要下载依赖，前端需要安装node_modules
+**原因**：Maven 需要下载依赖，前端需要安装 node_modules
 
 **解决方案**：
+
 - 耐心等待，首次下载后会缓存
-- 使用国内镜像加速（阿里云Maven镜像、淘宝NPM镜像）
+- 使用国内镜像加速（阿里云 Maven 镜像、淘宝 NPM 镜像）
 
 ---
 
@@ -419,7 +436,7 @@ docker-compose -f docker-compose-dev.yml restart mysql
 项目启动成功后，您可以：
 
 1. 📖 阅读 [README.md](README.md) 了解项目架构
-2. 📊 查看 [API文档](http://localhost:8080/doc.html)（如果配置了Knife4j）
+2. 📊 查看 [API 文档](http://localhost:8080/doc.html)（如果配置了 Knife4j）
 3. 🔧 阅读 [需求说明](在线商城需求说明.md) 了解业务需求
 4. 💻 开始开发您的功能模块
 
@@ -430,16 +447,19 @@ docker-compose -f docker-compose-dev.yml restart mysql
 遇到问题？
 
 1. **查看日志文件**：
+
    - 后端：控制台输出或 `logs/` 目录
    - 前端：浏览器开发者工具
    - Docker：`docker logs <容器名>`
 
 2. **检查服务状态**：
+
    ```bash
    .\check-services-silent.ps1
    ```
 
-3. **查看Nacos服务列表**：
+3. **查看 Nacos 服务列表**：
+
    - http://localhost:8848/nacos
    - 确认所有服务已注册
 
@@ -463,12 +483,12 @@ docker-compose -f docker-compose-dev.yml restart mysql
 5. 重复以上步骤
 
 **提示**：
+
 - 后端代码修改后需要重启对应的微服务
 - 前端代码修改后会自动热重载
 - 配置文件修改后需要重启服务
 
 ---
 
-*最后更新：2025年11月10日*  
-*版本：1.0*
-
+_最后更新：2026 年 01 月 01 日_  
+_版本：1.1_

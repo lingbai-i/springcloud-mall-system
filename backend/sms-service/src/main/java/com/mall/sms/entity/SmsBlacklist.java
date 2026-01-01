@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 /**
  * 短信黑名单实体
  *
- * @author SMS Service
+ * @author lingbai
  * @since 2024-01-01
  */
 @Data

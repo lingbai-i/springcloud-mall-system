@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,7 +17,7 @@ import java.util.Map;
 /**
  * 商家审批服务实现
  * 
- * @author system
+ * @author lingbai
  * @since 2025-11-11
  */
 @Slf4j
@@ -26,8 +25,8 @@ import java.util.Map;
 public class MerchantApprovalServiceImpl implements MerchantApprovalService {
 
   private final WebClient webClient;
-  private static final String MERCHANT_SERVICE_URL = "http://localhost:8087"; // Merchant Service地址
-  private static final String SMS_SERVICE_URL = "http://localhost:8089"; // SMS Service地址
+  // Docker环境使用服务名，本地开发使用localhost
+  private static final String MERCHANT_SERVICE_URL = "http://merchant-service:8087"; // Merchant Service地址
 
   public MerchantApprovalServiceImpl() {
     this.webClient = WebClient.builder()
@@ -64,10 +63,15 @@ public class MerchantApprovalServiceImpl implements MerchantApprovalService {
         @SuppressWarnings("unchecked")
         Map<String, Object> data = (Map<String, Object>) result.get("data");
         @SuppressWarnings("unchecked")
-        List<Map<String, Object>> records = (List<Map<String, Object>>) data.get("content");
-        int total = (Integer) data.get("totalElements");
+        List<Map<String, Object>> records = (List<Map<String, Object>>) data.get("records");
+        // 兼容不同的字段名
+        Object totalObj = data.get("total");
+        if (totalObj == null) {
+          totalObj = data.get("totalElements");
+        }
+        long total = totalObj != null ? ((Number) totalObj).longValue() : 0L;
 
-        return new PageImpl<>(records, PageRequest.of(page - 1, size), total);
+        return new PageImpl<>(records != null ? records : List.of(), PageRequest.of(page - 1, size), total);
       }
 
       return Page.empty();
@@ -102,42 +106,30 @@ public class MerchantApprovalServiceImpl implements MerchantApprovalService {
         throw new RuntimeException("拒绝申请时必须填写原因");
       }
 
-      // 4. 调用Merchant Service更新审批状态
-      Map<String, Object> updateData = new HashMap<>();
-      updateData.put("approvalStatus", request.getApproved() ? 1 : 2);
-      updateData.put("approvalReason", request.getReason());
-      updateData.put("approvalBy", adminId);
-      updateData.put("approvalByName", adminUsername);
-      updateData.put("approvalTime", LocalDateTime.now().toString());
+      // 4. 调用Merchant Service审核接口（使用查询参数）
+      // merchant-service 的 auditApplication 方法会自动创建商家账号（如果通过）
+      String reason = request.getReason() != null ? request.getReason() : "";
+      String auditUrl = String.format("%s/api/merchants/applications/%d/audit?approved=%s&reason=%s&adminId=%d&adminName=%s",
+          MERCHANT_SERVICE_URL, applicationId, request.getApproved(), 
+          java.net.URLEncoder.encode(reason, java.nio.charset.StandardCharsets.UTF_8),
+          adminId, java.net.URLEncoder.encode(adminUsername, java.nio.charset.StandardCharsets.UTF_8));
 
-      String updateUrl = String.format("%s/api/merchants/applications/%d/status",
-          MERCHANT_SERVICE_URL, applicationId);
+      log.info("调用审核接口: {}", auditUrl);
 
       @SuppressWarnings("unchecked")
-      Mono<Map<String, Object>> updateResponse = (Mono<Map<String, Object>>) (Mono<?>) webClient.put()
-          .uri(updateUrl)
-          .bodyValue(updateData)
+      Mono<Map<String, Object>> auditResponse = (Mono<Map<String, Object>>) (Mono<?>) webClient.put()
+          .uri(auditUrl)
           .retrieve()
           .bodyToMono(Map.class);
 
-      updateResponse.block(); // 执行更新请求
+      Map<String, Object> auditResult = auditResponse.block();
+      log.info("审核接口返回: {}", auditResult);
 
-      // 5. 如果通过，创建商家账号
-      Long merchantId = null;
-      if (request.getApproved()) {
-        merchantId = createMerchantAccount(application);
-        result.put("merchantId", merchantId);
-        log.info("商家账号创建成功 - ID: {}", merchantId);
-      }
-
-      // 6. 记录审批日志
+      // 5. 记录审批日志
       recordApprovalLog(applicationId, adminId, adminUsername,
           request.getApproved() ? "approve" : "reject",
           request.getApproved() ? "approved" : "rejected",
           request.getReason(), ipAddress);
-
-      // 7. 发送短信通知
-      sendApprovalSms(application, request.getApproved(), request.getReason());
 
       result.put("success", true);
       result.put("applicationId", applicationId);
@@ -185,66 +177,6 @@ public class MerchantApprovalServiceImpl implements MerchantApprovalService {
   }
 
   /**
-   * 创建商家账号（审批通过时）
-   */
-  private Long createMerchantAccount(Map<String, Object> application) {
-    try {
-      log.info("创建商家账号 - 店铺: {}", application.get("shopName"));
-
-      // 构建商家账号数据
-      Map<String, Object> merchantData = new HashMap<>();
-      merchantData.put("username", application.get("username"));
-      merchantData.put("password", application.get("password")); // 已加密
-      merchantData.put("shopName", application.get("shopName"));
-      merchantData.put("contactName", application.get("contactName"));
-      merchantData.put("contactPhone", application.get("contactPhone"));
-      merchantData.put("contactEmail", application.get("email"));
-      merchantData.put("merchantType", "enterprise".equals(application.get("entityType")) ? 2 : 1);
-      merchantData.put("approvalStatus", 1);
-      merchantData.put("status", 1);
-
-      // 企业信息
-      if (application.get("companyName") != null) {
-        merchantData.put("companyName", application.get("companyName"));
-        merchantData.put("creditCode", application.get("creditCode"));
-        merchantData.put("legalPerson", application.get("legalPerson"));
-        merchantData.put("businessLicense", application.get("businessLicense"));
-      }
-
-      // 个人信息
-      if (application.get("idCard") != null) {
-        merchantData.put("idNumber", application.get("idCard"));
-        merchantData.put("idFrontImage", application.get("idCardFront"));
-        merchantData.put("idBackImage", application.get("idCardBack"));
-      }
-
-      // 调用Merchant Service创建账号
-      String url = MERCHANT_SERVICE_URL + "/api/merchants/create";
-
-      @SuppressWarnings("unchecked")
-      Mono<Map<String, Object>> response = (Mono<Map<String, Object>>) (Mono<?>) webClient.post()
-          .uri(url)
-          .bodyValue(merchantData)
-          .retrieve()
-          .bodyToMono(Map.class);
-
-      Map<String, Object> result = response.block();
-
-      if (result != null && result.get("data") != null) {
-        @SuppressWarnings("unchecked")
-        Map<String, Object> data = (Map<String, Object>) result.get("data");
-        return Long.valueOf(data.get("merchantId").toString());
-      }
-
-      throw new RuntimeException("商家账号创建失败");
-
-    } catch (Exception e) {
-      log.error("创建商家账号失败", e);
-      throw new RuntimeException("创建商家账号失败: " + e.getMessage());
-    }
-  }
-
-  /**
    * 记录审批日志
    */
   private void recordApprovalLog(Long applicationId, Long adminId, String adminUsername,
@@ -268,57 +200,11 @@ public class MerchantApprovalServiceImpl implements MerchantApprovalService {
           .bodyToMono(Void.class)
           .subscribe(
               result -> log.info("审批日志记录成功"),
-              error -> log.error("审批日志记录失败", error));
+              error -> log.warn("审批日志记录失败（非关键错误）: {}", error.getMessage()));
 
     } catch (Exception e) {
-      log.error("记录审批日志异常", e);
+      log.warn("记录审批日志异常（非关键错误）: {}", e.getMessage());
       // 不抛出异常，避免影响主流程
-    }
-  }
-
-  /**
-   * 发送审批短信通知
-   */
-  private void sendApprovalSms(Map<String, Object> application, boolean approved, String reason) {
-    try {
-      String phone = (String) application.get("contactPhone");
-      String shopName = (String) application.get("shopName");
-      String username = (String) application.get("username");
-
-      Map<String, Object> smsData = new HashMap<>();
-      smsData.put("phoneNumber", phone);
-
-      if (approved) {
-        // 通过通知
-        String message = String.format(
-            "【在线商城】恭喜！您的商家入驻申请已审核通过！店铺名称：%s，登录账号：%s，请访问商家后台开启电商之旅！",
-            shopName, username);
-        smsData.put("purpose", "MERCHANT_APPROVAL_PASS");
-        smsData.put("message", message);
-      } else {
-        // 拒绝通知
-        String message = String.format(
-            "【在线商城】很遗憾，您的商家入驻申请未通过审核。店铺名称：%s，拒绝原因：%s",
-            shopName, reason != null ? reason : "未提供");
-        smsData.put("purpose", "MERCHANT_APPROVAL_REJECT");
-        smsData.put("message", message);
-      }
-
-      // 异步发送短信
-      String url = SMS_SERVICE_URL + "/send";
-
-      webClient.post()
-          .uri(url)
-          .bodyValue(smsData)
-          .retrieve()
-          .bodyToMono(Map.class)
-          .subscribe(
-              result -> log.info("审批短信发送成功 - 手机: {}", phone),
-              error -> log.error("审批短信发送失败 - 手机: {}", phone, error));
-
-    } catch (Exception e) {
-      log.error("发送审批短信异常", e);
-      // 不抛出异常，避免影响审批流程
     }
   }
 }

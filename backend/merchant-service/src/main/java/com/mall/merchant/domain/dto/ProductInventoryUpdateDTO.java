@@ -10,7 +10,7 @@ import jakarta.validation.constraints.NotNull;
  * 商品库存更新DTO
  * 用于更新单个商品的库存信息
  * 
- * @author system
+ * @author lingbai
  * @since 2025-11-12
  */
 @Data

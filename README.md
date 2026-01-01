@@ -1,13 +1,13 @@
-# 基于 SpringCloud 的微服务在线商城系统
+# 百物语 - 基于 SpringCloud 的微服务商城 system
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Java](https://img.shields.io/badge/Java-22-orange.svg)](https://www.oracle.com/java/)
+[![Java](https://img.shields.io/badge/Java-17-orange.svg)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-brightgreen.svg)](https://spring.io/projects/spring-boot)
 [![Vue](https://img.shields.io/badge/Vue-3.x-green.svg)](https://vuejs.org/)
 
 ## 项目简介
 
-本项目是一个基于 SpringCloud Alibaba 的**智能化微服务架构**在线商城系统，采用前后端分离的设计模式。项目集成了**自动服务发现与启动**功能，支持动态服务管理，大幅简化开发和部署流程。
+本项目是一个基于 SpringCloud Alibaba 的**智能化微服务架构**百物语商城系统，采用前后端分离的设计模式。项目集成了**自动服务发现与启动**功能，支持动态服务管理，大幅简化开发和部署流程。
 
 ### 🚀 核心特性
 
@@ -21,7 +21,7 @@
 
 ### 后端技术栈
 
-- **核心框架**: Java 22 + Spring Boot 3.x + Spring Cloud Alibaba
+- **核心框架**: Java 17 + Spring Boot 3.x + Spring Cloud Alibaba
 - **注册中心**: Nacos
 - **配置中心**: Nacos Config
 - **服务网关**: Spring Cloud Gateway
@@ -82,19 +82,12 @@ springcloud-mall/
 ├── auth-service            # 认证服务
 ├── user-service            # 用户服务
 ├── product-service         # 商品服务
-├── search-service          # 搜索服务
 ├── cart-service            # 购物车服务
 ├── order-service           # 订单服务
-├── inventory-service       # 库存服务
 ├── payment-service         # 支付服务
-├── refund-service          # 退款服务
 ├── merchant-service        # 商家服务
-├── settlement-service      # 结算服务
-├── withdrawal-service      # 提现服务
-├── cms-service            # 内容管理服务
-├── coupon-service         # 优惠券服务
 ├── admin-service          # 管理服务
-└── notify-service         # 通知服务
+└── sms-service            # 短信服务
 ```
 
 ### 数据库设计
@@ -149,6 +142,7 @@ springcloud-mall/
 ### ⚠️ 遇到启动问题？
 
 如果启动脚本闪退或遇到错误，请查看:
+
 - 📖 **[故障排查指南](TROUBLESHOOTING.md)** - 详细的问题诊断和解决方案
 - 📋 查看 [常见问题 FAQ](#常见问题-faq)
 
@@ -165,9 +159,10 @@ scripts\start-all.bat
 ```
 
 此脚本会自动启动：
+
 1. Docker 基础设施（MySQL、Redis、Nacos）
 2. 所有后端微服务
-3. 前端Vue应用
+3. 前端 Vue 应用
 
 ### 服务管理
 
@@ -324,6 +319,7 @@ npm run dev
 | Admin Service    | 8086 | http://localhost:8086/actuator/health |
 | Merchant Service | 8087 | http://localhost:8087/actuator/health |
 | Cart Service     | 8088 | http://localhost:8088/actuator/health |
+| SMS Service      | 8089 | http://localhost:8089/actuator/health |
 
 ### 🔍 启动验证
 
@@ -532,13 +528,16 @@ A: 参考现有服务结构，创建新的服务模块，注册到 Nacos。
 **A**: 这是最常见的问题，通常由以下原因引起:
 
 1. **Docker Desktop 未运行** (90%的情况)
+
    ```bash
    # 检查 Docker 是否运行
    docker ps
    ```
+
    解决: 启动 Docker Desktop，等待完全启动后重试
 
 2. **使用调试模式定位问题**
+
    ```bash
    # 运行调试版本，查看详细错误信息
    start-dev-debug.bat
@@ -570,15 +569,17 @@ taskkill /PID <进程ID> /F
 **A**: 按以下步骤排查:
 
 1. **查看服务日志**
+
    ```bash
    # 查看特定服务日志
    pwsh -File tail-logs.ps1 gateway-service
-   
+
    # 或直接打开日志文件
    notepad logs\gateway-service.log
    ```
 
 2. **检查服务状态**
+
    ```bash
    pwsh -File check-services-silent.ps1
    ```
@@ -595,6 +596,7 @@ taskkill /PID <进程ID> /F
 **A**: 配置国内镜像源
 
 编辑 `~/.m2/settings.xml`:
+
 ```xml
 <mirrors>
   <mirror>
@@ -629,7 +631,7 @@ REM set "SERVICES_CONFIG=!SERVICES_CONFIG!sms-service:8089::3;"
 
 ---
 
-### Q7: 如何查看所有服务的API文档?
+### Q7: 如何查看所有服务的 API 文档?
 
 **A**: 各服务的 Swagger 文档地址:
 
@@ -677,7 +679,6 @@ start-dev-silent.bat
 ## 许可证
 
 本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
-
 
 ---
 

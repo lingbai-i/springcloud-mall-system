@@ -682,7 +682,7 @@ const loadOrderList = async () => {
         items: (order.orderItems || []).map(item => ({
           id: item.id,
           name: item.productName,
-          image: item.productImage,
+          image: item.productImage ? item.productImage.split(',')[0] : '',
           spec: item.productSpec,
           price: item.productPrice,
           quantity: item.quantity
@@ -843,7 +843,7 @@ const viewOrder = async (orderId) => {
         items: (data.orderItems || []).map(item => ({
           id: item.id,
           name: item.productName,
-          image: item.productImage || 'https://via.placeholder.com/80',
+          image: item.productImage ? item.productImage.split(',')[0] : 'https://via.placeholder.com/80',
           spec: item.productSpec,
           price: item.productPrice,
           quantity: item.quantity,

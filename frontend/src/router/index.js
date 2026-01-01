@@ -72,15 +72,6 @@ const routes = [
         }
       },
       {
-        path: '/cart',
-        name: 'Cart',
-        component: () => import('@/views/cart/index.vue'),
-        meta: {
-          title: '购物车',
-          requiresAuth: true
-        }
-      },
-      {
         path: '/user',
         name: 'User',
         component: () => import('@/views/user/index.vue'),
@@ -144,6 +135,15 @@ const routes = [
             }
           },
           {
+            path: 'cart',
+            name: 'UserCart',
+            component: () => import('@/views/user/cart.vue'),
+            meta: {
+              title: '购物车',
+              requiresAuth: true
+            }
+          },
+          {
             path: 'settings',
             name: 'UserSettings',
             component: () => import('@/views/user/Settings.vue'),
@@ -200,6 +200,11 @@ const routes = [
   {
     path: '/register',
     redirect: '/auth/register'
+  },
+  // 购物车重定向到用户中心购物车
+  {
+    path: '/cart',
+    redirect: '/user/cart'
   },
   {
     path: '/checkout',
@@ -655,7 +660,7 @@ router.beforeEach((to, from, next) => {
   
   // 设置页面标题
   if (to.meta.title) {
-    document.title = `${to.meta.title} - 在线商城`
+    document.title = `${to.meta.title} - 百物语`
   }
   
   // 检查是否需要登录

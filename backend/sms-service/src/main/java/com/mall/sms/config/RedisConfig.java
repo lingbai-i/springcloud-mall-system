@@ -15,7 +15,7 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 /**
  * Redis配置类
  *
- * @author SMS Service
+ * @author lingbai
  * @since 2025-11-06
  */
 @Configuration

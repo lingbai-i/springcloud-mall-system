@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 /**
  * MyBatis Plus配置类
  *
- * @author SMS Service
+ * @author lingbai
  * @since 2024-01-01
  */
 @Configuration

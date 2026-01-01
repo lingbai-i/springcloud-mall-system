@@ -3,6 +3,7 @@ package com.mall.merchant.service.impl;
 import com.mall.common.core.domain.PageResult;
 import com.mall.common.core.domain.R;
 import com.mall.merchant.domain.entity.Merchant;
+import com.mall.merchant.repository.MerchantApplicationRepository;
 import com.mall.merchant.repository.MerchantRepository;
 import com.mall.merchant.service.MerchantService;
 import com.mall.merchant.util.JwtUtil;
@@ -40,6 +41,7 @@ public class MerchantServiceImpl implements MerchantService {
     private static final Logger log = LoggerFactory.getLogger(MerchantServiceImpl.class);
 
     private final MerchantRepository merchantRepository;
+    private final MerchantApplicationRepository applicationRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
@@ -703,9 +705,10 @@ public class MerchantServiceImpl implements MerchantService {
 
             // 待审核商家数（供 admin-service 使用）
             // 审核状态：0-待审核，1-审核通过，2-审核拒绝
-            Long pendingAudit = merchantRepository.countByApprovalStatus(0);
-            statistics.put("pendingAudit", pendingAudit);
-            statistics.put("pendingMerchants", pendingAudit); // 兼容 admin-service 字段名
+            // 查询 merchant_applications 表中的待审核申请数量
+            Long pendingApplications = applicationRepository.countByApprovalStatus(0);
+            statistics.put("pendingAudit", pendingApplications);
+            statistics.put("pendingMerchants", pendingApplications); // 兼容 admin-service 字段名
 
             // 已通过审核商家数
             Long approved = merchantRepository.countByApprovalStatus(1);

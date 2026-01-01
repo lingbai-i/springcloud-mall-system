@@ -20,7 +20,7 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
       - ./sql:/docker-entrypoint-initdb.d
-    command: --default-authentication-plugin=mysql_native_password
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     networks:
       - mall-network
 
@@ -93,7 +93,7 @@ services:
     image: apache/rocketmq:5.1.4
     container_name: mall-rocketmq-broker
     restart: always
-    user: "0:0"  # 使用 root 用户解决权限问题
+    user: "0:0" # 使用 root 用户解决权限问题
     ports:
       - "10909:10909"
       - "10911:10911"
@@ -101,7 +101,12 @@ services:
       NAMESRV_ADDR: "rocketmq-nameserver:9876"
       ROCKETMQ_HOME: "/home/rocketmq/rocketmq-5.1.4"
       JAVA_OPT_EXT: "-server -Xms512m -Xmx512m -Drocketmq.broker.diskSpaceWarningLevelRatio=0.90 -Drocketmq.broker.diskSpaceCleanForciblyRatio=0.85"
-    command: ["sh", "-c", "mkdir -p /home/rocketmq/store/config && chmod -R 755 /home/rocketmq/store && /home/rocketmq/rocketmq-5.1.4/bin/mqbroker -n rocketmq-nameserver:9876 -c /home/rocketmq/rocketmq-5.1.4/conf/broker.conf"]
+    command:
+      [
+        "sh",
+        "-c",
+        "mkdir -p /home/rocketmq/store/config && chmod -R 755 /home/rocketmq/store && /home/rocketmq/rocketmq-5.1.4/bin/mqbroker -n rocketmq-nameserver:9876 -c /home/rocketmq/rocketmq-5.1.4/conf/broker.conf",
+      ]
     volumes:
       - rocketmq_broker_logs:/home/rocketmq/logs
       - rocketmq_broker_store:/home/rocketmq/store
@@ -184,12 +189,12 @@ services:
       - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
     command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
-      - '--storage.tsdb.retention.time=200h'
-      - '--web.enable-lifecycle'
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/etc/prometheus/console_libraries"
+      - "--web.console.templates=/etc/prometheus/consoles"
+      - "--storage.tsdb.retention.time=200h"
+      - "--web.enable-lifecycle"
     networks:
       - mall-network
 
@@ -233,14 +238,16 @@ services:
     restart: always
     # 可选择暴露端口（如需要从宿主机直接访问）
     ports:
-      - "8083:8083"
+      - "8089:8089"
     volumes:
       - ./backend/sms-service/target:/app
     working_dir: /app
-    command: ["java", "-Xmx512m", "-Xms256m", "-jar", "/app/sms-service-1.0.0.jar"]
+    command:
+      ["java", "-Xmx512m", "-Xms256m", "-jar", "/app/sms-service-1.0.0.jar"]
     environment:
+      TZ: "Asia/Shanghai"
       SPRING_PROFILES_ACTIVE: "docker"
-      SERVER_PORT: 8083
+      SERVER_PORT: 8089
       SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: "nacos:8848"
       SPRING_CLOUD_NACOS_DISCOVERY_NAMESPACE: "docker"
       SPRING_CLOUD_NACOS_CONFIG_SERVER_ADDR: "nacos:8848"
@@ -265,17 +272,20 @@ services:
     volumes:
       - ./backend/gateway-service/target:/app
     working_dir: /app
-    command: ["java", "-Xmx512m", "-Xms256m", "-jar", "/app/gateway-service-1.0.0.jar"]
+    command:
+      ["java", "-Xmx512m", "-Xms256m", "-jar", "/app/gateway-service-1.0.0.jar"]
     environment:
-      SPRING_PROFILES_ACTIVE: "simple"
+      TZ: "Asia/Shanghai"
+      SPRING_PROFILES_ACTIVE: "docker"
       # 修复：网关默认连接本机 Redis 导致健康检查失败，改为容器网络内的 redis 服务
       SPRING_DATA_REDIS_HOST: "redis"
       SPRING_DATA_REDIS_PORT: "6379"
       SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: "nacos:8848"
+      SPRING_CLOUD_NACOS_DISCOVERY_NAMESPACE: "docker"
       SPRING_CLOUD_NACOS_CONFIG_SERVER_ADDR: "nacos:8848"
       SPRING_CONFIG_IMPORT: "optional:nacos:"
       SPRING_CLOUD_NACOS_CONFIG_IMPORT_CHECK_ENABLED: "false"
-      SPRING_CLOUD_NACOS_DISCOVERY_ENABLED: "false"
+      SPRING_CLOUD_NACOS_DISCOVERY_ENABLED: "true"
       SPRING_CLOUD_NACOS_CONFIG_ENABLED: "false"
       MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "*"
       MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS: "always"
@@ -294,13 +304,20 @@ services:
     volumes:
       - ./backend/user-service/target:/app
     working_dir: /app
-    command: ["java", "-Xmx512m", "-Xms256m", "-jar", "/app/user-service-1.0.0.jar"]
+    command:
+      ["java", "-Xmx512m", "-Xms256m", "-jar", "/app/user-service-1.0.0.jar"]
     environment:
+      TZ: "Asia/Shanghai"
       SPRING_PROFILES_ACTIVE: "docker"
       SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: "nacos:8848"
       SPRING_CLOUD_NACOS_DISCOVERY_NAMESPACE: "docker"
       SPRING_CLOUD_NACOS_CONFIG_SERVER_ADDR: "nacos:8848"
       SPRING_CONFIG_IMPORT: "optional:nacos:"
+      # Redis配置
+      SPRING_REDIS_HOST: "redis"
+      SPRING_REDIS_PORT: "6379"
+      SPRING_DATA_REDIS_HOST: "redis"
+      SPRING_DATA_REDIS_PORT: "6379"
     depends_on:
       - mysql
       - nacos
@@ -316,13 +333,20 @@ services:
     volumes:
       - ./backend/product-service/target:/app
     working_dir: /app
-    command: ["java", "-Xmx512m", "-Xms256m", "-jar", "/app/product-service-1.0.0.jar"]
+    command:
+      ["java", "-Xmx512m", "-Xms256m", "-jar", "/app/product-service-1.0.0.jar"]
     environment:
+      TZ: "Asia/Shanghai"
       SPRING_PROFILES_ACTIVE: "docker"
       SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: "nacos:8848"
       SPRING_CLOUD_NACOS_DISCOVERY_NAMESPACE: "docker"
       SPRING_CLOUD_NACOS_CONFIG_SERVER_ADDR: "nacos:8848"
       SPRING_CONFIG_IMPORT: "optional:nacos:"
+      # Redis配置
+      SPRING_REDIS_HOST: "redis"
+      SPRING_REDIS_PORT: "6379"
+      SPRING_DATA_REDIS_HOST: "redis"
+      SPRING_DATA_REDIS_PORT: "6379"
     depends_on:
       - mysql
       - nacos
@@ -338,14 +362,21 @@ services:
     volumes:
       - ./backend/cart-service/target:/app
     working_dir: /app
-    command: ["java", "-Xmx512m", "-Xms256m", "-jar", "/app/cart-service-1.0.0.jar"]
+    command:
+      ["java", "-Xmx512m", "-Xms256m", "-jar", "/app/cart-service-1.0.0.jar"]
     environment:
+      TZ: "Asia/Shanghai"
       SPRING_PROFILES_ACTIVE: "docker"
       SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: "nacos:8848"
       SPRING_CLOUD_NACOS_DISCOVERY_NAMESPACE: "docker"
       SPRING_CLOUD_NACOS_CONFIG_ENABLED: "false"
       SPRING_CLOUD_NACOS_CONFIG_IMPORT_CHECK_ENABLED: "false"
       SPRING_CONFIG_IMPORT: "optional:nacos:"
+      # Redis配置
+      SPRING_REDIS_HOST: "redis"
+      SPRING_REDIS_PORT: "6379"
+      SPRING_DATA_REDIS_HOST: "redis"
+      SPRING_DATA_REDIS_PORT: "6379"
     depends_on:
       - mysql
       - nacos
@@ -361,14 +392,27 @@ services:
     volumes:
       - ./backend/merchant-service/target:/app
     working_dir: /app
-    command: ["java", "-Xmx512m", "-Xms256m", "-jar", "/app/merchant-service-1.0.0.jar"]
+    command:
+      [
+        "java",
+        "-Xmx512m",
+        "-Xms256m",
+        "-jar",
+        "/app/merchant-service-1.0.0.jar",
+      ]
     environment:
+      TZ: "Asia/Shanghai"
       SPRING_PROFILES_ACTIVE: "docker"
       SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: "nacos:8848"
       SPRING_CLOUD_NACOS_DISCOVERY_NAMESPACE: "docker"
       SPRING_CLOUD_NACOS_CONFIG_ENABLED: "false"
       SPRING_CLOUD_NACOS_CONFIG_IMPORT_CHECK_ENABLED: "false"
       SPRING_CONFIG_IMPORT: "optional:nacos:"
+      # Redis配置
+      SPRING_REDIS_HOST: "redis"
+      SPRING_REDIS_PORT: "6379"
+      SPRING_DATA_REDIS_HOST: "redis"
+      SPRING_DATA_REDIS_PORT: "6379"
     depends_on:
       - mysql
       - nacos
@@ -384,14 +428,22 @@ services:
     volumes:
       - ./backend/order-service/target:/app
     working_dir: /app
-    command: ["java", "-Xmx512m", "-Xms256m", "-jar", "/app/order-service-1.0.0.jar"]
+    command:
+      ["java", "-Xmx512m", "-Xms256m", "-Duser.timezone=Asia/Shanghai", "-jar", "/app/order-service-1.0.0.jar"]
     environment:
+      TZ: "Asia/Shanghai"
       SPRING_PROFILES_ACTIVE: "docker"
       SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: "nacos:8848"
       SPRING_CLOUD_NACOS_DISCOVERY_NAMESPACE: "docker"
       SPRING_CLOUD_NACOS_CONFIG_ENABLED: "false"
       SPRING_CLOUD_NACOS_CONFIG_IMPORT_CHECK_ENABLED: "false"
       SPRING_CONFIG_IMPORT: "optional:nacos:"
+      # Redis配置 - 修复连接localhost问题
+      SPRING_REDIS_HOST: "redis"
+      SPRING_REDIS_PORT: "6379"
+      SPRING_DATA_REDIS_HOST: "redis"
+      SPRING_DATA_REDIS_PORT: "6379"
+      # RabbitMQ配置
       SPRING_RABBITMQ_HOST: "rabbitmq"
       SPRING_RABBITMQ_PORT: "5672"
       SPRING_RABBITMQ_USERNAME: "guest"
@@ -412,14 +464,21 @@ services:
     volumes:
       - ./backend/payment-service/target:/app
     working_dir: /app
-    command: ["java", "-Xmx512m", "-Xms256m", "-jar", "/app/payment-service-1.0.0.jar"]
+    command:
+      ["java", "-Xmx512m", "-Xms256m", "-jar", "/app/payment-service-1.0.0.jar"]
     environment:
+      TZ: "Asia/Shanghai"
       SPRING_PROFILES_ACTIVE: "docker"
       SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: "nacos:8848"
       SPRING_CLOUD_NACOS_DISCOVERY_NAMESPACE: "docker"
       SPRING_CLOUD_NACOS_CONFIG_ENABLED: "false"
       SPRING_CLOUD_NACOS_CONFIG_IMPORT_CHECK_ENABLED: "false"
       SPRING_CONFIG_IMPORT: "optional:nacos:"
+      # Redis配置
+      SPRING_REDIS_HOST: "redis"
+      SPRING_REDIS_PORT: "6379"
+      SPRING_DATA_REDIS_HOST: "redis"
+      SPRING_DATA_REDIS_PORT: "6379"
     depends_on:
       - mysql
       - nacos
@@ -435,14 +494,21 @@ services:
     volumes:
       - ./backend/admin-service/target:/app
     working_dir: /app
-    command: ["java", "-Xmx512m", "-Xms256m", "-jar", "/app/admin-service-1.0.0.jar"]
+    command:
+      ["java", "-Xmx512m", "-Xms256m", "-jar", "/app/admin-service-1.0.0.jar"]
     environment:
+      TZ: "Asia/Shanghai"
       SPRING_PROFILES_ACTIVE: "docker"
       SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: "nacos:8848"
       SPRING_CLOUD_NACOS_DISCOVERY_NAMESPACE: "docker"
       SPRING_CLOUD_NACOS_CONFIG_ENABLED: "false"
       SPRING_CLOUD_NACOS_CONFIG_IMPORT_CHECK_ENABLED: "false"
       SPRING_CONFIG_IMPORT: "optional:nacos:"
+      # Redis配置
+      SPRING_REDIS_HOST: "redis"
+      SPRING_REDIS_PORT: "6379"
+      SPRING_DATA_REDIS_HOST: "redis"
+      SPRING_DATA_REDIS_PORT: "6379"
     depends_on:
       - mysql
       - nacos
@@ -458,7 +524,12 @@ services:
     working_dir: /app
     volumes:
       - ./frontend:/app
-    command: ["sh", "-c", "npm install && npm run dev -- --host 0.0.0.0"]
+    command:
+      [
+        "sh",
+        "-c",
+        "npm install && npm run dev -- --host 0.0.0.0 --config vite.config.docker.js",
+      ]
     ports:
       - "5173:5173"
     depends_on:

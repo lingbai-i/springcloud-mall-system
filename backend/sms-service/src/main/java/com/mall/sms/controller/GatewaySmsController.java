@@ -15,7 +15,7 @@ import jakarta.validation.Valid;
  * 网关短信验证码控制器
  * 处理网关转发后的路径（去掉/api前缀）
  *
- * @author SMS Service
+ * @author lingbai
  * @since 2024-01-01
  */
 @Slf4j

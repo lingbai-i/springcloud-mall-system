@@ -3,8 +3,7 @@
     <!-- 侧边栏 -->
     <el-aside :width="isCollapse ? '64px' : '240px'" class="merchant-sidebar">
       <div class="logo-container">
-        <img v-if="!isCollapse" src="/logo.png" alt="Logo" class="logo" />
-        <img v-else src="/logo.png" alt="Logo" class="logo-mini" />
+        <img src="/商标png.png" alt="Logo" :class="isCollapse ? 'logo-mini' : 'logo'" />
         <h1 v-if="!isCollapse" class="title">商家中心</h1>
       </div>
       
@@ -13,9 +12,9 @@
         :collapse="isCollapse"
         :unique-opened="true"
         class="merchant-menu"
-        background-color="#001529"
-        text-color="#ffffff"
-        active-text-color="#52c41a"
+        background-color="#e8eee9"
+        text-color="#3a5044"
+        active-text-color="#2c3e34"
         router
       >
         <el-menu-item index="/merchant/dashboard">
@@ -120,7 +119,9 @@
           <!-- 用户信息 -->
           <el-dropdown @command="handleCommand" class="user-dropdown">
             <span class="user-info">
-              <el-avatar :size="32" :src="userStore.userInfo?.avatar || userStore.userInfo?.logo" />
+              <el-avatar :size="32" :src="userStore.userInfo?.avatar || userStore.userInfo?.logo || userStore.userInfo?.shopLogo">
+                <el-icon><Shop /></el-icon>
+              </el-avatar>
               <span class="username">{{ displayName }}</span>
               <el-icon><ArrowDown /></el-icon>
             </span>
@@ -271,40 +272,94 @@ watch(
 }
 
 .merchant-sidebar {
-  background-color: #001529;
+  background-color: #e8eee9; /* 中度浅绿色，比之前更沉稳，不刺眼 */
+  color: #3a5044;
+  height: 100vh;
   transition: width 0.3s;
+  box-shadow: 2px 0 12px rgba(58, 80, 68, 0.12);
+  z-index: 1001;
   overflow: hidden;
+  border-right: 1px solid #d1dbd3;
 }
 
 .logo-container {
   height: 64px;
   display: flex;
   align-items: center;
-  justify-content: center;
   padding: 0 16px;
-  border-bottom: 1px solid #1f1f1f;
+  background-color: #dce4de; /* 稍深一点的顶栏，增加稳重感 */
+  overflow: hidden;
+  gap: 12px;
+  border-bottom: 1px solid #c4cfc6;
 }
 
 .logo {
-  height: 32px;
-  margin-right: 12px;
+  height: 40px;
+  width: auto;
+  object-fit: contain;
 }
 
 .logo-mini {
   height: 32px;
+  width: auto;
+  margin: 0 auto;
 }
 
 .title {
-  color: #ffffff;
+  color: #3a5044;
   font-size: 18px;
-  font-weight: 600;
   margin: 0;
+  font-weight: 600;
+  white-space: nowrap;
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+  letter-spacing: 1px;
 }
 
 .merchant-menu {
-  border: none;
-  height: calc(100vh - 64px);
-  overflow-y: auto;
+  border-right: none;
+}
+
+/* 深度选择器修改 Element Plus 菜单样式 */
+:deep(.el-menu) {
+  border-right: none;
+}
+
+:deep(.el-menu-item),
+:deep(.el-sub-menu__title) {
+  height: 50px;
+  line-height: 50px;
+  margin: 4px 12px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+}
+
+/* 统一图标与文字的对齐 */
+:deep(.el-menu-item .el-icon),
+:deep(.el-sub-menu__title .el-icon) {
+  margin-right: 12px;
+  width: 20px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+:deep(.el-menu-item.is-active) {
+  background-color: #3a5044 !important; /* 选中项改为深色背景，形成鲜明对比 */
+  color: #ffffff !important;
+  font-weight: 600;
+  border-right: none;
+  box-shadow: 0 4px 12px rgba(58, 80, 68, 0.2);
+}
+
+:deep(.el-menu-item:hover),
+:deep(.el-sub-menu__title:hover) {
+  background-color: rgba(58, 80, 68, 0.08) !important;
+  color: #3a5044 !important;
+}
+
+:deep(.el-sub-menu.is-active .el-sub-menu__title) {
+  color: #3a5044 !important;
+  font-weight: 600;
 }
 
 .merchant-menu:not(.el-menu--collapse) {
@@ -313,17 +368,22 @@ watch(
 
 .merchant-main {
   flex: 1;
-  background-color: #f0f2f5;
+  background: linear-gradient(135deg, #f4f7f5 0%, #d1dbd3 100%) !important; /* 加深一点点终点色，让渐变更明显 */
+  display: flex;
+  flex-direction: column;
+  position: relative;
 }
 
 .merchant-header {
-  background-color: #ffffff;
-  border-bottom: 1px solid #e8e8e8;
+  background-color: rgba(255, 255, 255, 0.8); /* 半透明背景，透出下方渐变 */
+  backdrop-filter: blur(10px); /* 磨砂玻璃效果 */
+  border-bottom: 1px solid rgba(209, 219, 211, 0.5);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 24px;
-  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
+  box-shadow: 0 1px 4px rgba(58, 80, 68, 0.05);
+  z-index: 1000;
 }
 
 .header-left {
@@ -334,7 +394,13 @@ watch(
 .collapse-btn {
   margin-right: 16px;
   font-size: 18px;
-  color: #666;
+  color: #3a5044;
+  cursor: pointer;
+  transition: color 0.3s;
+}
+
+.collapse-btn:hover {
+  color: #5a7a68;
 }
 
 .breadcrumb {
@@ -344,50 +410,82 @@ watch(
 .header-right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 20px;
 }
 
 .header-btn {
-  font-size: 16px;
-  color: #666;
+  font-size: 18px;
+  color: #3a5044;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.header-btn:hover {
+  transform: scale(1.1);
 }
 
 .user-dropdown {
   cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background 0.3s;
+}
+
+.user-dropdown:hover {
+  background: #f0f4f1;
 }
 
 .user-info {
   display: flex;
   align-items: center;
-  gap: 8px;
-  color: #666;
+  gap: 10px;
+  color: #3a5044;
 }
 
 .username {
   font-size: 14px;
+  font-weight: 500;
 }
 
 .merchant-content {
   padding: 24px;
   overflow-y: auto;
+  flex: 1;
+  background-color: transparent !important; /* 强制透明，确保透出父级的渐变 */
+}
+
+/* 统一修改主区域内卡片的样式，使其适应渐变背景 */
+:deep(.el-card) {
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  background-color: rgba(255, 255, 255, 0.7) !important;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 12px rgba(58, 80, 68, 0.04) !important;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+:deep(.el-card:hover) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(58, 80, 68, 0.08) !important;
+  background-color: rgba(255, 255, 255, 0.9) !important;
 }
 
 /* 滚动条样式 */
 .merchant-menu::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
 }
 
 .merchant-menu::-webkit-scrollbar-track {
-  background: #001529;
-}
-
-.merchant-menu::-webkit-scrollbar-thumb {
-  background: #52c41a;
-  border-radius: 3px;
-}
+    background: #e8eee9;
+  }
+  
+  .merchant-menu::-webkit-scrollbar-thumb {
+    background: #c4cfc6;
+    border-radius: 2px;
+  }
 
 .merchant-content::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 .merchant-content::-webkit-scrollbar-track {
@@ -396,7 +494,7 @@ watch(
 
 .merchant-content::-webkit-scrollbar-thumb {
   background: #c1c1c1;
-  border-radius: 4px;
+  border-radius: 3px;
 }
 
 .merchant-content::-webkit-scrollbar-thumb:hover {

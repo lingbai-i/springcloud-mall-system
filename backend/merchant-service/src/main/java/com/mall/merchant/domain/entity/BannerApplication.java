@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
  * 轮播图申请实体类
  * 存储商家提交的轮播图投流申请信息
  * 
- * @author system
+ * @author lingbai
  * @version 1.0
  * @since 2025-12-28
  */

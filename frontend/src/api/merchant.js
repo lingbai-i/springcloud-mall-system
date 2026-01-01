@@ -1,7 +1,7 @@
 /**
  * 商家相关API
  * 
- * @author system
+ * @author lingbai
  * @since 2025-11-11
  */
 import request from '@/utils/request'

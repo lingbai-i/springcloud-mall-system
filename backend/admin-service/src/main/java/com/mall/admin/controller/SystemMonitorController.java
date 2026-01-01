@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * 系统监控控制器
  * 
- * @author system
+ * @author lingbai
  * @since 2025-01-09
  */
 @Slf4j

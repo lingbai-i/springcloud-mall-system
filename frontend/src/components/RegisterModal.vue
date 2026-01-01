@@ -19,7 +19,7 @@
     <template #header>
       <div class="modal-header">
         <div class="logo-section">
-          <h2>在线商城</h2>
+          <h2>百物语</h2>
           <span class="welcome-text">欢迎注册</span>
         </div>
         <el-button
@@ -396,12 +396,13 @@ watch(visible, (newVal) => {
 <style scoped>
 /* 弹窗样式 */
 .register-modal {
-  --el-dialog-border-radius: 8px;
+  --el-dialog-border-radius: 12px;
 }
 
 .register-modal :deep(.el-dialog) {
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
+  background: #f0f9f4; /* 适配主题的浅绿色背景 */
 }
 
 .register-modal :deep(.el-dialog__header) {
@@ -419,7 +420,7 @@ watch(visible, (newVal) => {
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px;
-  background: linear-gradient(135deg, #ff4142 0%, #ff6b6c 100%);
+  background: linear-gradient(135deg, #5d7e68 0%, #7da38a 100%);
   color: white;
 }
 
@@ -447,6 +448,7 @@ watch(visible, (newVal) => {
 /* 内容区域 */
 .register-content {
   padding: 24px;
+  background: #f0f9f4;
 }
 
 /* 表单样式 */
@@ -459,16 +461,27 @@ watch(visible, (newVal) => {
 }
 
 .register-form :deep(.el-input__wrapper) {
-  border-radius: 6px;
+  border-radius: 8px;
   box-shadow: 0 0 0 1px #dcdfe6 inset;
+  background-color: #fff;
 }
 
 .register-form :deep(.el-input__wrapper:hover) {
-  box-shadow: 0 0 0 1px #c0c4cc inset;
+  box-shadow: 0 0 0 1px #5d7e68 inset;
 }
 
 .register-form :deep(.el-input.is-focus .el-input__wrapper) {
-  box-shadow: 0 0 0 1px #ff4142 inset;
+  box-shadow: 0 0 0 1px #5d7e68 inset !important;
+}
+
+/* 复选框主题化 */
+.register-form :deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
+  background-color: #5d7e68;
+  border-color: #5d7e68;
+}
+
+.register-form :deep(.el-checkbox__input.is-checked + .el-checkbox__label) {
+  color: #5d7e68;
 }
 
 /* 短信验证码输入组 */
@@ -483,13 +496,13 @@ watch(visible, (newVal) => {
 
 .sms-btn {
   white-space: nowrap;
-  color: #ff4142;
+  color: #5d7e68;
   font-size: 14px;
   padding: 0 12px;
 }
 
 .sms-btn:hover:not(:disabled) {
-  color: #ff6b6c;
+  color: #4a6654;
 }
 
 .sms-btn:disabled {
@@ -503,12 +516,13 @@ watch(visible, (newVal) => {
 }
 
 .agreement-link {
-  color: #ff4142;
+  color: #5d7e68;
   text-decoration: none;
 }
 
 .agreement-link:hover {
-  color: #ff6b6c;
+  color: #4a6654;
+  text-decoration: underline;
 }
 
 /* 注册按钮 */
@@ -517,17 +531,19 @@ watch(visible, (newVal) => {
   height: 44px;
   font-size: 16px;
   font-weight: 500;
-  border-radius: 6px;
-  background: linear-gradient(135deg, #ff4142 0%, #ff6b6c 100%);
+  border-radius: 8px;
+  background: linear-gradient(135deg, #5d7e68 0%, #7da38a 100%) !important;
   border: none;
+  color: white !important;
 }
 
 .register-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #ff6b6c 0%, #ff4142 100%);
+  background: linear-gradient(135deg, #4a6654 0%, #5d7e68 100%) !important;
+  opacity: 0.9;
 }
 
 .register-btn:disabled {
-  background: #c0c4cc;
+  background: #c0c4cc !important;
   cursor: not-allowed;
 }
 
@@ -540,13 +556,13 @@ watch(visible, (newVal) => {
 }
 
 .login-link a {
-  color: #ff4142;
+  color: #5d7e68;
   text-decoration: none;
   margin-left: 4px;
 }
 
 .login-link a:hover {
-  color: #ff6b6c;
+  color: #4a6654;
 }
 
 /* 响应式设计 */

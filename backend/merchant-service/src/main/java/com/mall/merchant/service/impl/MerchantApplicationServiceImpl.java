@@ -20,6 +20,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
+import com.mall.merchant.util.MerchantApprovalSmsBuilder;
+
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -28,7 +30,7 @@ import java.util.Map;
 /**
  * 商家申请服务实现
  * 
- * @author system
+ * @author lingbai
  * @since 2025-11-12
  */
 @Slf4j
@@ -40,6 +42,11 @@ public class MerchantApplicationServiceImpl implements MerchantApplicationServic
   private final MerchantRepository merchantRepository;
   private final PasswordEncoder passwordEncoder;
   private final RestTemplate restTemplate;
+
+  /**
+   * 最大短信重试次数
+   */
+  private static final int MAX_SMS_RETRY_COUNT = 3;
 
   @Override
   @Transactional(rollbackFor = Exception.class)
@@ -265,37 +272,31 @@ public class MerchantApplicationServiceImpl implements MerchantApplicationServic
   /**
    * 发送审批短信通知
    * 使用异步线程发送，避免阻塞主业务流程
+   * 支持最多3次重试，重试间隔递增（1秒、2秒、4秒）
    */
   private void sendApprovalSms(MerchantApplication application, Boolean approved, String reason) {
     try {
       final Long applicationId = application.getId();
       final String phone = application.getContactPhone();
-      final String shopName = application.getShopName();
-      final String username = application.getUsername();
+
+      // 使用 MerchantApprovalSmsBuilder 构建短信内容
+      String message;
+      String purpose;
+      if (approved) {
+        message = MerchantApprovalSmsBuilder.buildApprovalMessage();
+        purpose = "MERCHANT_APPROVAL_PASS";
+        log.info("准备发送审批通过短信 - 申请ID: {}, 手机: {}, 内容: {}", applicationId, phone, message);
+      } else {
+        message = MerchantApprovalSmsBuilder.buildRejectionMessage(reason);
+        purpose = "MERCHANT_APPROVAL_REJECT";
+        log.info("准备发送审批拒绝短信 - 申请ID: {}, 手机: {}, 原因: {}, 内容: {}", 
+            applicationId, phone, reason, message);
+      }
 
       Map<String, Object> smsData = new HashMap<>();
       smsData.put("phoneNumber", phone);
-
-      if (approved) {
-        // 通过通知
-        String message = String.format(
-            "【在线商城】恭喜！您的商家入驻申请已审核通过！店铺名称：%s，登录账号：%s，请访问商家后台开启电商之旅！",
-            shopName, username);
-        smsData.put("purpose", "MERCHANT_APPROVAL_PASS");
-        smsData.put("message", message);
-
-        log.info("准备发送审批通过短信 - 申请ID: {}, 手机: {}, 店铺: {}", applicationId, phone, shopName);
-      } else {
-        // 拒绝通知
-        String message = String.format(
-            "【在线商城】很遗憾，您的商家入驻申请未通过审核。店铺名称：%s，拒绝原因：%s",
-            shopName, reason != null && !reason.isEmpty() ? reason : "未提供");
-        smsData.put("purpose", "MERCHANT_APPROVAL_REJECT");
-        smsData.put("message", message);
-
-        log.info("准备发送审批拒绝短信 - 申请ID: {}, 手机: {}, 店铺: {}, 原因: {}",
-            applicationId, phone, shopName, reason);
-      }
+      smsData.put("purpose", purpose);
+      smsData.put("message", message);
 
       // 异步发送短信（不阻塞主流程）
       // 使用独立线程避免事务边界问题
@@ -303,32 +304,10 @@ public class MerchantApplicationServiceImpl implements MerchantApplicationServic
         try {
           // 等待短暂时间，确保主事务已提交
           Thread.sleep(500);
-
-          String smsUrl = "http://sms-service/sms/send";
-          log.info("开始调用SMS服务 - URL: {}, 申请ID: {}, 手机: {}", smsUrl, applicationId, phone);
-
-          ResponseEntity<Map> response = restTemplate.postForEntity(smsUrl, smsData, Map.class);
-
-          if (response.getStatusCode().is2xxSuccessful()) {
-            log.info("审批短信发送成功 - 申请ID: {}, 手机: {}, 结果: {}, 响应: {}",
-                applicationId, phone, approved ? "通过" : "拒绝", response.getBody());
-
-            // 更新短信发送状态（使用新事务）
-            try {
-              MerchantApplication app = applicationRepository.findById(applicationId).orElse(null);
-              if (app != null) {
-                app.setSmsSent(true);
-                app.setSmsSentTime(LocalDateTime.now());
-                applicationRepository.save(app);
-                log.info("短信发送状态已更新 - 申请ID: {}", applicationId);
-              }
-            } catch (Exception e) {
-              log.error("更新短信发送状态失败 - 申请ID: {}", applicationId, e);
-            }
-          } else {
-            log.error("审批短信发送失败 - 申请ID: {}, 手机: {}, 状态码: {}, 响应体: {}",
-                applicationId, phone, response.getStatusCode(), response.getBody());
-          }
+          
+          // 带重试机制的短信发送
+          sendSmsWithRetry(applicationId, phone, smsData, approved);
+          
         } catch (InterruptedException ie) {
           Thread.currentThread().interrupt();
           log.error("发送审批短信线程被中断 - 申请ID: {}, 手机: {}", applicationId, phone);
@@ -340,6 +319,112 @@ public class MerchantApplicationServiceImpl implements MerchantApplicationServic
     } catch (Exception e) {
       log.error("准备发送审批短信失败 - 申请ID: {}", application.getId(), e);
       // 不抛出异常，避免影响审批流程
+    }
+  }
+
+  /**
+   * 带重试机制的短信发送
+   * 最多重试3次，重试间隔递增（1秒、2秒、4秒）
+   */
+  private void sendSmsWithRetry(Long applicationId, String phone, Map<String, Object> smsData, Boolean approved) {
+    String smsUrl = "http://sms-service/sms/send";
+    int retryCount = 0;
+    boolean success = false;
+    Exception lastException = null;
+
+    while (retryCount < MAX_SMS_RETRY_COUNT && !success) {
+      try {
+        // 更新重试次数
+        updateSmsRetryCount(applicationId, retryCount);
+        
+        log.info("开始调用SMS服务 - URL: {}, 申请ID: {}, 手机: {}, 重试次数: {}/{}", 
+            smsUrl, applicationId, phone, retryCount + 1, MAX_SMS_RETRY_COUNT);
+
+        ResponseEntity<Map> response = restTemplate.postForEntity(smsUrl, smsData, Map.class);
+
+        if (response.getStatusCode().is2xxSuccessful()) {
+          log.info("审批短信发送成功 - 申请ID: {}, 手机: {}, 结果: {}, 重试次数: {}, 响应: {}",
+              applicationId, phone, approved ? "通过" : "拒绝", retryCount + 1, response.getBody());
+          
+          // 更新短信发送状态
+          updateSmsSentStatus(applicationId, true);
+          success = true;
+        } else {
+          log.error("审批短信发送失败 - 申请ID: {}, 手机: {}, 状态码: {}, 重试次数: {}/{}, 响应体: {}",
+              applicationId, phone, response.getStatusCode(), retryCount + 1, MAX_SMS_RETRY_COUNT, response.getBody());
+          retryCount++;
+          
+          // 重试间隔递增：1秒、2秒、4秒
+          if (retryCount < MAX_SMS_RETRY_COUNT) {
+            long sleepTime = (long) Math.pow(2, retryCount - 1) * 1000;
+            log.info("等待 {}ms 后重试 - 申请ID: {}", sleepTime, applicationId);
+            Thread.sleep(sleepTime);
+          }
+        }
+      } catch (Exception e) {
+        lastException = e;
+        retryCount++;
+        log.error("审批短信发送异常 - 申请ID: {}, 手机: {}, 重试次数: {}/{}, 错误: {}",
+            applicationId, phone, retryCount, MAX_SMS_RETRY_COUNT, e.getMessage());
+        
+        // 重试间隔递增
+        if (retryCount < MAX_SMS_RETRY_COUNT) {
+          try {
+            long sleepTime = (long) Math.pow(2, retryCount - 1) * 1000;
+            log.info("等待 {}ms 后重试 - 申请ID: {}", sleepTime, applicationId);
+            Thread.sleep(sleepTime);
+          } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+            break;
+          }
+        }
+      }
+    }
+
+    // 所有重试都失败
+    if (!success) {
+      log.error("审批短信发送最终失败 - 申请ID: {}, 手机: {}, 已重试 {} 次", 
+          applicationId, phone, retryCount);
+      updateSmsSentStatus(applicationId, false);
+      if (lastException != null) {
+        log.error("最后一次异常详情 - 申请ID: {}", applicationId, lastException);
+      }
+    }
+  }
+
+  /**
+   * 更新短信重试次数
+   */
+  private void updateSmsRetryCount(Long applicationId, int retryCount) {
+    try {
+      MerchantApplication app = applicationRepository.findById(applicationId).orElse(null);
+      if (app != null) {
+        app.setSmsRetryCount(retryCount);
+        applicationRepository.save(app);
+        log.debug("短信重试次数已更新 - 申请ID: {}, 重试次数: {}", applicationId, retryCount);
+      }
+    } catch (Exception e) {
+      log.warn("更新短信重试次数失败 - 申请ID: {}, 错误: {}", applicationId, e.getMessage());
+    }
+  }
+
+  /**
+   * 更新短信发送状态
+   */
+  private void updateSmsSentStatus(Long applicationId, boolean success) {
+    try {
+      MerchantApplication app = applicationRepository.findById(applicationId).orElse(null);
+      if (app != null) {
+        app.setSmsSent(success);
+        if (success) {
+          app.setSmsSentTime(LocalDateTime.now());
+        }
+        applicationRepository.save(app);
+        log.info("短信发送状态已更新 - 申请ID: {}, 成功: {}, 时间: {}", 
+            applicationId, success, success ? app.getSmsSentTime() : "N/A");
+      }
+    } catch (Exception e) {
+      log.error("更新短信发送状态失败 - 申请ID: {}", applicationId, e);
     }
   }
 

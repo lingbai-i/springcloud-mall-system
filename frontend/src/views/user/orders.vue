@@ -224,7 +224,7 @@ const fetchOrders = async () => {
         items: (order.orderItems || []).map(item => ({
           id: item.id,
           name: item.productName,
-          image: item.productImage,
+          image: item.productImage ? item.productImage.split(',')[0] : '',
           specification: item.productSpec,
           price: item.productPrice,
           quantity: item.quantity

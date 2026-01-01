@@ -3,8 +3,8 @@ package com.mall.sms.service;
 /**
  * SMS服务接口
  *
- * @author SMS Service
- * @since 2024-01-01
+ * @author lingbai
+ * @since 2025-09-22
  */
 public interface SmsService {
 

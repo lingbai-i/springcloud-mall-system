@@ -16,7 +16,7 @@ import java.util.Map;
 /**
  * 商家审批控制器（管理员）
  * 
- * @author system
+ * @author lingbai
  * @since 2025-11-11
  */
 @Slf4j

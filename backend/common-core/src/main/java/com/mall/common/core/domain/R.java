@@ -1,5 +1,6 @@
 package com.mall.common.core.domain;
 
+import com.mall.common.core.utils.TimeUtils;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -31,14 +32,14 @@ public class R<T> implements Serializable {
     /** 返回数据 */
     private T data;
     
-    /** 时间戳 */
+    /** 服务器时间戳（北京时间 GMT+8） */
     private long timestamp;
     
     public R(int code, String message, T data) {
         this.code = code;
         this.message = message;
         this.data = data;
-        this.timestamp = System.currentTimeMillis();
+        this.timestamp = TimeUtils.currentTimeMillis();
     }
     
     /**

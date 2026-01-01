@@ -49,12 +49,18 @@ export default defineConfig({
       // 本地直连短信服务（当网关未运行时使用）
       // 说明：Axios baseURL 为 /api，验证码接口实际为 /api/sms/send，因此此处对 /api/sms 做更具体的代理并重写为 /sms
       '/api/sms': {
-        target: 'http://localhost:8083',
+        target: 'http://localhost:8089',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/sms/, '/sms')
       }
+    },
+    // 配置静态资源目录，使 /images 路径可以访问项目根目录的 images 文件夹
+    fs: {
+      allow: ['..']
     }
   },
+  // 配置公共基础路径
+  publicDir: 'public',
   // 解决dayjs插件问题
   define: {
     __VUE_PROD_DEVTOOLS__: false

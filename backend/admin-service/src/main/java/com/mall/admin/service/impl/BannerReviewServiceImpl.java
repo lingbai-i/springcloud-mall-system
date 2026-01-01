@@ -17,7 +17,7 @@ import java.util.Collections;
 /**
  * 轮播图审核服务实现类
  * 
- * @author system
+ * @author lingbai
  * @version 1.0
  * @since 2025-12-28
  */

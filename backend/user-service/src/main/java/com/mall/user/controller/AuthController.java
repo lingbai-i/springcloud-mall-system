@@ -18,7 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * 认证控制�?
+ * 认证控制
  * 
  * @author lingbai
  * @version 1.0

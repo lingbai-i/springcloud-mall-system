@@ -8,7 +8,7 @@ import jakarta.validation.constraints.Pattern;
 /**
  * 验证短信验证码请求DTO
  *
- * @author SMS Service
+ * @author lingbai
  * @since 2024-01-01
  */
 @Data

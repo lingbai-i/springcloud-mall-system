@@ -9,8 +9,8 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * SMS服务启动类
  *
- * @author SMS Service
- * @since 2024-01-01
+ * @author lingbai
+ * @since 2025-09-22
  */
 @SpringBootApplication
 @EnableDiscoveryClient

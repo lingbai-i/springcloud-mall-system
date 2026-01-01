@@ -9,7 +9,7 @@ import lombok.Data;
 /**
  * 商家入驻申请DTO
  * 
- * @author system
+ * @author lingbai
  * @since 2025-11-12
  */
 @Data

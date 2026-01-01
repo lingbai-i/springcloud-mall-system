@@ -14,7 +14,7 @@ import java.util.List;
  * 商家轮播图服务Feign客户端
  * 用于从merchant-service获取轮播图数据和记录统计
  * 
- * @author system
+ * @author lingbai
  * @version 1.0
  * @since 2025-12-28
  */

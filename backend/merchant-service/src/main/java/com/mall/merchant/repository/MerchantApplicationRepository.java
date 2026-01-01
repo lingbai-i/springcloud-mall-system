@@ -14,7 +14,7 @@ import java.util.Optional;
 /**
  * 商家申请Repository
  * 
- * @author system
+ * @author lingbai
  * @since 2025-11-12
  */
 @Repository

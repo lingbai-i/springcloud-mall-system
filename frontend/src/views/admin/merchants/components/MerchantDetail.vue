@@ -19,7 +19,10 @@
         <div class="basic-info">
           <div class="merchant-profile">
             <div class="avatar-section">
-              <img :src="merchant.avatar" :alt="merchant.shopName" class="merchant-avatar" />
+              <img v-if="merchant.avatar || merchant.shopLogo" :src="merchant.avatar || merchant.shopLogo" :alt="merchant.shopName" class="merchant-avatar" />
+              <div v-else class="merchant-avatar default-avatar">
+                <el-icon :size="40"><Shop /></el-icon>
+              </div>
               <div class="rating-section">
                 <el-rate
                   v-model="merchant.rating"
@@ -38,34 +41,34 @@
               </div>
               <div class="info-row">
                 <span class="label">联系人：</span>
-                <span class="value">{{ merchant.contactPerson }}</span>
+                <span class="value">{{ merchant.contactName || merchant.contactPerson || '暂未填写' }}</span>
               </div>
               <div class="info-row">
                 <span class="label">手机号：</span>
-                <span class="value">{{ merchant.phone }}</span>
+                <span class="value">{{ merchant.contactPhone || merchant.phone || '暂未填写' }}</span>
               </div>
               <div class="info-row">
                 <span class="label">邮箱：</span>
-                <span class="value">{{ merchant.email }}</span>
+                <span class="value">{{ merchant.contactEmail || merchant.email || '暂未填写' }}</span>
               </div>
               <div class="info-row">
                 <span class="label">经营类目：</span>
-                <el-tag size="small">{{ getCategoryName(merchant.category) }}</el-tag>
+                <el-tag size="small">{{ getCategoryName(merchant.businessCategory || merchant.category) }}</el-tag>
               </div>
             </div>
           </div>
           
           <div class="stats-grid">
             <div class="stat-item">
-              <div class="stat-number">{{ merchant.productCount }}</div>
+              <div class="stat-number">{{ merchant.productCount || 0 }}</div>
               <div class="stat-label">商品数量</div>
             </div>
             <div class="stat-item">
-              <div class="stat-number">{{ merchant.orderCount }}</div>
+              <div class="stat-number">{{ merchant.orderCount || 0 }}</div>
               <div class="stat-label">订单数量</div>
             </div>
             <div class="stat-item">
-              <div class="stat-number">{{ formatDate(merchant.registerTime) }}</div>
+              <div class="stat-number">{{ formatDate(merchant.createTime || merchant.registerTime) }}</div>
               <div class="stat-label">注册时间</div>
             </div>
             <div class="stat-item">
@@ -84,11 +87,11 @@
             <div class="tab-content">
               <el-descriptions :column="2" border>
                 <el-descriptions-item label="店铺名称">{{ merchant.shopName }}</el-descriptions-item>
-                <el-descriptions-item label="店铺类型">{{ getShopType(merchant.shopType) }}</el-descriptions-item>
-                <el-descriptions-item label="经营类目">{{ getCategoryName(merchant.category) }}</el-descriptions-item>
+                <el-descriptions-item label="店铺类型">{{ getShopType(merchant.merchantType || merchant.shopType) }}</el-descriptions-item>
+                <el-descriptions-item label="经营类目">{{ getCategoryName(merchant.businessCategory || merchant.category) }}</el-descriptions-item>
                 <el-descriptions-item label="店铺等级">{{ getShopLevel(merchant.shopLevel) }}</el-descriptions-item>
                 <el-descriptions-item label="店铺地址" :span="2">
-                  {{ merchant.shopAddress || '暂未设置' }}
+                  {{ merchant.address || merchant.shopAddress || '暂未设置' }}
                 </el-descriptions-item>
                 <el-descriptions-item label="店铺简介" :span="2">
                   {{ merchant.shopDescription || '暂未设置' }}
@@ -101,23 +104,41 @@
           <el-tab-pane label="资质信息" name="qualification">
             <div class="tab-content">
               <el-descriptions :column="2" border>
-                <el-descriptions-item label="营业执照号">{{ merchant.businessLicense || '暂未上传' }}</el-descriptions-item>
-                <el-descriptions-item label="法人姓名">{{ merchant.legalPerson || '暂未填写' }}</el-descriptions-item>
-                <el-descriptions-item label="法人身份证">{{ merchant.legalIdCard || '暂未填写' }}</el-descriptions-item>
+                <el-descriptions-item label="营业执照号">{{ merchant.businessLicense || merchant.businessLicenseImage || '暂未上传' }}</el-descriptions-item>
+                <el-descriptions-item label="法人姓名">{{ merchant.realName || merchant.legalPerson || '暂未填写' }}</el-descriptions-item>
+                <el-descriptions-item label="法人身份证">{{ merchant.idNumber || merchant.idCard || merchant.legalIdCard || '暂未填写' }}</el-descriptions-item>
                 <el-descriptions-item label="注册资本">{{ merchant.registeredCapital || '暂未填写' }}</el-descriptions-item>
                 <el-descriptions-item label="经营范围" :span="2">
                   {{ merchant.businessScope || '暂未填写' }}
                 </el-descriptions-item>
               </el-descriptions>
               
-              <div class="qualification-images" v-if="merchant.qualificationImages">
+              <div class="qualification-images" v-if="hasQualificationImages">
                 <h4>资质证件</h4>
                 <div class="image-grid">
-                  <div
-                    v-for="(image, index) in merchant.qualificationImages"
-                    :key="index"
-                    class="image-item">
-                    <img :src="image" :alt="`资质证件${index + 1}`" @click="previewImage(image)" />
+                  <div v-if="merchant.idFrontImage || merchant.idCardFront" class="image-item">
+                    <img 
+                      :src="merchant.idFrontImage || merchant.idCardFront" 
+                      alt="身份证正面" 
+                      @click="previewImage(merchant.idFrontImage || merchant.idCardFront)"
+                      @error="handleImageError" />
+                    <div class="image-label">身份证正面</div>
+                  </div>
+                  <div v-if="merchant.idBackImage || merchant.idCardBack" class="image-item">
+                    <img 
+                      :src="merchant.idBackImage || merchant.idCardBack" 
+                      alt="身份证背面" 
+                      @click="previewImage(merchant.idBackImage || merchant.idCardBack)"
+                      @error="handleImageError" />
+                    <div class="image-label">身份证背面</div>
+                  </div>
+                  <div v-if="merchant.businessLicenseImage" class="image-item">
+                    <img 
+                      :src="merchant.businessLicenseImage" 
+                      alt="营业执照" 
+                      @click="previewImage(merchant.businessLicenseImage)"
+                      @error="handleImageError" />
+                    <div class="image-label">营业执照</div>
                   </div>
                 </div>
               </div>
@@ -210,25 +231,25 @@
       <div class="dialog-footer">
         <el-button @click="handleClose">关闭</el-button>
         <el-button
-          v-if="merchant && merchant.status === 'pending'"
+          v-if="merchant && isPendingStatus(merchant)"
           type="success"
           @click="approveMerchant">
           审核通过
         </el-button>
         <el-button
-          v-if="merchant && merchant.status === 'pending'"
+          v-if="merchant && isPendingStatus(merchant)"
           type="danger"
           @click="rejectMerchant">
           审核拒绝
         </el-button>
         <el-button
-          v-if="merchant && merchant.status === 'approved'"
+          v-if="merchant && isApprovedStatus(merchant)"
           type="warning"
           @click="disableMerchant">
           禁用商家
         </el-button>
         <el-button
-          v-if="merchant && merchant.status === 'disabled'"
+          v-if="merchant && isDisabledStatus(merchant)"
           type="success"
           @click="enableMerchant">
           启用商家
@@ -241,6 +262,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Shop } from '@element-plus/icons-vue'
 
 const props = defineProps({
   modelValue: {
@@ -261,6 +283,14 @@ const visible = computed({
 })
 
 const activeTab = ref('shop')
+
+// 计算属性：是否有资质图片
+const hasQualificationImages = computed(() => {
+  if (!props.merchant) return false
+  return props.merchant.idFrontImage || props.merchant.idCardFront || 
+         props.merchant.idBackImage || props.merchant.idCardBack ||
+         props.merchant.businessLicenseImage
+})
 
 // 模拟操作记录数据
 const operationLogs = ref([
@@ -296,31 +326,33 @@ const handleClose = () => {
 }
 
 const getCategoryName = (category) => {
-  return categoryMap[category] || category
+  return categoryMap[category] || category || '未设置'
 }
 
 const getStatusType = (status) => {
-  const typeMap = {
-    pending: 'warning',
-    approved: 'success',
-    rejected: 'danger',
-    disabled: 'info'
-  }
-  return typeMap[status] || 'info'
+  // 支持数字状态：0=禁用, 1=正常
+  // 支持字符串状态：pending, approved, rejected, disabled
+  if (status === 1 || status === 'approved') return 'success'
+  if (status === 0 || status === 'disabled') return 'info'
+  if (status === 'pending') return 'warning'
+  if (status === 'rejected') return 'danger'
+  return 'info'
 }
 
 const getStatusText = (status) => {
-  const textMap = {
-    pending: '待审核',
-    approved: '已通过',
-    rejected: '已拒绝',
-    disabled: '已禁用'
-  }
-  return textMap[status] || status
+  // 支持数字状态：0=禁用, 1=正常
+  // 支持字符串状态：pending, approved, rejected, disabled
+  if (status === 1 || status === 'approved') return '已通过'
+  if (status === 0 || status === 'disabled') return '已禁用'
+  if (status === 'pending') return '待审核'
+  if (status === 'rejected') return '已拒绝'
+  return String(status)
 }
 
 const getShopType = (type) => {
   const typeMap = {
+    1: '个人商家',
+    2: '企业商家',
     personal: '个人店铺',
     enterprise: '企业店铺',
     flagship: '旗舰店'
@@ -337,6 +369,19 @@ const getShopLevel = (level) => {
     5: '五星店铺'
   }
   return levelMap[level] || '普通店铺'
+}
+
+// 状态判断辅助函数
+const isPendingStatus = (merchant) => {
+  return merchant.approvalStatus === 0 || merchant.status === 'pending'
+}
+
+const isApprovedStatus = (merchant) => {
+  return merchant.status === 1 || merchant.status === 'approved'
+}
+
+const isDisabledStatus = (merchant) => {
+  return merchant.status === 0 || merchant.status === 'disabled'
 }
 
 const getActionType = (action) => {
@@ -365,6 +410,12 @@ const formatMoney = (amount) => {
 const previewImage = (imageUrl) => {
   // 这里可以实现图片预览功能
   window.open(imageUrl, '_blank')
+}
+
+// 图片加载失败时显示占位图
+const handleImageError = (event) => {
+  event.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgZmlsbD0iI2Y1ZjVmNSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTk5IiBmb250LXNpemU9IjE0Ij7lm77niYfml6Dms5XliqDovb08L3RleHQ+PC9zdmc+'
+  event.target.style.objectFit = 'contain'
 }
 
 const approveMerchant = async () => {
@@ -511,6 +562,14 @@ watch(() => props.merchant, (newMerchant) => {
   margin-bottom: 10px;
 }
 
+.default-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
 .rating-section {
   margin-top: 10px;
 }
@@ -641,6 +700,14 @@ watch(() => props.merchant, (newMerchant) => {
 
 .image-item img:hover {
   transform: scale(1.05);
+}
+
+.image-label {
+  text-align: center;
+  padding: 8px;
+  font-size: 12px;
+  color: #6b7280;
+  background: #f9fafb;
 }
 
 .dialog-footer {

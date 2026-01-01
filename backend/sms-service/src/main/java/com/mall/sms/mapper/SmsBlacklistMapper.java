@@ -7,7 +7,7 @@ import org.apache.ibatis.annotations.Mapper;
 /**
  * 短信黑名单Mapper
  *
- * @author SMS Service
+ * @author lingbai
  * @since 2024-01-01
  */
 @Mapper

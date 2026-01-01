@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
  * 轮播图统计实体类
  * 存储轮播图的曝光和点击统计数据（按日汇总）
  * 
- * @author system
+ * @author lingbai
  * @version 1.0
  * @since 2025-12-28
  */

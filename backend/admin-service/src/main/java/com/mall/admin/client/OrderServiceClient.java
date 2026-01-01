@@ -10,7 +10,7 @@ import java.util.Map;
 /**
  * 订单服务Feign Client
  * 
- * @author system
+ * @author lingbai
  * @since 2025-12-25
  */
 @FeignClient(name = "order-service", path = "/orders")
@@ -57,4 +57,12 @@ public interface OrderServiceClient {
      */
     @GetMapping("/admin/recent")
     R<List<Map<String, Object>>> getRecentOrders(@RequestParam(value = "limit", defaultValue = "10") int limit);
+
+    /**
+     * 获取消费能力分布
+     * 
+     * @return 消费能力分布数据
+     */
+    @GetMapping("/admin/consume-distribution")
+    R<List<Map<String, Object>>> getConsumeDistribution();
 }

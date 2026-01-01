@@ -6,7 +6,7 @@ import com.mall.admin.domain.vo.LoginResponse;
 /**
  * 管理员认证服务接口
  * 
- * @author system
+ * @author lingbai
  * @since 2025-01-09
  */
 public interface AuthService {

@@ -150,6 +150,15 @@ const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 
+// 获取第一张图片URL（处理逗号分隔的多图片URL）
+const getFirstImage = (imageUrl) => {
+  if (!imageUrl) return ''
+  if (imageUrl.includes(',')) {
+    return imageUrl.split(',')[0].trim()
+  }
+  return imageUrl
+}
+
 // 状态
 const loading = ref(false)
 const submitting = ref(false)
@@ -223,7 +232,7 @@ const fetchOrderItems = async () => {
         id: item.id,
         productId: item.productId,
         name: item.productName,
-        image: item.productImage,
+        image: getFirstImage(item.productImage),
         specification: item.productSpec,
         reviewed: false
       }))

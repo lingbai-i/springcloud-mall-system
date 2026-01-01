@@ -13,8 +13,7 @@ import { useUserStore } from '@/stores/user'
 import '@/styles/index.scss'
 
 /**
- * Vue3应用程序入口文件
- * 配置全局插件、组件库和状态管理
+ * @Description: 项目入口文件 - 百物语微服务商城前端
  * 
  * @author lingbai
  * @version 1.0
@@ -48,9 +47,13 @@ app.mount('#app')
 const userStore = useUserStore()
 userStore.initUserState()
 
+// 启动跨标签页状态同步（退出登录时同步所有标签页）
+userStore.startStorageSync()
+
 // 开发环境下的调试信息
 if (import.meta.env.DEV) {
   console.log('🚀 在线商城前端应用启动成功')
   console.log('📦 Vue版本:', app.version)
   console.log('🛠️ 开发模式已启用')
+  console.log('🔄 跨标签页状态同步已启用')
 }

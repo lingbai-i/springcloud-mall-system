@@ -104,26 +104,56 @@ const formatCountdown = computed(() => {
 
 /**
  * 启动倒计时
- * @param {string} createTime - 订单创建时间
+ * 基于订单创建时间计算剩余支付时间
+ * @param {string} createTime - 订单创建时间 (格式: yyyy-MM-dd HH:mm:ss 或 ISO 8601)
  */
 const startCountdown = (createTime) => {
-  if (!createTime) return
+  // 支付超时时间（10分钟，与后端配置一致）
+  const TIMEOUT_MINUTES = 10
   
-  // 计算剩余时间
-  const orderTime = new Date(createTime).getTime()
-  const expireTime = orderTime + PAYMENT_TIMEOUT_MS
-  const now = Date.now()
-  const remainingMs = expireTime - now
+  let remainingSeconds = TIMEOUT_MINUTES * 60 // 默认给满时间
   
-  if (remainingMs <= 0) {
-    // 订单已超时
+  if (createTime) {
+    try {
+      // 后端配置了 GMT+8 时区，返回的时间字符串格式为 "yyyy-MM-dd HH:mm:ss" 或 ISO 8601 格式
+      // 统一转换为时间戳进行计算
+      let orderCreateTime
+      
+      if (createTime.includes('T')) {
+        // ISO 8601 格式 (如 2025-01-01T10:30:00)
+        // 将其视为本地时间（东8区），因为后端配置了 GMT+8
+        orderCreateTime = new Date(createTime.replace('T', ' ').replace(/\.\d+/, '')).getTime()
+      } else {
+        // "yyyy-MM-dd HH:mm:ss" 格式
+        orderCreateTime = new Date(createTime).getTime()
+      }
+      
+      const now = Date.now()
+      const elapsed = now - orderCreateTime
+      const timeoutMs = TIMEOUT_MINUTES * 60 * 1000
+      
+      remainingSeconds = Math.floor((timeoutMs - elapsed) / 1000)
+      
+      console.log('订单创建时间:', createTime)
+      console.log('解析后时间戳:', orderCreateTime)
+      console.log('当前时间:', new Date().toLocaleString())
+      console.log('已过时间(秒):', Math.floor(elapsed / 1000))
+      console.log('剩余时间(秒):', remainingSeconds)
+    } catch (e) {
+      console.error('解析订单时间失败:', e)
+      remainingSeconds = TIMEOUT_MINUTES * 60 // 解析失败给满时间
+    }
+  }
+  
+  // 如果剩余时间已经小于等于0，标记为超时
+  if (remainingSeconds <= 0) {
     orderExpired.value = true
     countdown.value = 0
     return
   }
   
-  // 设置初始倒计时（秒）
-  countdown.value = Math.floor(remainingMs / 1000)
+  // 设置初始倒计时
+  countdown.value = remainingSeconds
   
   // 启动定时器
   countdownTimer = setInterval(() => {
@@ -195,11 +225,13 @@ const handlePay = async () => {
     
     // 检查支付是否成功（后端返回的data中包含success字段）
     if (result.success || (result.data && result.data.success)) {
+      // 停止倒计时
+      stopCountdown()
       ElMessage.success('支付成功！')
-      // 延迟跳转，让用户看到成功提示
+      // 延迟跳转到订单详情页，让用户看到成功提示
       setTimeout(() => {
-        router.push('/user/orders')
-      }, 1000)
+        router.push(`/order/${orderId.value}`)
+      }, 1500)
     } else {
       ElMessage.error(result.message || '支付失败')
     }

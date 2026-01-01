@@ -29,14 +29,6 @@
               <el-avatar :size="60" :src="userInfo.avatar" class="user-avatar">
                 {{ userInfo.nickname?.charAt(0) || 'U' }}
               </el-avatar>
-              <el-button 
-                type="text" 
-                size="small"
-                class="change-avatar-btn"
-                @click="showAvatarUpload = true"
-              >
-                更换头像
-              </el-button>
             </div>
             <div class="user-details">
               <h3 class="username">{{ userInfo.nickname || userInfo.username }}</h3>
@@ -58,6 +50,7 @@
           >
             <LocalIcon :name="menu.icon" :size="20" :color="activeMenu === menu.key ? menu.color : '#606266'" />
             <span>{{ menu.title }}</span>
+            <el-badge v-if="menu.badge && cartCount > 0" :value="cartCount" :max="99" class="menu-badge" />
           </el-menu-item>
         </el-menu>
       </div>
@@ -65,68 +58,42 @@
       <!-- 右侧内容区域 -->
       <div class="content-area">
         <!-- 个人资料 -->
-        <div v-show="activeMenu === 'profile'" class="content-panel">
+        <div v-if="activeMenu === 'profile'" class="content-panel">
           <ProfileView />
         </div>
 
         <!-- 账户安全 -->
-        <div v-show="activeMenu === 'security'" class="content-panel">
+        <div v-if="activeMenu === 'security'" class="content-panel">
           <SecurityView />
         </div>
 
         <!-- 我的订单 -->
-        <div v-show="activeMenu === 'orders'" class="content-panel">
+        <div v-if="activeMenu === 'orders'" class="content-panel">
           <OrdersView />
         </div>
 
         <!-- 收货地址 -->
-        <div v-show="activeMenu === 'addresses'" class="content-panel">
+        <div v-if="activeMenu === 'addresses'" class="content-panel">
           <AddressesView />
         </div>
 
         <!-- 我的收藏 -->
-        <div v-show="activeMenu === 'favorites'" class="content-panel">
+        <div v-if="activeMenu === 'favorites'" class="content-panel">
           <FavoritesView />
         </div>
 
+        <!-- 购物车 -->
+        <div v-if="activeMenu === 'cart'" class="content-panel">
+          <CartView />
+        </div>
+
         <!-- 系统设置 -->
-        <div v-show="activeMenu === 'settings'" class="content-panel">
+        <div v-if="activeMenu === 'settings'" class="content-panel">
           <SettingsView />
         </div>
       </div>
     </div>
 
-    <!-- 头像上传对话框 -->
-    <el-dialog
-      v-model="showAvatarUpload"
-      title="更换头像"
-      width="400px"
-      :before-close="handleAvatarDialogClose"
-    >
-      <el-upload
-        class="avatar-uploader"
-        action="#"
-        :show-file-list="false"
-        :before-upload="beforeAvatarUpload"
-        :http-request="handleAvatarUpload"
-        accept="image/*"
-      >
-        <img v-if="previewAvatar" :src="previewAvatar" class="avatar-preview" />
-        <LocalIcon v-else name="tianjia" :size="32" class="avatar-uploader-icon" />
-        <div class="upload-tip">
-          <p>点击上传头像</p>
-          <p class="tip-text">支持 JPG、PNG 格式，文件大小不超过 2MB</p>
-        </div>
-      </el-upload>
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="showAvatarUpload = false">取消</el-button>
-          <el-button type="primary" @click="confirmAvatarUpload" :loading="uploading">
-            确定
-          </el-button>
-        </span>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
@@ -134,6 +101,7 @@
 import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { useCartStore } from '@/stores/cart'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { HomeFilled } from '@element-plus/icons-vue'
 import LocalIcon from '@/components/LocalIcon.vue'
@@ -143,7 +111,7 @@ import OrdersView from './orders.vue'
 import AddressesView from './addresses.vue'
 import FavoritesView from './favorites.vue'
 import SettingsView from './Settings.vue'
-import { updateUserProfile } from '@/api/user'
+import CartView from './cart.vue'
 import * as logger from '@/utils/logger'
 
 /**
@@ -164,12 +132,12 @@ import * as logger from '@/utils/logger'
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
+const cartStore = useCartStore()
 
 // 响应式数据
 const userInfo = computed(() => userStore.userInfo || {})
-const showAvatarUpload = ref(false)
-const previewAvatar = ref('')
-const uploading = ref(false)
+const cartCount = computed(() => cartStore.totalCount || 0)
+
 
 // 路由路径到菜单key的映射
 const routeToMenuMap = {
@@ -178,6 +146,7 @@ const routeToMenuMap = {
   '/user/orders': 'orders',
   '/user/addresses': 'addresses',
   '/user/favorites': 'favorites',
+  '/user/cart': 'cart',
   '/user/settings': 'settings',
   '/user/password': 'security'
 }
@@ -189,6 +158,7 @@ const menuToRouteMap = {
   'orders': '/user/orders',
   'addresses': '/user/addresses',
   'favorites': '/user/favorites',
+  'cart': '/user/cart',
   'settings': '/user/settings'
 }
 
@@ -244,6 +214,13 @@ const menuList = reactive([
     description: '收藏的商品',
     icon: 'shoucang',
     color: '#FF6B6B'
+  },
+  {
+    key: 'cart',
+    title: '购物车',
+    description: '购物车商品',
+    icon: 'gouwuche',
+    color: '#409EFF'
   },
   {
     key: 'settings',
@@ -327,99 +304,6 @@ const formatDate = (dateStr) => {
     day: '2-digit'
   })
 }
-
-/**
- * 头像上传前验证
- */
-const beforeAvatarUpload = (file) => {
-  const isImage = file.type.startsWith('image/')
-  const isLt2M = file.size / 1024 / 1024 < 2
-
-  if (!isImage) {
-    ElMessage.error('只能上传图片文件!')
-    return false
-  }
-  if (!isLt2M) {
-    ElMessage.error('图片大小不能超过 2MB!')
-    return false
-  }
-
-  // 预览图片
-  const reader = new FileReader()
-  reader.onload = (e) => {
-    previewAvatar.value = e.target.result
-  }
-  reader.readAsDataURL(file)
-
-  return false // 阻止自动上传
-}
-
-/**
- * 处理头像上传
- *
- * 修改日志：
- * V1.1 2025-11-09T20:51:23+08:00：保留占位实现，但实际上传在 confirmAvatarUpload 中走后端更新资料接口，保证与 /users/profile 一致。
- */
-const handleAvatarUpload = async (options) => {
-  // 这里暂时不实际上传，只是模拟
-  console.log('上传文件:', options.file)
-}
-
-/**
- * 确认头像上传
- *
- * 修改日志：
- * V1.1 2025-11-09T20:51:23+08:00：接入后端 /users/profile 接口，提交 base64 头像数据至 avatar 字段；成功后刷新本地 store。
- * V1.2 2025-11-11：添加后端数据同步，确保头像更新后立即刷新用户信息。
- * @author lingbai
- * @returns {Promise<void>} 无返回值
- */
-const confirmAvatarUpload = async () => {
-  if (!previewAvatar.value) {
-    ElMessage.warning('请先选择头像')
-    return
-  }
-
-  try {
-    uploading.value = true
-    // 调用后端用户资料更新接口，仅更新 avatar 字段（后端会基于 token 识别用户）
-    logger.info('开始调用后端更新头像接口 /users/profile')
-    const resp = await updateUserProfile({ avatar: previewAvatar.value })
-    if (resp && (resp.success === true || resp.code === 200)) {
-      // 后端不返回最新用户对象，这里直接用本地预览值更新 store，保持 UI 同步
-      await userStore.updateUserInfo({ avatar: previewAvatar.value })
-      
-      // 刷新用户信息以确保后端数据同步
-      try {
-        await userStore.fetchUserInfo()
-        logger.info('头像更新成功，已同步到本地 store 并刷新后端数据')
-      } catch (err) {
-        logger.warn('刷新用户信息失败，但头像已更新', err)
-      }
-      
-      ElMessage.success('头像更新成功')
-      showAvatarUpload.value = false
-      previewAvatar.value = ''
-    } else {
-      const message = (resp && resp.message) || '头像更新失败'
-      logger.warn('后端返回失败，头像未更新', { message })
-      ElMessage.error(message)
-    }
-  } catch (error) {
-    console.error('头像上传失败:', error)
-    ElMessage.error('头像上传失败')
-  } finally {
-    uploading.value = false
-  }
-}
-
-/**
- * 头像对话框关闭处理
- */
-const handleAvatarDialogClose = () => {
-  previewAvatar.value = ''
-  showAvatarUpload.value = false
-}
 </script>
 
 <style scoped>
@@ -474,10 +358,7 @@ const handleAvatarDialogClose = () => {
   border: 2px solid #f0f0f0;
 }
 
-.change-avatar-btn {
-  font-size: 12px;
-  color: #409EFF;
-}
+
 
 .user-details {
   width: 100%;
@@ -527,6 +408,14 @@ const handleAvatarDialogClose = () => {
   color: #409EFF;
 }
 
+.menu-badge {
+  margin-left: auto;
+}
+
+.menu-badge :deep(.el-badge__content) {
+  transform: scale(0.8);
+}
+
 /* 内容区域样式 */
 .content-area {
   flex: 1;
@@ -540,55 +429,7 @@ const handleAvatarDialogClose = () => {
   height: 100%;
 }
 
-.avatar-uploader {
-  display: flex;
-  justify-content: center;
-}
 
-.avatar-uploader :deep(.el-upload) {
-  border: 1px dashed #d9d9d9;
-  border-radius: 6px;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  transition: 0.2s;
-  width: 200px;
-  height: 200px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.avatar-uploader :deep(.el-upload:hover) {
-  border-color: #409EFF;
-}
-
-.avatar-uploader-icon {
-  font-size: 28px;
-  color: #8c939d;
-  margin-bottom: 10px;
-}
-
-.avatar-preview {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.upload-tip {
-  text-align: center;
-}
-
-.upload-tip p {
-  margin: 5px 0;
-  color: #606266;
-}
-
-.tip-text {
-  font-size: 12px;
-  color: #909399;
-}
 
 /* 响应式设计 */
 @media (max-width: 768px) {

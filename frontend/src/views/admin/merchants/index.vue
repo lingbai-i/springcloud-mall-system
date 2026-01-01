@@ -167,20 +167,27 @@
           <el-table-column label="商家信息" min-width="200">
             <template #default="{ row }">
               <div class="merchant-info">
-                <div class="merchant-avatar">
-                  <img :src="row.avatar" :alt="row.shopName" />
+                <div class="merchant-avatar" v-if="row.avatar || row.shopLogo">
+                  <img :src="row.avatar || row.shopLogo" :alt="row.shopName" />
+                </div>
+                <div class="merchant-avatar default-avatar" v-else>
+                  <el-icon :size="24"><Shop /></el-icon>
                 </div>
                 <div class="merchant-details">
                   <div class="shop-name">{{ row.shopName }}</div>
-                  <div class="contact-info">{{ row.contactPerson }} | {{ row.phone }}</div>
+                  <div class="contact-info">{{ row.contactName || row.contactPerson || '未设置' }} | {{ row.contactPhone || row.phone || '未设置' }}</div>
                 </div>
               </div>
             </template>
           </el-table-column>
-          <el-table-column prop="email" label="邮箱" width="180"></el-table-column>
+          <el-table-column label="邮箱" width="180">
+            <template #default="{ row }">
+              {{ row.contactEmail || row.email }}
+            </template>
+          </el-table-column>
           <el-table-column label="经营类目" width="120">
             <template #default="{ row }">
-              <el-tag size="small">{{ getCategoryName(row.category) }}</el-tag>
+              <el-tag size="small">{{ getCategoryName(row.businessCategory || row.category) }}</el-tag>
             </template>
           </el-table-column>
           <el-table-column label="状态" width="100">
@@ -204,9 +211,9 @@
               </el-rate>
             </template>
           </el-table-column>
-          <el-table-column prop="registerTime" label="注册时间" width="120">
+          <el-table-column label="注册时间" width="120">
             <template #default="{ row }">
-              {{ formatDate(row.registerTime) }}
+              {{ formatDate(row.createTime || row.registerTime) }}
             </template>
           </el-table-column>
           <el-table-column label="操作" width="200" fixed="right">
@@ -218,7 +225,7 @@
                 查看详情
               </el-button>
               <el-button
-                v-if="row.status === 'pending'"
+                v-if="isPendingStatus(row)"
                 type="success"
                 size="small"
                 @click="approveMerchant(row)">
@@ -232,12 +239,12 @@
                   <el-dropdown-menu>
                     <el-dropdown-item :command="`edit-${row.id}`">编辑信息</el-dropdown-item>
                     <el-dropdown-item
-                      v-if="row.status === 'approved'"
+                      v-if="isApprovedStatus(row)"
                       :command="`disable-${row.id}`">
                       禁用商家
                     </el-dropdown-item>
                     <el-dropdown-item
-                      v-if="row.status === 'disabled'"
+                      v-if="isDisabledStatus(row)"
                       :command="`enable-${row.id}`">
                       启用商家
                     </el-dropdown-item>
@@ -370,11 +377,12 @@ const loadMerchants = async () => {
     
     // 调用真实的API
     const response = await getMerchantList(queryParams)
-    merchants.value = response.data.list || []
+    // 适配后端返回格式：PageResult 使用 records 字段，merchant-service 直接返回使用 list 字段
+    merchants.value = response.data.records || response.data.list || []
     pagination.total = response.data.total || 0
     
     // 更新统计数据
-    stats.total = response.data.stats?.total || 0
+    stats.total = response.data.stats?.total || pagination.total || 0
     stats.pending = response.data.stats?.pending || 0
     stats.approved = response.data.stats?.approved || 0
     stats.active = response.data.stats?.active || 0
@@ -613,27 +621,40 @@ const exportMerchants = async () => {
 
 // 工具方法
 const getCategoryName = (category) => {
-  return categoryMap[category] || category
+  return categoryMap[category] || category || '未设置'
+}
+
+// 状态判断辅助函数（支持数字和字符串状态）
+const isPendingStatus = (row) => {
+  return row.approvalStatus === 0 || row.status === 'pending'
+}
+
+const isApprovedStatus = (row) => {
+  return row.status === 1 || row.status === 'approved'
+}
+
+const isDisabledStatus = (row) => {
+  return row.status === 0 || row.status === 'disabled'
 }
 
 const getStatusType = (status) => {
-  const typeMap = {
-    pending: 'warning',
-    approved: 'success',
-    rejected: 'danger',
-    disabled: 'info'
-  }
-  return typeMap[status] || 'info'
+  // 支持数字状态：0=禁用, 1=正常
+  // 支持字符串状态：pending, approved, rejected, disabled
+  if (status === 1 || status === 'approved') return 'success'
+  if (status === 0 || status === 'disabled') return 'info'
+  if (status === 'pending') return 'warning'
+  if (status === 'rejected') return 'danger'
+  return 'info'
 }
 
 const getStatusText = (status) => {
-  const textMap = {
-    pending: '待审核',
-    approved: '已通过',
-    rejected: '已拒绝',
-    disabled: '已禁用'
-  }
-  return textMap[status] || status
+  // 支持数字状态：0=禁用, 1=正常
+  // 支持字符串状态：pending, approved, rejected, disabled
+  if (status === 1 || status === 'approved') return '已通过'
+  if (status === 0 || status === 'disabled') return '已禁用'
+  if (status === 'pending') return '待审核'
+  if (status === 'rejected') return '已拒绝'
+  return String(status)
 }
 
 const formatDate = (dateString) => {
@@ -765,6 +786,14 @@ onMounted(() => {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.merchant-avatar.default-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
 }
 
 .merchant-details {

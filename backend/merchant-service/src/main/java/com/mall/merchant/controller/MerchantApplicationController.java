@@ -19,7 +19,7 @@ import java.util.Map;
  * 商家申请控制器
  * 处理商家入驻申请相关接口
  * 
- * @author system
+ * @author lingbai
  * @since 2025-11-12
  */
 @Slf4j
@@ -64,12 +64,22 @@ public class MerchantApplicationController {
 
       return ResponseEntity.ok(response);
 
+    } catch (RuntimeException e) {
+      // 业务异常，返回友好的错误信息
+      log.warn("提交商家申请失败（业务异常）: {}", e.getMessage());
+
+      response.put("code", 400);
+      response.put("success", false);
+      response.put("message", e.getMessage());
+
+      return ResponseEntity.badRequest().body(response);
+
     } catch (Exception e) {
-      log.error("提交商家申请失败", e);
+      log.error("提交商家申请失败（系统异常）", e);
 
       response.put("code", 500);
       response.put("success", false);
-      response.put("message", "提交失败: " + e.getMessage());
+      response.put("message", "系统繁忙，请稍后重试");
 
       return ResponseEntity.status(500).body(response);
     }

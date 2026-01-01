@@ -28,7 +28,7 @@ public interface ProductMapper extends BaseMapper<Product> {
      * @param merchantId 商家ID
      * @return 商品列表
      */
-    @Select("SELECT * FROM product WHERE merchant_id = #{merchantId} AND deleted = 0")
+    @Select("SELECT * FROM products WHERE merchant_id = #{merchantId} AND deleted = 0")
     List<Product> selectByMerchantId(@Param("merchantId") Long merchantId);
     
     /**
@@ -39,7 +39,7 @@ public interface ProductMapper extends BaseMapper<Product> {
      * @return 商品数量
      */
     @Select("<script>" +
-            "SELECT COUNT(*) FROM product WHERE deleted = 0 " +
+            "SELECT COUNT(*) FROM products WHERE deleted = 0 " +
             "<if test='merchantId != null'> AND merchant_id = #{merchantId}</if>" +
             "<if test='status != null'> AND status = #{status}</if>" +
             "</script>")
@@ -52,7 +52,7 @@ public interface ProductMapper extends BaseMapper<Product> {
      * @return 库存预警商品列表
      */
     @Select("<script>" +
-            "SELECT * FROM product WHERE deleted = 0 AND stock &lt;= stock_warning " +
+            "SELECT * FROM products WHERE deleted = 0 AND stock &lt;= stock_warning " +
             "<if test='merchantId != null'> AND merchant_id = #{merchantId}</if>" +
             " ORDER BY stock ASC" +
             "</script>")
@@ -66,7 +66,7 @@ public interface ProductMapper extends BaseMapper<Product> {
      * @return 热销商品列表
      */
     @Select("<script>" +
-            "SELECT * FROM product WHERE deleted = 0 AND status = 1 " +
+            "SELECT * FROM products WHERE deleted = 0 AND status = 1 " +
             "<if test='merchantId != null'> AND merchant_id = #{merchantId}</if>" +
             " ORDER BY sales DESC LIMIT #{limit}" +
             "</script>")
@@ -79,7 +79,7 @@ public interface ProductMapper extends BaseMapper<Product> {
      * @param quantity 扣减数量
      * @return 影响行数
      */
-    @Update("UPDATE product SET stock = stock - #{quantity}, update_time = NOW() " +
+    @Update("UPDATE products SET stock = stock - #{quantity}, updated_time = NOW() " +
             "WHERE id = #{productId} AND stock >= #{quantity} AND deleted = 0")
     int deductStock(@Param("productId") Long productId, @Param("quantity") Integer quantity);
     
@@ -90,7 +90,7 @@ public interface ProductMapper extends BaseMapper<Product> {
      * @param quantity 恢复数量
      * @return 影响行数
      */
-    @Update("UPDATE product SET stock = stock + #{quantity}, update_time = NOW() " +
+    @Update("UPDATE products SET stock = stock + #{quantity}, updated_time = NOW() " +
             "WHERE id = #{productId} AND deleted = 0")
     int restoreStock(@Param("productId") Long productId, @Param("quantity") Integer quantity);
     
@@ -101,7 +101,7 @@ public interface ProductMapper extends BaseMapper<Product> {
      * @param quantity 增加数量
      * @return 影响行数
      */
-    @Update("UPDATE product SET sales = sales + #{quantity}, update_time = NOW() " +
+    @Update("UPDATE products SET sales = sales + #{quantity}, updated_time = NOW() " +
             "WHERE id = #{productId} AND deleted = 0")
     int increaseSales(@Param("productId") Long productId, @Param("quantity") Integer quantity);
     
@@ -112,7 +112,7 @@ public interface ProductMapper extends BaseMapper<Product> {
      * @return 总销量
      */
     @Select("<script>" +
-            "SELECT COALESCE(SUM(sales), 0) FROM product WHERE deleted = 0 " +
+            "SELECT COALESCE(SUM(sales), 0) FROM products WHERE deleted = 0 " +
             "<if test='merchantId != null'> AND merchant_id = #{merchantId}</if>" +
             "</script>")
     Long sumSales(@Param("merchantId") Long merchantId);
@@ -124,7 +124,7 @@ public interface ProductMapper extends BaseMapper<Product> {
      * @return 总销售额
      */
     @Select("<script>" +
-            "SELECT COALESCE(SUM(sales * price), 0) FROM product WHERE deleted = 0 " +
+            "SELECT COALESCE(SUM(sales * price), 0) FROM products WHERE deleted = 0 " +
             "<if test='merchantId != null'> AND merchant_id = #{merchantId}</if>" +
             "</script>")
     Double sumRevenue(@Param("merchantId") Long merchantId);

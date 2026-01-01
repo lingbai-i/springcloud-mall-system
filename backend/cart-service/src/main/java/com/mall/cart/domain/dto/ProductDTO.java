@@ -1,5 +1,6 @@
 package com.mall.cart.domain.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import java.io.Serializable;
 import java.math.BigDecimal;
 
@@ -7,8 +8,10 @@ import java.math.BigDecimal;
  * 商品信息DTO
  * 
  * @author lingbai
- * @version 1.0
+ * @version 1.1
  * @since 2025-01-21
+ * 
+ *        V1.1: 添加字段别名，兼容 merchant-service 返回的 productName 和 mainImage 字段
  */
 public class ProductDTO implements Serializable {
 
@@ -21,7 +24,9 @@ public class ProductDTO implements Serializable {
 
     /**
      * 商品名称
+     * 兼容 merchant-service 的 productName 字段
      */
+    @JsonAlias({ "productName", "name" })
     private String name;
 
     /**
@@ -31,7 +36,9 @@ public class ProductDTO implements Serializable {
 
     /**
      * 商品图片
+     * 兼容 merchant-service 的 mainImage 字段
      */
+    @JsonAlias({ "mainImage", "image" })
     private String image;
 
     /**
@@ -52,6 +59,7 @@ public class ProductDTO implements Serializable {
     /**
      * 库存数量 (merchant-service字段)
      */
+    @JsonAlias({ "stockQuantity", "stock" })
     private Integer stockQuantity;
 
     // 构造函数
@@ -86,6 +94,13 @@ public class ProductDTO implements Serializable {
         this.name = name;
     }
 
+    /**
+     * 兼容 merchant-service 的 productName 字段
+     */
+    public void setProductName(String productName) {
+        this.name = productName;
+    }
+
     public BigDecimal getPrice() {
         return price;
     }
@@ -95,6 +110,10 @@ public class ProductDTO implements Serializable {
     }
 
     public String getImage() {
+        // 如果图片包含逗号，只取第一张
+        if (image != null && image.contains(",")) {
+            return image.split(",")[0].trim();
+        }
         return image;
     }
 

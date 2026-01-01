@@ -132,8 +132,8 @@
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column label="头像" width="80">
           <template #default="{ row }">
-            <el-avatar :src="row.avatar" :alt="row.username">
-              {{ row.username.charAt(0).toUpperCase() }}
+            <el-avatar :src="row.avatar" :alt="row.nickname || row.username">
+              {{ (row.nickname || row.username || '').charAt(0).toUpperCase() }}
             </el-avatar>
           </template>
         </el-table-column>
@@ -142,8 +142,8 @@
         <el-table-column prop="phone" label="手机号" width="120" />
         <el-table-column label="性别" width="80">
           <template #default="{ row }">
-            <el-tag v-if="row.gender === 'male'" type="primary" size="small">男</el-tag>
-            <el-tag v-else-if="row.gender === 'female'" type="danger" size="small">女</el-tag>
+            <el-tag v-if="row.gender === 1 || row.gender === 'male'" type="primary" size="small">男</el-tag>
+            <el-tag v-else-if="row.gender === 2 || row.gender === 'female'" type="danger" size="small">女</el-tag>
             <el-tag v-else type="info" size="small">未知</el-tag>
           </template>
         </el-table-column>
@@ -163,11 +163,11 @@
             <span v-else class="text-gray-400">从未登录</span>
           </template>
         </el-table-column>
-        <el-table-column prop="registerTime" label="注册时间" width="160">
+        <el-table-column prop="createTime" label="注册时间" width="160">
           <template #default="{ row }">
             <div>
-              <div>{{ formatDate(row.registerTime) }}</div>
-              <div class="text-gray-500 text-xs">{{ formatTime(row.registerTime) }}</div>
+              <div>{{ formatDate(row.createTime) }}</div>
+              <div class="text-gray-500 text-xs">{{ formatTime(row.createTime) }}</div>
             </div>
           </template>
         </el-table-column>
@@ -369,20 +369,28 @@ const userStats = reactive([
 
 // 获取用户状态类型
 const getUserStatusType = (status) => {
+  // 支持数字和字符串两种格式
   const statusMap = {
-    active: 'success',
-    disabled: 'warning',
-    pending: 'danger'
+    1: 'success',
+    0: 'warning',
+    2: 'danger',
+    'active': 'success',
+    'disabled': 'warning',
+    'pending': 'danger'
   }
   return statusMap[status] || 'info'
 }
 
 // 获取用户状态文本
 const getUserStatusText = (status) => {
+  // 支持数字和字符串两种格式
   const statusMap = {
-    active: '正常',
-    disabled: '禁用',
-    pending: '待验证'
+    1: '正常',
+    0: '禁用',
+    2: '待验证',
+    'active': '正常',
+    'disabled': '禁用',
+    'pending': '待验证'
   }
   return statusMap[status] || '未知'
 }
@@ -418,7 +426,8 @@ const loadUserList = async () => {
     }
     
     const response = await getUserList(queryParams)
-    userList.value = response.data.list || []
+    // 适配后端返回的数据格式：records 而不是 list
+    userList.value = response.data.records || response.data.list || []
     pagination.total = response.data.total || 0
     
   } catch (error) {

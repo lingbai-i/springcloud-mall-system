@@ -10,7 +10,7 @@ import java.util.Map;
 /**
  * 商家服务Feign Client
  * 
- * @author system
+ * @author lingbai
  * @since 2025-01-09
  */
 @FeignClient(name = "merchant-service", path = "/api/admin/merchants")

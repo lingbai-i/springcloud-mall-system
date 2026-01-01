@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 /**
  * 商家入驻申请实体类
  * 
- * @author system
+ * @author lingbai
  * @since 2025-11-12
  */
 @Data
@@ -102,8 +102,9 @@ public class MerchantApplication {
     
     /**
      * 登录账号
+     * 注意：不使用数据库唯一约束，由业务逻辑控制（允许被拒绝的申请重新提交）
      */
-    @Column(name = "username", nullable = false, unique = true, length = 50)
+    @Column(name = "username", nullable = false, length = 50)
     private String username;
     
     /**

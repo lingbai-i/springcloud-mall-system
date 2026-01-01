@@ -1,0 +1,97 @@
+server:
+  port: 8085
+  servlet:
+    context-path: /payment
+
+spring:
+  application:
+    name: payment-service
+
+  # Nacos服务注册与发现
+  cloud:
+    nacos:
+      discovery:
+        server-addr: nacos:8848
+        namespace: docker
+        group: DEFAULT_GROUP
+      config:
+        server-addr: nacos:8848
+        namespace: docker
+        import-check:
+          enabled: false
+
+  # 数据库配置 - Docker环境
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://mysql:3306/mall_payment?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: 123456
+
+  # JPA配置
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: true
+
+  # Redis配置 - Docker环境
+  data:
+    redis:
+      host: redis
+      port: 6379
+      database: 0
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-wait: -1ms
+          max-idle: 8
+          min-idle: 0
+
+# 支付配置
+payment:
+  # 支付宝配置
+  alipay:
+    app-id: 2021000000000000
+    private-key: MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC...
+    public-key: MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...
+    gateway-url: https://openapi.alipaydev.com/gateway.do
+    format: json
+    charset: UTF-8
+    sign-type: RSA2
+
+  # 微信支付配置
+  wechat:
+    app-id: wx1234567890abcdef
+    mch-id: 1234567890
+    api-key: abcdefghijklmnopqrstuvwxyz123456
+    cert-path: /path/to/apiclient_cert.p12
+    notify-url: http://localhost:8080/api/payment/callback/wechat
+
+# 监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# 日志配置
+logging:
+  level:
+    com.mall.payment: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

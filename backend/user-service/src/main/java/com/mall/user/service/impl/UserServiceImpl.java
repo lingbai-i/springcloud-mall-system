@@ -279,23 +279,24 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
             // 统计待验证用户数（暂时设置为0，后续根据实际业务调整）
             stats.put("pending", 0);
-            
+
             // 计算用户趋势（今日新增/昨日新增）
-            java.time.LocalDateTime todayStart = java.time.LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0);
+            java.time.LocalDateTime todayStart = java.time.LocalDateTime.now().withHour(0).withMinute(0).withSecond(0)
+                    .withNano(0);
             java.time.LocalDateTime yesterdayStart = todayStart.minusDays(1);
-            
+
             LambdaQueryWrapper<User> todayWrapper = new LambdaQueryWrapper<>();
             todayWrapper.ge(User::getCreateTime, todayStart);
             Long todayNew = userMapper.selectCount(todayWrapper);
-            
+
             LambdaQueryWrapper<User> yesterdayWrapper = new LambdaQueryWrapper<>();
             yesterdayWrapper.ge(User::getCreateTime, yesterdayStart);
             yesterdayWrapper.lt(User::getCreateTime, todayStart);
             Long yesterdayNew = userMapper.selectCount(yesterdayWrapper);
-            
+
             double usersTrend = 0;
             if (yesterdayNew != null && yesterdayNew > 0) {
-                usersTrend = ((double)((todayNew != null ? todayNew : 0) - yesterdayNew) / yesterdayNew) * 100;
+                usersTrend = ((double) ((todayNew != null ? todayNew : 0) - yesterdayNew) / yesterdayNew) * 100;
             } else if (todayNew != null && todayNew > 0) {
                 usersTrend = 100;
             }
@@ -316,6 +317,96 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             stats.put("usersTrend", 0);
             return stats;
         }
+    }
+
+    /**
+     * 获取用户分布数据
+     * 返回活跃度分布和注册时间分布
+     */
+    public Map<String, Object> getUserDistribution() {
+        Map<String, Object> distribution = new HashMap<>();
+        java.util.List<Map<String, Object>> activeDistribution = new java.util.ArrayList<>();
+        java.util.List<Map<String, Object>> registerDistribution = new java.util.ArrayList<>();
+
+        try {
+            java.time.LocalDateTime now = java.time.LocalDateTime.now();
+            java.time.LocalDateTime today = now.withHour(0).withMinute(0).withSecond(0).withNano(0);
+            java.time.LocalDateTime sevenDaysAgo = today.minusDays(7);
+            java.time.LocalDateTime thirtyDaysAgo = today.minusDays(30);
+
+            // === 活跃度分布（基于 last_login_time）===
+            // 活跃用户：7天内登录
+            LambdaQueryWrapper<User> activeWrapper = new LambdaQueryWrapper<>();
+            activeWrapper.ge(User::getLastLoginTime, sevenDaysAgo);
+            Long activeUsers = userMapper.selectCount(activeWrapper);
+
+            // 不活跃用户：7-30天登录
+            LambdaQueryWrapper<User> inactiveWrapper = new LambdaQueryWrapper<>();
+            inactiveWrapper.lt(User::getLastLoginTime, sevenDaysAgo);
+            inactiveWrapper.ge(User::getLastLoginTime, thirtyDaysAgo);
+            Long inactiveUsers = userMapper.selectCount(inactiveWrapper);
+
+            // 沉睡用户：30天以上未登录或从未登录
+            LambdaQueryWrapper<User> sleepWrapper = new LambdaQueryWrapper<>();
+            sleepWrapper.and(w -> w.lt(User::getLastLoginTime, thirtyDaysAgo).or().isNull(User::getLastLoginTime));
+            Long sleepUsers = userMapper.selectCount(sleepWrapper);
+
+            // Add logging
+            System.out.println("User Distribution Stats - Active: " + activeUsers + ", Inactive: " + inactiveUsers
+                    + ", Sleep: " + sleepUsers);
+
+            activeDistribution.add(createDistributionItem("活跃用户", activeUsers != null ? activeUsers : 0L));
+            activeDistribution.add(createDistributionItem("不活跃用户", inactiveUsers != null ? inactiveUsers : 0L));
+            activeDistribution.add(createDistributionItem("沉睡用户", sleepUsers != null ? sleepUsers : 0L));
+
+            // === 注册时间分布（基于 created_time）===
+            java.time.LocalDateTime oneMonthAgo = today.minusMonths(1);
+            java.time.LocalDateTime threeMonthsAgo = today.minusMonths(3);
+            java.time.LocalDateTime sixMonthsAgo = today.minusMonths(6);
+            java.time.LocalDateTime oneYearAgo = today.minusYears(1);
+
+            // 新用户：1个月内注册
+            LambdaQueryWrapper<User> newUserWrapper = new LambdaQueryWrapper<>();
+            newUserWrapper.ge(User::getCreateTime, oneMonthAgo);
+            Long newUsers = userMapper.selectCount(newUserWrapper);
+
+            // 成长期用户：1-3个月
+            LambdaQueryWrapper<User> growthWrapper = new LambdaQueryWrapper<>();
+            growthWrapper.lt(User::getCreateTime, oneMonthAgo);
+            growthWrapper.ge(User::getCreateTime, threeMonthsAgo);
+            Long growthUsers = userMapper.selectCount(growthWrapper);
+
+            // 成熟用户：3-6个月
+            LambdaQueryWrapper<User> matureWrapper = new LambdaQueryWrapper<>();
+            matureWrapper.lt(User::getCreateTime, threeMonthsAgo);
+            matureWrapper.ge(User::getCreateTime, sixMonthsAgo);
+            Long matureUsers = userMapper.selectCount(matureWrapper);
+
+            // 老用户：6个月以上
+            LambdaQueryWrapper<User> oldUserWrapper = new LambdaQueryWrapper<>();
+            oldUserWrapper.lt(User::getCreateTime, sixMonthsAgo);
+            Long oldUsers = userMapper.selectCount(oldUserWrapper);
+
+            registerDistribution.add(createDistributionItem("新用户", newUsers != null ? newUsers : 0L));
+            registerDistribution.add(createDistributionItem("成长期用户", growthUsers != null ? growthUsers : 0L));
+            registerDistribution.add(createDistributionItem("成熟用户", matureUsers != null ? matureUsers : 0L));
+            registerDistribution.add(createDistributionItem("老用户", oldUsers != null ? oldUsers : 0L));
+
+        } catch (Exception e) {
+            System.err.println("获取用户分布数据异常: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        distribution.put("activeDistribution", activeDistribution);
+        distribution.put("registerDistribution", registerDistribution);
+        return distribution;
+    }
+
+    private Map<String, Object> createDistributionItem(String name, Long value) {
+        Map<String, Object> item = new HashMap<>();
+        item.put("name", name);
+        item.put("value", value);
+        return item;
     }
 
     /**

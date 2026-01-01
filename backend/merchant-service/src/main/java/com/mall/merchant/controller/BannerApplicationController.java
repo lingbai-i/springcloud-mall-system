@@ -22,7 +22,7 @@ import jakarta.validation.constraints.NotNull;
  * 轮播图申请管理控制器
  * 提供商家轮播图投流申请的提交、查询、更新、取消等功能的REST API接口
  * 
- * @author system
+ * @author lingbai
  * @version 1.0
  * @since 2025-12-28
  */

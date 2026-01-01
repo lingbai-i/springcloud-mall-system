@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 /**
  * 商家申请信息VO
  * 
- * @author system
+ * @author lingbai
  * @since 2025-11-11
  */
 @Data

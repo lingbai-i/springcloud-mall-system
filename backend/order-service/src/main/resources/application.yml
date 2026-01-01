@@ -15,7 +15,7 @@ spring:
         import-check:
           enabled: false
   datasource:
-    url: jdbc:mysql://localhost:3307/mall_order?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=UTC
+    url: jdbc:mysql://localhost:3307/mall_order?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai
     username: root
     password: 123456
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -45,6 +45,13 @@ spring:
     username: guest
     password: guest
     virtual-host: /
+  
+  # Jackson时间序列化配置
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+    serialization:
+      write-dates-as-timestamps: false
 
 # Feign配置
 feign:

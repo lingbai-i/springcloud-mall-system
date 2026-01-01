@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
  * 库存预警VO
  * 返回库存不足的商品信息
  * 
- * @author system
+ * @author lingbai
  * @since 2025-11-12
  */
 @Data

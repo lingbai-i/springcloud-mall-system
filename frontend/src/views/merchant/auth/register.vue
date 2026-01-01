@@ -2,9 +2,10 @@
   <div class="merchant-register">
     <div class="register-container">
       <div class="register-header">
-        <img src="/logo.png" alt="Logo" class="logo" />
+        <!-- 修复：使用正确的商标图片路径，统一品牌形象 -->
+        <img src="/商标png.png" alt="Logo" class="logo" />
         <h1 class="title">商家入驻申请</h1>
-        <p class="subtitle">加入我们，开启您的电商之旅</p>
+        <p class="subtitle">秉承匠心 · 诚就百物 · 开启您的电商之旅</p>
       </div>
       
       <el-steps :active="currentStep" finish-status="success" align-center class="steps">
@@ -734,7 +735,8 @@ const handleSubmit = async () => {
 <style scoped>
 .merchant-register {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  /* 使用与后台主区域一致的浅绿色渐变 */
+  background: linear-gradient(135deg, #f4f7f5 0%, #d1dbd3 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -744,9 +746,12 @@ const handleSubmit = async () => {
 }
 
 .register-container {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  /* 玻璃拟态效果 */
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(58, 80, 68, 0.1);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   padding: 40px;
   width: 100%;
   max-width: 900px;
@@ -760,26 +765,36 @@ const handleSubmit = async () => {
 }
 
 .logo {
-  width: 60px;
-  height: 60px;
-  margin-bottom: 15px;
+  height: 80px;
+  margin-bottom: 20px;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.05));
 }
 
 .title {
   font-size: 28px;
-  color: #333;
+  /* 使用品牌深绿色 */
+  color: #3a5044;
   margin: 0 0 10px 0;
   font-weight: bold;
 }
 
 .subtitle {
   font-size: 14px;
-  color: #666;
+  color: #8a9b8e;
   margin: 0;
 }
 
 .steps {
   margin-bottom: 40px;
+}
+
+:deep(.el-step__title.is-success) {
+  color: #3a5044;
+}
+
+:deep(.el-step__head.is-success) {
+  color: #3a5044;
+  border-color: #3a5044;
 }
 
 .step-content {
@@ -789,7 +804,7 @@ const handleSubmit = async () => {
 .step-title {
   text-align: center;
   font-size: 20px;
-  color: #333;
+  color: #3a5044;
   margin-bottom: 30px;
 }
 
@@ -802,8 +817,9 @@ const handleSubmit = async () => {
 }
 
 .entity-card {
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
+  border: 2px solid rgba(58, 80, 68, 0.1);
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 12px;
   padding: 30px 20px;
   text-align: center;
   cursor: pointer;
@@ -811,31 +827,32 @@ const handleSubmit = async () => {
 }
 
 .entity-card:hover {
-  border-color: #667eea;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+  border-color: #3a5044;
+  box-shadow: 0 4px 12px rgba(58, 80, 68, 0.1);
+  transform: translateY(-2px);
 }
 
 .entity-card.active {
-  border-color: #667eea;
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  border-color: #3a5044;
+  background: rgba(58, 80, 68, 0.05);
+  box-shadow: 0 4px 12px rgba(58, 80, 68, 0.2);
 }
 
 .entity-icon {
   font-size: 48px;
-  color: #667eea;
+  color: #3a5044;
   margin-bottom: 15px;
 }
 
 .entity-card h3 {
   font-size: 20px;
-  color: #333;
+  color: #3a5044;
   margin: 0 0 10px 0;
 }
 
 .entity-desc {
   font-size: 14px;
-  color: #666;
+  color: #6e7d73;
   margin: 0 0 20px 0;
 }
 
@@ -847,7 +864,7 @@ const handleSubmit = async () => {
 
 .feature-item {
   font-size: 13px;
-  color: #888;
+  color: #8a9b8e;
   text-align: left;
 }
 
@@ -856,47 +873,35 @@ const handleSubmit = async () => {
   margin-bottom: 30px;
 }
 
-.radio-content {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  margin-left: 8px;
+:deep(.el-input__wrapper) {
+  background-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 0 1px rgba(58, 80, 68, 0.1) inset;
+  border-radius: 8px;
 }
 
-.radio-desc {
-  font-size: 12px;
-  color: #999;
-  margin-top: 4px;
-  display: block;
-  line-height: 1.5;
+:deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 1px #3a5044 inset !important;
 }
 
 /* 表单区块样式 */
 .form-section {
-  background-color: #f8f9fa;
-  border-radius: 8px;
+  background-color: rgba(58, 80, 68, 0.02);
+  border-radius: 12px;
   padding: 24px;
   margin-bottom: 24px;
-  border: 2px solid #e0e0e0;
+  border: 1px solid rgba(58, 80, 68, 0.05);
 }
 
 .section-title {
   font-size: 18px;
   font-weight: 600;
-  color: #333;
+  color: #3a5044;
   margin: 0 0 20px 0;
   padding-bottom: 12px;
-  border-bottom: 2px solid #e0e0e0;
+  border-bottom: 1px solid rgba(58, 80, 68, 0.1);
 }
 
 /* 店铺类型radio优化布局 */
-.shop-type-radio-group {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
 .shop-type-radio {
   display: inline-flex !important;
   align-items: center !important;
@@ -904,125 +909,36 @@ const handleSubmit = async () => {
   margin-bottom: 0 !important;
   width: 100% !important;
   padding: 12px 16px;
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
+  border: 1px solid rgba(58, 80, 68, 0.1);
+  border-radius: 8px;
   transition: all 0.3s;
-  background-color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.5);
 }
 
 .shop-type-radio:hover {
-  background-color: #f5f7fa;
-  border-color: #667eea;
+  background-color: #ffffff;
+  border-color: #3a5044;
 }
 
-.shop-type-radio .radio-label {
-  margin-left: 8px;
-  font-weight: 500;
-  color: #333;
-  flex: 1;
+:deep(.el-radio__input.is-checked .el-radio__inner) {
+  background-color: #3a5044;
+  border-color: #3a5044;
 }
 
-.shop-type-radio .info-icon {
-  margin-left: 6px;
-  font-size: 16px;
-  color: #909399;
-  cursor: help;
-  transition: color 0.3s;
-}
-
-.shop-type-radio .info-icon:hover {
-  color: #667eea;
-}
-
-/* Element Plus Radio组件样式调整 */
-:deep(.el-radio) {
-  display: inline-flex;
-  align-items: center;
-  margin-right: 0;
-  white-space: normal;
-}
-
-:deep(.el-radio__label) {
-  padding-left: 0;
-  display: inline-flex;
-  align-items: center;
-  width: 100%;
-}
-
-:deep(.el-radio__input) {
-  align-self: flex-start;
-  margin-top: 2px;
-}
-
-/* Tooltip过渡动画 */
-:deep(.el-tooltip__popper) {
-  transition: opacity 0.3s ease-in-out;
-}
-
-/* 表单项间距 */
-.register-form :deep(.el-form-item) {
-  margin-bottom: 16px;
-}
-
-/* 必填字段标记 */
-:deep(.el-form-item.is-required:not(.is-no-asterisk)) > .el-form-item__label:before {
-  content: '*';
-  color: #f56c6c;
-  margin-right: 4px;
-}
-
-/* 上传组件 */
-.license-uploader {
-  width: 180px;
-  height: 180px;
-  border: 1px dashed #d9d9d9;
-  border-radius: 6px;
-  cursor: pointer;
-  overflow: hidden;
-  transition: border-color 0.3s;
-}
-
-.license-uploader:hover {
-  border-color: #667eea;
-}
-
-.license-uploader-icon {
-  font-size: 28px;
-  color: #8c939d;
-  width: 180px;
-  height: 180px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.license-image {
-  width: 180px;
-  height: 180px;
-  object-fit: cover;
-}
-
-.upload-tip {
-  font-size: 12px;
-  color: #999;
-  margin-top: 8px;
-}
-
-/* 确认信息 */
-.confirm-content {
-  margin-bottom: 30px;
-}
-
-.submit-tip {
-  margin-top: 20px;
+:deep(.el-radio__input.is-checked + .el-radio__label) {
+  color: #3a5044;
 }
 
 /* 步骤操作按钮 */
-.step-actions {
-  display: flex;
-  justify-content: center;
-  gap: 20px;
-  margin-top: 40px;
+.step-actions .el-button--primary {
+  background: linear-gradient(135deg, #4a6355, #3a5044);
+  border: none;
+  box-shadow: 0 4px 12px rgba(58, 80, 68, 0.2);
+}
+
+.step-actions .el-button--primary:hover {
+  background: linear-gradient(135deg, #5a7566, #4a6355);
+  transform: translateY(-1px);
 }
 
 /* 背景装饰 */
@@ -1032,38 +948,37 @@ const handleSubmit = async () => {
   left: 0;
   right: 0;
   bottom: 0;
-  overflow: hidden;
-  z-index: 0;
+  pointer-events: none;
 }
 
 .circle {
   position: absolute;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  animation: float 15s infinite ease-in-out;
+  background: rgba(58, 80, 68, 0.03);
+  animation: float 10s ease-in-out infinite;
 }
 
 .circle-1 {
-  width: 300px;
-  height: 300px;
-  top: -100px;
-  left: -100px;
+  width: 400px;
+  height: 400px;
+  top: -150px;
+  left: -150px;
 }
 
 .circle-2 {
-  width: 200px;
-  height: 200px;
-  bottom: -50px;
-  right: -50px;
-  animation-delay: 5s;
+  width: 300px;
+  height: 300px;
+  bottom: -100px;
+  right: -100px;
+  animation-delay: 2s;
 }
 
 .circle-3 {
-  width: 150px;
-  height: 150px;
-  top: 50%;
-  left: 50%;
-  animation-delay: 10s;
+  width: 200px;
+  height: 200px;
+  top: 20%;
+  right: 10%;
+  animation-delay: 4s;
 }
 
 @keyframes float {

@@ -6,7 +6,7 @@ import lombok.Data;
 /**
  * 商家审批请求DTO
  * 
- * @author system
+ * @author lingbai
  * @since 2025-11-11
  */
 @Data

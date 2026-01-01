@@ -3,7 +3,8 @@
     <!-- 侧边栏 -->
     <el-aside :width="isCollapse ? '64px' : '240px'" class="admin-sidebar">
       <div class="logo-container">
-        <img src="/logo.png" alt="Logo" :class="isCollapse ? 'logo-mini' : 'logo'" />
+        <!-- 修复：使用正确的商标图片路径 -->
+        <img src="/商标png.png" alt="Logo" :class="isCollapse ? 'logo-mini' : 'logo'" />
         <h1 v-if="!isCollapse" class="title">管理后台</h1>
       </div>
       
@@ -12,9 +13,6 @@
         :collapse="isCollapse"
         :unique-opened="true"
         class="admin-menu"
-        background-color="#001529"
-        text-color="#ffffff"
-        active-text-color="#1890ff"
         router
       >
         <el-menu-item index="/admin/dashboard">
@@ -248,12 +246,18 @@ watch(
 .admin-layout {
   height: 100vh;
   display: flex;
+  background-color: #f4f7f5;
 }
 
 .admin-sidebar {
-  background-color: #001529;
+  background-color: #e8eee9; /* 中度浅绿色，与商家后台一致 */
+  color: #3a5044;
+  height: 100vh;
   transition: width 0.3s;
+  box-shadow: 2px 0 12px rgba(58, 80, 68, 0.12);
+  z-index: 1001;
   overflow: hidden;
+  border-right: 1px solid #d1dbd3;
 }
 
 .logo-container {
@@ -262,7 +266,8 @@ watch(
   align-items: center;
   justify-content: center;
   padding: 0 16px;
-  border-bottom: 1px solid #1f1f1f;
+  background-color: #dce4de; /* 稍微深一点的绿色背景，增加层次感 */
+  border-bottom: 1px solid #d1dbd3;
 }
 
 .logo {
@@ -275,16 +280,62 @@ watch(
 }
 
 .title {
-  color: #ffffff;
+  color: #3a5044;
   font-size: 18px;
   font-weight: 600;
   margin: 0;
+  letter-spacing: 0.5px;
 }
 
 .admin-menu {
   border: none;
   height: calc(100vh - 64px);
   overflow-y: auto;
+  background-color: transparent !important;
+  padding: 12px 0;
+}
+
+:deep(.el-menu) {
+  background-color: transparent !important;
+  border: none;
+}
+
+:deep(.el-menu-item),
+:deep(.el-sub-menu__title) {
+  height: 50px;
+  line-height: 50px;
+  margin: 4px 12px;
+  border-radius: 8px;
+  color: #3a5044 !important;
+  display: flex;
+  align-items: center;
+  transition: all 0.2s;
+}
+
+:deep(.el-menu-item .el-icon),
+:deep(.el-sub-menu__title .el-icon) {
+  margin-right: 12px;
+  width: 20px;
+  text-align: center;
+  font-size: 18px;
+  color: #3a5044 !important;
+}
+
+:deep(.el-menu-item:hover),
+:deep(.el-sub-menu__title:hover) {
+  background-color: rgba(58, 80, 68, 0.08) !important;
+  color: #2c3e50 !important;
+}
+
+:deep(.el-menu-item.is-active) {
+  background-color: #3a5044 !important; /* 选中项改为深色背景，形成鲜明对比 */
+  color: #ffffff !important;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(58, 80, 68, 0.2);
+}
+
+:deep(.el-menu-item.is-active .el-icon) {
+  color: #ffffff !important;
 }
 
 .admin-menu:not(.el-menu--collapse) {
@@ -293,17 +344,22 @@ watch(
 
 .admin-main {
   flex: 1;
-  background-color: #f0f2f5;
+  background: linear-gradient(135deg, #f4f7f5 0%, #d1dbd3 100%) !important; /* 统一绿色渐变背景 */
+  display: flex;
+  flex-direction: column;
+  position: relative;
 }
 
 .admin-header {
-  background-color: #ffffff;
-  border-bottom: 1px solid #e8e8e8;
+  background-color: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid #d1dbd3;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 24px;
-  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
+  height: 64px;
+  z-index: 1000;
 }
 
 .header-left {
@@ -313,23 +369,38 @@ watch(
 
 .collapse-btn {
   margin-right: 16px;
-  font-size: 18px;
-  color: #666;
+  font-size: 20px;
+  color: #3a5044;
+  cursor: pointer;
+}
+
+.collapse-btn:hover {
+  color: #4caf50;
 }
 
 .breadcrumb {
   font-size: 14px;
 }
 
+:deep(.el-breadcrumb__inner) {
+  color: #5c7c6a !important;
+}
+
+:deep(.el-breadcrumb__item:last-child .el-breadcrumb__inner) {
+  color: #3a5044 !important;
+  font-weight: 600;
+}
+
 .header-right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 20px;
 }
 
 .header-btn {
-  font-size: 16px;
-  color: #666;
+  font-size: 18px;
+  color: #3a5044;
+  cursor: pointer;
 }
 
 .user-dropdown {
@@ -339,47 +410,89 @@ watch(
 .user-info {
   display: flex;
   align-items: center;
-  gap: 8px;
-  color: #666;
+  gap: 10px;
+  color: #3a5044;
 }
 
 .username {
   font-size: 14px;
+  font-weight: 500;
 }
 
 .admin-content {
   padding: 24px;
   overflow-y: auto;
+  flex: 1;
+}
+
+/* 组件样式统一优化 */
+:deep(.el-card) {
+  border: 1px solid rgba(209, 219, 211, 0.5) !important;
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(58, 80, 68, 0.08) !important;
+  border-radius: 12px;
+}
+
+:deep(.el-card__header) {
+  border-bottom: 1px solid rgba(209, 219, 211, 0.5) !important;
+  color: #3a5044 !important;
+  font-weight: 600;
+}
+
+:deep(.el-button--primary) {
+  background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%) !important;
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);
+}
+
+:deep(.el-button--primary:hover) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(76, 175, 80, 0.3);
+}
+
+:deep(.el-table) {
+  background-color: transparent !important;
+  color: #3a5044 !important;
+}
+
+:deep(.el-table th.el-table__cell) {
+  background-color: rgba(232, 238, 233, 0.5) !important;
+  color: #3a5044 !important;
+  border-bottom: 1px solid #d1dbd3 !important;
+}
+
+:deep(.el-table td.el-table__cell) {
+  border-bottom: 1px solid rgba(209, 219, 211, 0.3) !important;
 }
 
 /* 滚动条样式 */
-.admin-menu::-webkit-scrollbar {
+.admin-menu::-webkit-scrollbar,
+.admin-content::-webkit-scrollbar {
   width: 6px;
 }
 
-.admin-menu::-webkit-scrollbar-track {
-  background: #001529;
+.admin-menu::-webkit-scrollbar-track,
+.admin-content::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .admin-menu::-webkit-scrollbar-thumb {
-  background: #1890ff;
+  background: rgba(58, 80, 68, 0.1);
   border-radius: 3px;
 }
 
-.admin-content::-webkit-scrollbar {
-  width: 8px;
-}
-
-.admin-content::-webkit-scrollbar-track {
-  background: #f1f1f1;
+.admin-menu::-webkit-scrollbar-thumb:hover {
+  background: rgba(58, 80, 68, 0.2);
 }
 
 .admin-content::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 4px;
+  background: rgba(58, 80, 68, 0.1);
+  border-radius: 3px;
 }
 
 .admin-content::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: rgba(58, 80, 68, 0.2);
 }
 </style>

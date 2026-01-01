@@ -196,7 +196,7 @@ public class MerchantProductServiceImpl implements MerchantProductService {
      * 分页查询商品列表
      * 调用 product-service 按商家ID筛选
      * 
-     * @param merchantId 商家ID
+     * @param merchantId 商家ID（可选，为null时查询所有商品）
      * @param page 页码
      * @param size 每页大小
      * @param productName 商品名称（可选）
@@ -214,7 +214,14 @@ public class MerchantProductServiceImpl implements MerchantProductService {
         log.debug("分页查询商品列表，商家ID：{}，页码：{}，大小：{}", merchantId, page, size);
 
         try {
-            R<Object> result = productClient.getProductsByMerchantId(merchantId, (long) page, (long) size);
+            R<Object> result;
+            // 当merchantId为null时，查询所有商品；否则按商家ID筛选
+            if (merchantId == null) {
+                log.debug("merchantId为空，查询所有商品");
+                result = productClient.getProducts((long) page, (long) size, categoryId, null);
+            } else {
+                result = productClient.getProductsByMerchantId(merchantId, (long) page, (long) size);
+            }
             
             if (result != null && result.isSuccess() && result.getData() != null) {
                 return convertToPageResult(result.getData());
@@ -1041,6 +1048,7 @@ public class MerchantProductServiceImpl implements MerchantProductService {
 
     /**
      * 将 MerchantProduct 转换为 Map 用于调用 product-service
+     * 字段名需要与 Product 实体类的字段名一致
      * 
      * @param merchantId 商家ID
      * @param product 商品实体
@@ -1049,24 +1057,47 @@ public class MerchantProductServiceImpl implements MerchantProductService {
     private Map<String, Object> convertToProductMap(Long merchantId, MerchantProduct product) {
         Map<String, Object> map = new HashMap<>();
         map.put("merchantId", merchantId);
-        map.put("name", product.getProductName());
+        map.put("name", product.getProductName());  // Product.name
         map.put("description", product.getDescription());
-        map.put("price", product.getPrice());
-        map.put("originalPrice", product.getMarketPrice());
-        map.put("costPrice", product.getCostPrice());
-        map.put("stock", product.getStockQuantity());
-        map.put("stockWarning", product.getWarningStock());
-        map.put("sales", product.getSalesCount() != null ? product.getSalesCount() : 0);
-        map.put("status", product.getStatus() != null ? product.getStatus() : 0);
-        map.put("isRecommend", product.getIsRecommended() != null ? product.getIsRecommended() : 0);
-        map.put("isNew", product.getIsNew() != null ? product.getIsNew() : 0);
-        map.put("isHot", product.getIsHot() != null ? product.getIsHot() : 0);
+        map.put("price", product.getPrice() != null ? product.getPrice().doubleValue() : 0.0);  // Product.price (Double)
+        map.put("originalPrice", product.getMarketPrice() != null ? product.getMarketPrice().doubleValue() : null);  // Product.originalPrice
+        map.put("costPrice", product.getCostPrice() != null ? product.getCostPrice().doubleValue() : null);  // Product.costPrice
+        map.put("stock", product.getStockQuantity());  // Product.stock
+        map.put("stockWarning", product.getWarningStock());  // Product.stockWarning
+        map.put("sales", product.getSalesCount() != null ? product.getSalesCount() : 0);  // Product.sales
+        map.put("status", product.getStatus() != null ? product.getStatus() : 1);  // Product.status，默认上架
+        map.put("isRecommend", product.getIsRecommended() != null && product.getIsRecommended() == 1);  // Product.isRecommend (Boolean)
+        map.put("isNew", product.getIsNew() != null && product.getIsNew() == 1);  // Product.isNew (Boolean)
+        map.put("isHot", product.getIsHot() != null && product.getIsHot() == 1);  // Product.isHot (Boolean)
         map.put("categoryId", product.getCategoryId());
         map.put("brandName", product.getBrand());
-        map.put("mainImage", product.getMainImage());
-        map.put("detailImages", product.getImages());
+        map.put("mainImage", product.getMainImage());  // Product.mainImage
+        // 详情图片：Product.detailImages 存储逗号分隔的URL字符串
+        map.put("detailImages", product.getImages());  // 直接传递逗号分隔的字符串
         map.put("sortOrder", product.getSortOrder() != null ? product.getSortOrder() : 0);
         return map;
+    }
+    
+    /**
+     * 将逗号分隔的字符串转换为JSON数组格式
+     * 
+     * @param commaSeparated 逗号分隔的字符串
+     * @return JSON数组格式的字符串
+     */
+    private String convertToJsonArray(String commaSeparated) {
+        if (commaSeparated == null || commaSeparated.trim().isEmpty()) {
+            return "[]";
+        }
+        String[] parts = commaSeparated.split(",");
+        StringBuilder sb = new StringBuilder("[");
+        for (int i = 0; i < parts.length; i++) {
+            if (i > 0) {
+                sb.append(",");
+            }
+            sb.append("\"").append(parts[i].trim()).append("\"");
+        }
+        sb.append("]");
+        return sb.toString();
     }
 
     /**

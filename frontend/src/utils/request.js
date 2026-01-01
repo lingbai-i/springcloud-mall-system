@@ -127,6 +127,18 @@ service.interceptors.response.use(
     }
     
     // 统一处理响应
+    // 定义非关键API列表（401时不弹出"登录过期"提示）
+    const nonCriticalPaths = [
+      '/cart-service',  // 购物车服务
+      '/product-service',  // 商品服务
+      '/order-service',  // 订单服务
+      '/reviews',  // 评价相关
+      '/favorites'  // 收藏服务
+    ]
+    const isNonCriticalApi = nonCriticalPaths.some(path => 
+      response.config?.url?.includes(path)
+    )
+
     // 处理标准格式 {code: 200, success: true, data: ...}
     if (data.code === 200 || data.success === true) {
       logger.info('[HTTP] 标准响应成功', { url: response.config?.url, code: data.code, success: data.success })
@@ -138,8 +150,12 @@ service.interceptors.response.use(
         success: data.success !== false
       }
     } else if (data.code === 401) {
-      // token过期或无效
-      handleTokenExpired()
+      // token过期或无效 - 非关键API静默处理
+      if (!isNonCriticalApi) {
+        handleTokenExpired()
+      } else {
+        logger.debug('非关键API返回401，静默处理', { url: response.config?.url })
+      }
       return Promise.reject(new Error(data.message || '登录已过期'))
     }
     // 处理业务错误：success === false 或 code !== 200
@@ -198,7 +214,8 @@ service.interceptors.response.use(
         '/cart-service',  // 购物车服务
         '/product-service',  // 商品服务
         '/order-service',  // 订单服务
-        '/reviews'  // 评价相关
+        '/reviews',  // 评价相关
+        '/favorites'  // 收藏服务
       ]
       
       const isNonCriticalApi = nonCriticalPaths.some(path => 
@@ -207,7 +224,16 @@ service.interceptors.response.use(
       
       switch (status) {
         case 400:
-          ElMessage.error(data.message || '请求参数错误')
+          // 处理验证错误，提取详细的错误信息
+          let errorMsg = '请求参数错误'
+          if (data.message) {
+            errorMsg = data.message
+          } else if (data.fieldErrors) {
+            // 如果有字段级错误，组合显示
+            errorMsg = Object.values(data.fieldErrors).join(', ')
+          }
+          console.error('[HTTP] 400 参数错误:', errorMsg, data)
+          ElMessage.error(errorMsg)
           break
         case 401:
           // 只对关键API（如用户服务）弹出登录过期提示

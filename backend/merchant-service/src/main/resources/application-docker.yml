@@ -46,6 +46,14 @@ spring:
       config:
         enabled: false
 
+# MinIO配置 - Docker环境
+minio:
+  endpoint: http://minio:9000
+  access-key: minioadmin
+  secret-key: minioadmin
+  bucket-name: mall-files
+  public-url: http://localhost:9000
+
 # 商家配置
 merchant:
   audit:

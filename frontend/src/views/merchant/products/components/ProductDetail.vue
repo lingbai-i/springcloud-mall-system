@@ -15,7 +15,7 @@
           <el-col :span="8">
             <div class="product-images">
               <el-image
-                :src="product.mainImage"
+                :src="getFirstImage(product.mainImage)"
                 :preview-src-list="product.images"
                 class="main-image"
                 fit="cover"
@@ -315,6 +315,20 @@ const salesStats = computed(() => [
 ])
 
 // 方法
+
+/**
+ * 获取第一张图片URL（处理逗号分隔的多图片URL）
+ * @param imageUrl 图片URL字符串，可能包含逗号分隔的多个URL
+ * @returns 第一张图片的URL
+ */
+const getFirstImage = (imageUrl) => {
+  if (!imageUrl) return ''
+  if (imageUrl.includes(',')) {
+    return imageUrl.split(',')[0].trim()
+  }
+  return imageUrl
+}
+
 const getCategoryName = (category) => {
   const categoryMap = {
     'electronics': '数码电子',

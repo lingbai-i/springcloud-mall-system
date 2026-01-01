@@ -31,6 +31,13 @@ spring:
             - Path=/api/users/**
           filters:
             - StripPrefix=1
+        # 收藏服务（用户服务中的收藏功能）
+        - id: favorites-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/favorites/**
+          filters:
+            - StripPrefix=1
         # 用户服务兼容路由（支持前端/api/user-service/**路径）
         - id: user-service-compat
           uri: lb://user-service

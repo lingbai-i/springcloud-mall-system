@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
  * 轮播图审核列表VO
  * 用于管理员审核列表展示
  * 
- * @author system
+ * @author lingbai
  * @version 1.0
  * @since 2025-12-28
  */

@@ -136,7 +136,7 @@ public class OrderServiceImpl implements OrderService {
             order.setDiscountAmount(
                     request.getDiscountAmount() != null ? request.getDiscountAmount() : BigDecimal.ZERO);
             order.setRemark(request.getRemark());
-            
+
             // 设置商家ID（从第一个商品获取，假设订单中所有商品属于同一商家）
             if (!products.isEmpty()) {
                 Object merchantIdObj = products.get(0).get("merchantId");
@@ -184,7 +184,7 @@ public class OrderServiceImpl implements OrderService {
 
             // 7. 先保存订单获取ID
             Order savedOrder = orderRepository.save(order);
-            
+
             // 8. 设置订单项的orderId并保存
             for (OrderItem orderItem : orderItems) {
                 orderItem.setOrderId(savedOrder.getId());
@@ -273,6 +273,12 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    public Order getOrderById(Long orderId) {
+        return orderRepository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException(orderId));
+    }
+
+    @Override
     public Order getOrderByIdForUserOrMerchant(Long orderId, Long userId, Long merchantId) {
         log.info("获取订单详情（用户或商家），订单ID: {}, 用户ID: {}, 商家ID: {}", orderId, userId, merchantId);
 
@@ -282,16 +288,16 @@ public class OrderServiceImpl implements OrderService {
 
             // 验证权限：用户查看自己的订单，或商家查看自己店铺的订单
             boolean hasPermission = false;
-            
+
             if (userId != null && userId > 0 && order.getUserId().equals(userId)) {
                 hasPermission = true; // 用户查看自己的订单
             }
-            
-            if (merchantId != null && merchantId > 0 && 
-                order.getMerchantId() != null && order.getMerchantId().equals(merchantId)) {
+
+            if (merchantId != null && merchantId > 0 &&
+                    order.getMerchantId() != null && order.getMerchantId().equals(merchantId)) {
                 hasPermission = true; // 商家查看自己店铺的订单
             }
-            
+
             if (!hasPermission) {
                 log.warn("无权限查看订单，orderId: {}, userId: {}, merchantId: {}", orderId, userId, merchantId);
                 throw new OrderPermissionException("无权限查看此订单");
@@ -991,7 +997,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public Page<Order> getMerchantOrders(Long merchantId, Pageable pageable) {
-        log.info("分页查询商家订单，商家ID: {}, 页码: {}, 页大小: {}", 
+        log.info("分页查询商家订单，商家ID: {}, 页码: {}, 页大小: {}",
                 merchantId, pageable.getPageNumber(), pageable.getPageSize());
         return orderRepository.findByMerchantIdOrderByCreateTimeDesc(merchantId, pageable);
     }
@@ -1005,7 +1011,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean shipOrder(Long orderId, Long merchantId, String logisticsCompany, String logisticsNo) {
-        log.info("商家发货，订单ID: {}, 商家ID: {}, 物流公司: {}, 物流单号: {}", 
+        log.info("商家发货，订单ID: {}, 商家ID: {}, 物流公司: {}, 物流单号: {}",
                 orderId, merchantId, logisticsCompany, logisticsNo);
 
         try {
@@ -1072,20 +1078,22 @@ public class OrderServiceImpl implements OrderService {
         LocalDateTime todayStart = LocalDateTime.now().toLocalDate().atStartOfDay();
         LocalDateTime todayEnd = todayStart.plusDays(1);
         long todayOrders = orderRepository.countMerchantOrdersBetween(merchantId, todayStart, todayEnd);
-        BigDecimal todaySales = orderRepository.sumMerchantValidTransactionAmountBetween(merchantId, todayStart, todayEnd);
+        BigDecimal todaySales = orderRepository.sumMerchantValidTransactionAmountBetween(merchantId, todayStart,
+                todayEnd);
         stats.put("todayOrders", todayOrders);
         stats.put("todaySales", todaySales != null ? todaySales : BigDecimal.ZERO);
 
         // 计算昨日统计（用于趋势计算）
         LocalDateTime yesterdayStart = todayStart.minusDays(1);
         long yesterdayOrders = orderRepository.countMerchantOrdersBetween(merchantId, yesterdayStart, todayStart);
-        BigDecimal yesterdaySales = orderRepository.sumMerchantValidTransactionAmountBetween(merchantId, yesterdayStart, todayStart);
+        BigDecimal yesterdaySales = orderRepository.sumMerchantValidTransactionAmountBetween(merchantId, yesterdayStart,
+                todayStart);
         stats.put("yesterdayOrders", yesterdayOrders);
         stats.put("yesterdaySales", yesterdaySales != null ? yesterdaySales : BigDecimal.ZERO);
 
         // 计算趋势百分比
         if (yesterdayOrders > 0) {
-            double ordersTrend = ((double)(todayOrders - yesterdayOrders) / yesterdayOrders) * 100;
+            double ordersTrend = ((double) (todayOrders - yesterdayOrders) / yesterdayOrders) * 100;
             stats.put("ordersTrend", Math.round(ordersTrend * 100.0) / 100.0);
         } else {
             stats.put("ordersTrend", todayOrders > 0 ? 100.0 : 0.0);
@@ -1109,7 +1117,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public Page<Order> getAllOrders(Pageable pageable) {
-        log.info("分页查询所有订单（管理员），页码: {}, 页大小: {}", 
+        log.info("分页查询所有订单（管理员），页码: {}, 页大小: {}",
                 pageable.getPageNumber(), pageable.getPageSize());
         return orderRepository.findAllByOrderByCreateTimeDesc(pageable);
     }
@@ -1159,13 +1167,15 @@ public class OrderServiceImpl implements OrderService {
         // 计算昨日统计（用于趋势计算）
         LocalDateTime yesterdayStart = todayStart.minusDays(1);
         long yesterdayOrders = orderRepository.countOrdersBetween(yesterdayStart, todayStart);
-        BigDecimal yesterdayTransactionAmount = orderRepository.sumValidTransactionAmountBetween(yesterdayStart, todayStart);
+        BigDecimal yesterdayTransactionAmount = orderRepository.sumValidTransactionAmountBetween(yesterdayStart,
+                todayStart);
         stats.put("yesterdayOrders", yesterdayOrders);
-        stats.put("yesterdayTransactionAmount", yesterdayTransactionAmount != null ? yesterdayTransactionAmount : BigDecimal.ZERO);
+        stats.put("yesterdayTransactionAmount",
+                yesterdayTransactionAmount != null ? yesterdayTransactionAmount : BigDecimal.ZERO);
 
         // 计算趋势百分比
         if (yesterdayOrders > 0) {
-            double ordersTrend = ((double)(todayOrders - yesterdayOrders) / yesterdayOrders) * 100;
+            double ordersTrend = ((double) (todayOrders - yesterdayOrders) / yesterdayOrders) * 100;
             stats.put("ordersTrend", Math.round(ordersTrend * 100.0) / 100.0);
         } else {
             stats.put("ordersTrend", todayOrders > 0 ? 100.0 : 0.0);
@@ -1179,7 +1189,9 @@ public class OrderServiceImpl implements OrderService {
                     .doubleValue();
             stats.put("transactionTrend", Math.round(transactionTrend * 100.0) / 100.0);
         } else {
-            stats.put("transactionTrend", (todayTransactionAmount != null && todayTransactionAmount.compareTo(BigDecimal.ZERO) > 0) ? 100.0 : 0.0);
+            stats.put("transactionTrend",
+                    (todayTransactionAmount != null && todayTransactionAmount.compareTo(BigDecimal.ZERO) > 0) ? 100.0
+                            : 0.0);
         }
 
         return stats;
@@ -1250,7 +1262,7 @@ public class OrderServiceImpl implements OrderService {
 
         // 获取每日统计数据
         List<Object[]> dailyStats = orderRepository.getDailySalesStatistics(startTime, endTime);
-        
+
         // 创建日期到数据的映射
         Map<String, Object[]> statsMap = new HashMap<>();
         for (Object[] row : dailyStats) {
@@ -1261,10 +1273,10 @@ public class OrderServiceImpl implements OrderService {
         // 填充所有日期的数据（包括没有订单的日期）
         java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd");
         for (int i = days - 1; i >= 0; i--) {
-            LocalDateTime date = endTime.minusDays(i + 1);
+            LocalDate date = LocalDate.now().minusDays(i);
             String dateStr = date.format(formatter);
             dates.add(dateStr);
-            
+
             if (statsMap.containsKey(dateStr)) {
                 Object[] row = statsMap.get(dateStr);
                 sales.add((BigDecimal) row[1]);
@@ -1296,8 +1308,11 @@ public class OrderServiceImpl implements OrderService {
             orderMap.put("userName", order.getReceiverName()); // 使用收货人名称作为用户名
             orderMap.put("amount", order.getPayableAmount());
             orderMap.put("status", order.getStatus().name().toLowerCase());
-            orderMap.put("createTime", order.getCreateTime() != null ? 
-                    order.getCreateTime().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) : "");
+            orderMap.put("createTime",
+                    order.getCreateTime() != null
+                            ? order.getCreateTime()
+                                    .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+                            : "");
             result.add(orderMap);
         }
 
@@ -1318,14 +1333,14 @@ public class OrderServiceImpl implements OrderService {
         log.info("获取商家每日销售统计，商家ID: {}, 开始日期: {}, 结束日期: {}", merchantId, startDate, endDate);
 
         List<Map<String, Object>> result = new ArrayList<>();
-        
+
         try {
             LocalDateTime startTime = LocalDate.parse(startDate).atStartOfDay();
             LocalDateTime endTime = LocalDate.parse(endDate).plusDays(1).atStartOfDay();
 
             // 获取每日统计数据
             List<Object[]> dailyStats = orderRepository.getMerchantDailySalesStatistics(merchantId, startTime, endTime);
-            
+
             // 创建日期到数据的映射
             Map<String, Object[]> statsMap = new HashMap<>();
             for (Object[] row : dailyStats) {
@@ -1337,12 +1352,12 @@ public class OrderServiceImpl implements OrderService {
             java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd");
             LocalDate start = LocalDate.parse(startDate);
             LocalDate end = LocalDate.parse(endDate);
-            
+
             for (LocalDate date = start; !date.isAfter(end); date = date.plusDays(1)) {
                 String dateStr = date.format(formatter);
                 Map<String, Object> dayData = new HashMap<>();
                 dayData.put("date", dateStr);
-                
+
                 if (statsMap.containsKey(dateStr)) {
                     Object[] row = statsMap.get(dateStr);
                     dayData.put("totalSales", row[1] != null ? row[1] : BigDecimal.ZERO);
@@ -1351,7 +1366,7 @@ public class OrderServiceImpl implements OrderService {
                     dayData.put("totalSales", BigDecimal.ZERO);
                     dayData.put("totalOrders", 0L);
                 }
-                
+
                 result.add(dayData);
             }
         } catch (Exception e) {
@@ -1366,11 +1381,11 @@ public class OrderServiceImpl implements OrderService {
         log.info("获取商家热销商品统计，商家ID: {}, 数量: {}", merchantId, limit);
 
         List<Map<String, Object>> result = new ArrayList<>();
-        
+
         try {
             Pageable pageable = PageRequest.of(0, limit);
             List<Object[]> hotProducts = orderRepository.getMerchantHotProducts(merchantId, pageable);
-            
+
             for (Object[] row : hotProducts) {
                 Map<String, Object> product = new HashMap<>();
                 product.put("productId", row[0]);
@@ -1384,5 +1399,57 @@ public class OrderServiceImpl implements OrderService {
         }
 
         return result;
+    }
+
+    @Override
+    public List<Map<String, Object>> getConsumeDistribution() {
+        log.info("获取消费能力分布数据");
+
+        List<Map<String, Object>> distribution = new ArrayList<>();
+
+        try {
+            // 统计每个用户的总消费金额，按金额分级
+            // 获取所有有效订单（PAID, SHIPPED, COMPLETED）的用户消费统计
+            List<Object[]> userConsume = orderRepository.getUserConsumeStatistics();
+
+            // 分级统计
+            long lowConsume = 0; // 低消费用户：总额 < 500
+            long mediumConsume = 0; // 中等消费用户：500 <= 总额 < 2000
+            long highConsume = 0; // 高消费用户：2000 <= 总额 < 5000
+            long vipConsume = 0; // VIP用户：总额 >= 5000
+
+            for (Object[] row : userConsume) {
+                BigDecimal totalAmount = (BigDecimal) row[1];
+                if (totalAmount == null)
+                    continue;
+
+                if (totalAmount.compareTo(new BigDecimal("500")) < 0) {
+                    lowConsume++;
+                } else if (totalAmount.compareTo(new BigDecimal("2000")) < 0) {
+                    mediumConsume++;
+                } else if (totalAmount.compareTo(new BigDecimal("5000")) < 0) {
+                    highConsume++;
+                } else {
+                    vipConsume++;
+                }
+            }
+
+            distribution.add(createConsumeItem("低消费用户", lowConsume));
+            distribution.add(createConsumeItem("中等消费用户", mediumConsume));
+            distribution.add(createConsumeItem("高消费用户", highConsume));
+            distribution.add(createConsumeItem("VIP用户", vipConsume));
+
+        } catch (Exception e) {
+            log.error("获取消费能力分布失败", e);
+        }
+
+        return distribution;
+    }
+
+    private Map<String, Object> createConsumeItem(String name, long value) {
+        Map<String, Object> item = new HashMap<>();
+        item.put("name", name);
+        item.put("value", value);
+        return item;
     }
 }

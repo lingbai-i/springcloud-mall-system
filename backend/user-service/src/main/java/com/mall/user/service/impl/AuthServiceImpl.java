@@ -153,8 +153,8 @@ public class AuthServiceImpl implements AuthService {
             throw new RuntimeException("用户名或密码错误");
         }
 
-        // 生成JWT令牌
-        String token = jwtUtils.generateToken(user.getUsername());
+        // 生成JWT令牌（包含用户ID）
+        String token = jwtUtils.generateToken(user.getUsername(), user.getId());
 
         // 更新登录时间
         user.setLastLoginTime(LocalDateTime.now());
@@ -242,8 +242,8 @@ public class AuthServiceImpl implements AuthService {
             throw new RuntimeException("用户已被禁用");
         }
 
-        // 生成JWT令牌
-        String token = jwtUtils.generateToken(user.getUsername());
+        // 生成JWT令牌（包含用户ID）
+        String token = jwtUtils.generateToken(user.getUsername(), user.getId());
 
         // 更新登录时间
         user.setLastLoginTime(LocalDateTime.now());
@@ -347,8 +347,8 @@ public class AuthServiceImpl implements AuthService {
 
         logger.info("用户注册成功: {}", user.getUsername());
 
-        // 注册成功后，自动生成JWT token并构建登录响应
-        String token = jwtUtils.generateToken(user.getUsername());
+        // 注册成功后，自动生成JWT token并构建登录响应（包含用户ID）
+        String token = jwtUtils.generateToken(user.getUsername(), user.getId());
 
         // 构建用户信息
         LoginResponse.UserInfo userInfo = new LoginResponse.UserInfo();

@@ -4,10 +4,11 @@
       <!-- Logo和标题 -->
       <div class="login-header">
         <div class="logo">
-          <img src="/logo.png" alt="商城Logo" class="logo-img">
+          <!-- 修复：使用正确的商标图片路径，统一品牌形象 -->
+          <img src="/商标png.png" alt="商城Logo" class="logo-img">
         </div>
         <h2 class="title">欢迎登录</h2>
-        <p class="subtitle">在线商城 - 您的购物首选</p>
+        <p class="subtitle">秉承匠心 · 诚就百物</p>
       </div>
 
       <!-- 登录表单 -->
@@ -109,19 +110,25 @@
           </div>
         </div>
 
-        <!-- 注册链接 -->
-        <div class="register-link">
-          <span>还没有账号？</span>
-          <el-button type="text" @click="goToRegister">立即注册</el-button>
-        </div>
       </el-form>
+
+      <div class="login-footer">
+        <p>还没有账号？<el-button type="text" @click="goToRegister">立即注册</el-button></p>
+        <div class="footer-links">
+          <el-link href="/" target="_blank">返回首页</el-link>
+          <el-divider direction="vertical" />
+          <el-link href="/merchant/login">商家登录</el-link>
+          <el-divider direction="vertical" />
+          <el-link href="/admin/login">管理员登录</el-link>
+        </div>
+      </div>
     </div>
 
     <!-- 背景装饰 -->
     <div class="bg-decoration">
-      <div class="shape shape-1"></div>
-      <div class="shape shape-2"></div>
-      <div class="shape shape-3"></div>
+      <div class="circle circle-1"></div>
+      <div class="circle circle-2"></div>
+      <div class="circle circle-3"></div>
     </div>
   </div>
 </template>
@@ -294,20 +301,21 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #f4f7f5 0%, #d1dbd3 100%);
   position: relative;
   overflow: hidden;
 }
 
 .login-box {
   width: 400px;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(15px);
   border-radius: 20px;
   padding: 40px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 20px 50px rgba(58, 80, 68, 0.1);
   position: relative;
   z-index: 10;
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .login-header {
@@ -319,23 +327,63 @@ onUnmounted(() => {
   width: 60px;
   height: 60px;
   margin-bottom: 15px;
+  filter: drop-shadow(0 4px 8px rgba(58, 80, 68, 0.1));
 }
 
 .title {
   margin: 0 0 10px 0;
-  color: #303133;
+  color: #3a5044;
   font-size: 24px;
   font-weight: 600;
+  letter-spacing: 2px;
 }
 
 .subtitle {
   margin: 0;
-  color: #909399;
+  color: #5c7c6a;
   font-size: 14px;
+  font-family: "STKaiti", "Kaiti SC", serif;
 }
 
 .login-form {
   margin-top: 20px;
+}
+
+/* 深度选择器修改 Element Plus 样式 */
+:deep(.el-input__wrapper) {
+  background-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 0 1px #dcdfe6 inset;
+  transition: all 0.3s;
+}
+
+:deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 1px #5c7c6a inset !important;
+  background-color: #fff;
+}
+
+:deep(.el-tabs__item.is-active) {
+  color: #3a5044;
+}
+
+:deep(.el-tabs__active-bar) {
+  background-color: #3a5044;
+}
+
+:deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
+  background-color: #5c7c6a;
+  border-color: #5c7c6a;
+}
+
+:deep(.el-checkbox__input.is-checked + .el-checkbox__label) {
+  color: #3a5044;
+}
+
+:deep(.el-button--text) {
+  color: #5c7c6a;
+}
+
+:deep(.el-button--text:hover) {
+  color: #3a5044;
 }
 
 .login-tabs {
@@ -362,10 +410,18 @@ onUnmounted(() => {
 .sms-btn {
   white-space: nowrap;
   min-width: 100px;
+  border-color: #5c7c6a;
+  color: #5c7c6a;
+}
+
+.sms-btn:hover {
+  background-color: #f4f7f5;
+  color: #3a5044;
+  border-color: #3a5044;
 }
 
 .login-options {
-  display: flex;
+  display: flex; 
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
@@ -376,6 +432,16 @@ onUnmounted(() => {
   height: 45px;
   font-size: 16px;
   font-weight: 600;
+  background: linear-gradient(135deg, #5c7c6a, #3a5044);
+  border: none;
+  border-radius: 8px;
+  transition: all 0.3s;
+}
+
+.login-btn:hover {
+  background: linear-gradient(135deg, #6d8e7b, #4a6355);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(58, 80, 68, 0.2);
 }
 
 .third-party-login {
@@ -395,39 +461,67 @@ onUnmounted(() => {
   left: 0;
   right: 0;
   height: 1px;
-  background: #e4e7ed;
+  background: #dcdfe6;
 }
 
 .divider span {
-  background: rgba(255, 255, 255, 0.95);
+  position: relative;
+  background: transparent;
   padding: 0 15px;
   color: #909399;
-  font-size: 12px;
+  font-size: 13px;
+  z-index: 1;
+}
+
+.login-box .divider span {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(5px);
 }
 
 .third-party-buttons {
   display: flex;
   justify-content: center;
-  gap: 15px;
+  gap: 20px;
 }
 
-.third-party-buttons .el-button {
-  width: 45px;
-  height: 45px;
-  border-radius: 50%;
+.third-party-buttons :deep(.el-button) {
+  font-size: 20px;
+  width: 40px;
+  height: 40px;
+  transition: all 0.3s;
 }
 
-.icon {
-  width: 20px;
-  height: 20px;
-  fill: currentColor;
+.third-party-buttons :deep(.el-button:hover) {
+  transform: scale(1.1);
+  color: #3a5044;
+  border-color: #5c7c6a;
 }
 
-.register-link {
+.login-footer {
+  margin-top: 30px;
   text-align: center;
-  margin-top: 20px;
-  color: #909399;
+}
+
+.login-footer p {
+  margin-bottom: 15px;
+  color: #606266;
   font-size: 14px;
+}
+
+.footer-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+:deep(.el-link) {
+  font-size: 13px;
+  color: #5c7c6a;
+}
+
+:deep(.el-link:hover) {
+  color: #3a5044;
 }
 
 /* 背景装饰 */
@@ -440,40 +534,40 @@ onUnmounted(() => {
   pointer-events: none;
 }
 
-.shape {
+.circle {
   position: absolute;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, rgba(92, 124, 106, 0.1), rgba(58, 80, 68, 0.05));
   animation: float 6s ease-in-out infinite;
 }
 
-.shape-1 {
-  width: 200px;
-  height: 200px;
-  top: 10%;
-  left: 10%;
+.circle-1 {
+  width: 300px;
+  height: 300px;
+  top: -100px;
+  left: -100px;
   animation-delay: 0s;
 }
 
-.shape-2 {
-  width: 150px;
-  height: 150px;
-  top: 60%;
-  right: 10%;
+.circle-2 {
+  width: 200px;
+  height: 200px;
+  bottom: -50px;
+  right: -50px;
   animation-delay: 2s;
 }
 
-.shape-3 {
-  width: 100px;
-  height: 100px;
-  bottom: 20%;
-  left: 20%;
+.circle-3 {
+  width: 150px;
+  height: 150px;
+  top: 20%;
+  right: 15%;
   animation-delay: 4s;
 }
 
 @keyframes float {
   0%, 100% {
-    transform: translateY(0px);
+    transform: translateY(0);
   }
   50% {
     transform: translateY(-20px);

@@ -66,7 +66,7 @@
           @click="goToProduct(product.id)"
         >
           <div class="product-image">
-            <img :src="product.mainImage" :alt="product.name" />
+            <img :src="getFirstImage(product.mainImage)" :alt="product.name" />
             <div class="product-actions">
               <el-button 
                 type="primary" 
@@ -97,7 +97,7 @@
           @click="goToProduct(product.id)"
         >
           <div class="item-image">
-            <img :src="product.mainImage" :alt="product.name" />
+            <img :src="getFirstImage(product.mainImage)" :alt="product.name" />
           </div>
           <div class="item-info">
             <h3 class="item-name">{{ product.name }}</h3>
@@ -245,6 +245,21 @@ const goToProduct = (productId) => {
 }
 
 /**
+ * 获取第一张图片URL（处理逗号分隔的多图片URL）
+ * @param imageUrl 图片URL字符串，可能包含逗号分隔的多个URL
+ * @returns 第一张图片的URL
+ * @author lingbai
+ * @since 2025-01-27
+ */
+const getFirstImage = (imageUrl) => {
+  if (!imageUrl) return ''
+  if (imageUrl.includes(',')) {
+    return imageUrl.split(',')[0].trim()
+  }
+  return imageUrl
+}
+
+/**
  * 添加到购物车
  * @param product 商品信息
  * @author lingbai
@@ -255,7 +270,7 @@ const addToCart = (product) => {
     id: product.id,
     name: product.name,
     price: product.price,
-    image: product.mainImage,
+    image: getFirstImage(product.mainImage),
     quantity: 1
   })
   ElMessage.success('已添加到购物车')

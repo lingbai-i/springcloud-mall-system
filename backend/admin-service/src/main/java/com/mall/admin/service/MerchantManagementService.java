@@ -7,7 +7,7 @@ import java.util.Map;
 /**
  * 商家管理服务接口
  * 
- * @author system
+ * @author lingbai
  * @since 2025-01-09
  */
 public interface MerchantManagementService {

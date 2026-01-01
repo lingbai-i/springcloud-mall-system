@@ -1,5 +1,10 @@
 <template>
   <div class="admin-dashboard">
+    <!-- 服务器时间显示 -->
+    <div class="server-time-header">
+      <ServerTime :auto-sync="true" />
+    </div>
+    
     <!-- 欢迎区域 -->
     <div class="welcome-section">
       <div class="welcome-content">
@@ -68,7 +73,14 @@
         <el-col :span="8">
           <el-card class="chart-card">
             <template #header>
-              <span>用户分布</span>
+              <div class="card-header">
+                <span>用户分布</span>
+                <el-radio-group v-model="distributionDimension" size="small">
+                  <el-radio-button label="active">活跃度</el-radio-button>
+                  <el-radio-button label="consume">消费力</el-radio-button>
+                  <el-radio-button label="register">注册时间</el-radio-button>
+                </el-radio-group>
+              </div>
             </template>
             <div class="chart-container" ref="userChartRef"></div>
           </el-card>
@@ -183,6 +195,8 @@ import {
 import * as echarts from 'echarts'
 import { getDashboardStats, getSalesTrend, getUserDistribution, getRecentOrders, getPendingItems } from '@/api/admin'
 import { getPendingBannerCount } from '@/api/admin/banner'
+import ServerTime from '@/components/ServerTime.vue'
+import serverTimeManager from '@/utils/serverTime'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -194,14 +208,31 @@ const userChartRef = ref()
 // 销售趋势周期
 const salesPeriod = ref('30d')
 
+// 用户分布维度
+const distributionDimension = ref('active')
+
 // 监听周期变化，重新加载数据
 watch(salesPeriod, () => {
   loadSalesTrend()
 })
 
-// 当前日期
+// 监听维度变化，重新加载用户分布数据
+watch(distributionDimension, () => {
+  loadUserDistribution()
+})
+
+// 当前日期（使用服务器时间）
 const currentDate = computed(() => {
-  return new Date().toLocaleDateString('zh-CN', {
+  if (!serverTimeManager.isSynced()) {
+    return new Date().toLocaleDateString('zh-CN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      weekday: 'long'
+    })
+  }
+  const serverDate = serverTimeManager.nowDate()
+  return serverDate.toLocaleDateString('zh-CN', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -216,7 +247,7 @@ const statsData = reactive([
     label: '总用户数',
     value: '0',
     trend: 0,
-    color: '#1890ff',
+    color: '#667eea',
     icon: User
   },
   {
@@ -224,7 +255,7 @@ const statsData = reactive([
     label: '商家数量',
     value: '0',
     trend: 0,
-    color: '#52c41a',
+    color: '#8b5cf6',
     icon: Shop
   },
   {
@@ -232,7 +263,7 @@ const statsData = reactive([
     label: '总订单数',
     value: '0',
     trend: 0,
-    color: '#faad14',
+    color: '#a78bfa',
     icon: Document
   },
   {
@@ -240,7 +271,7 @@ const statsData = reactive([
     label: '交易额',
     value: '¥0',
     trend: 0,
-    color: '#f5222d',
+    color: '#764ba2',
     icon: Money
   }
 ])
@@ -370,7 +401,7 @@ const initSalesChart = () => {
     yAxis: [
       {
         type: 'value',
-        name: '销售额(万元)',
+        name: '销售额(元)',
         position: 'left'
       },
       {
@@ -512,17 +543,42 @@ const loadUserDistribution = async () => {
   try {
     const response = await getUserDistribution()
     if (response.data && userChart) {
-      const data = response.data.distribution || []
+      let data = []
+      let seriesName = '用户分布'
+      
+      // 根据维度选择对应的数据
+      switch (distributionDimension.value) {
+        case 'active':
+          data = response.data.activeDistribution || []
+          seriesName = '活跃度分布'
+          break
+        case 'consume':
+          data = response.data.consumeDistribution || []
+          seriesName = '消费能力分布'
+          break
+        case 'register':
+          data = response.data.registerDistribution || []
+          seriesName = '注册时间分布'
+          break
+        default:
+          data = response.data.activeDistribution || []
+          seriesName = '活跃度分布'
+      }
+      
+      // 颜色配色
+      const colors = ['#667eea', '#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe']
+      
       userChart.setOption({
         legend: {
           data: data.map(item => item.name)
         },
         series: [
           {
-            data: data.map(item => ({
+            name: seriesName,
+            data: data.map((item, index) => ({
               value: item.value,
               name: item.name,
-              itemStyle: { color: item.color || '#1890ff' }
+              itemStyle: { color: colors[index % colors.length] }
             }))
           }
         ]
@@ -657,21 +713,30 @@ onMounted(async () => {
 }
 
 /* 欢迎区域 */
+/* 服务器时间头部 */
+.server-time-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
+
 .welcome-section {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); /* 保持用户喜欢的紫色渐变 */
   color: white;
   padding: 32px;
-  border-radius: 8px;
+  border-radius: 16px;
   margin-bottom: 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  box-shadow: 0 8px 32px rgba(118, 75, 162, 0.25); /* 优化阴影 */
 }
 
 .welcome-title {
   font-size: 28px;
   font-weight: 600;
   margin: 0 0 8px 0;
+  letter-spacing: 0.5px;
 }
 
 .welcome-subtitle {
@@ -685,6 +750,19 @@ onMounted(async () => {
   gap: 12px;
 }
 
+.welcome-actions :deep(.el-button) {
+  border: none;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  backdrop-filter: blur(4px);
+  transition: all 0.3s;
+}
+
+.welcome-actions :deep(.el-button:hover) {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
 /* 统计卡片网格 */
 .stats-grid {
   display: grid;
@@ -695,13 +773,6 @@ onMounted(async () => {
 
 .stats-card {
   border: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s;
-}
-
-.stats-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
 }
 
 .stats-content {
@@ -711,14 +782,15 @@ onMounted(async () => {
 }
 
 .stats-icon {
-  width: 64px;
-  height: 64px;
+  width: 56px;
+  height: 56px;
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   font-size: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .stats-info {
@@ -726,17 +798,17 @@ onMounted(async () => {
 }
 
 .stats-value {
-  font-size: 32px;
-  font-weight: 600;
-  color: #333;
-  line-height: 1;
+  font-size: 28px;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1.2;
   margin-bottom: 4px;
 }
 
 .stats-label {
   font-size: 14px;
-  color: #666;
-  margin-bottom: 8px;
+  color: #64748b;
+  margin-bottom: 4px;
 }
 
 .stats-trend {
@@ -744,15 +816,15 @@ onMounted(async () => {
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .stats-trend.positive {
-  color: #52c41a;
+  color: #10b981;
 }
 
 .stats-trend.negative {
-  color: #f5222d;
+  color: #ef4444;
 }
 
 /* 图表区域 */
@@ -762,11 +834,10 @@ onMounted(async () => {
 
 .chart-card {
   border: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .chart-container {
-  height: 300px;
+  height: 320px;
 }
 
 /* 表格区域 */
@@ -776,24 +847,26 @@ onMounted(async () => {
 
 .table-card {
   border: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  font-weight: 600;
+  color: #1e293b;
 }
 
 .amount {
   font-weight: 600;
-  color: #f5222d;
+  color: #ef4444;
 }
 
 /* 待处理事项 */
 .pending-list {
-  max-height: 300px;
+  max-height: 320px;
   overflow-y: auto;
+  padding-right: 8px;
 }
 
 .pending-item {
@@ -801,24 +874,28 @@ onMounted(async () => {
   align-items: center;
   gap: 12px;
   padding: 12px;
-  border-radius: 8px;
+  border-radius: 12px;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: all 0.3s;
+  margin-bottom: 8px;
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .pending-item:hover {
-  background-color: #f5f5f5;
+  background-color: rgba(59, 130, 246, 0.05);
+  transform: translateX(4px);
 }
 
 .pending-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  font-size: 16px;
+  font-size: 18px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .pending-content {
@@ -827,25 +904,24 @@ onMounted(async () => {
 
 .pending-title {
   font-size: 14px;
-  font-weight: 500;
-  color: #333;
-  margin-bottom: 4px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 2px;
 }
 
 .pending-desc {
   font-size: 12px;
-  color: #666;
+  color: #64748b;
 }
 
 .pending-count {
-  background-color: #f5222d;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
   color: white;
   font-size: 12px;
-  font-weight: 500;
-  padding: 2px 8px;
-  border-radius: 12px;
-  min-width: 20px;
-  text-align: center;
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: 20px;
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.3);
 }
 
 .badge {
@@ -859,12 +935,17 @@ onMounted(async () => {
 
 .system-card {
   border: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .system-item {
   text-align: center;
   padding: 16px;
+  border-radius: 12px;
+  transition: all 0.3s;
+}
+
+.system-item:hover {
+  background: rgba(59, 130, 246, 0.03);
 }
 
 .system-status {
@@ -874,49 +955,60 @@ onMounted(async () => {
   gap: 8px;
   margin-bottom: 8px;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .status-dot {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
+  position: relative;
+}
+
+.status-dot::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border-radius: 50%;
+  background: inherit;
+  opacity: 0.4;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 0.4; }
+  100% { transform: scale(2.5); opacity: 0; }
 }
 
 .system-status.normal {
-  color: #52c41a;
+  color: #10b981;
 }
 
 .system-status.normal .status-dot {
-  background-color: #52c41a;
+  background-color: #10b981;
 }
 
 .system-status.warning {
-  color: #faad14;
+  color: #f59e0b;
 }
 
 .system-status.warning .status-dot {
-  background-color: #faad14;
-}
-
-.system-status.error {
-  color: #f5222d;
-}
-
-.system-status.error .status-dot {
-  background-color: #f5222d;
+  background-color: #f59e0b;
 }
 
 .system-name {
-  font-size: 16px;
-  font-weight: 500;
-  color: #333;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
   margin-bottom: 4px;
 }
 
 .system-info {
   font-size: 12px;
-  color: #666;
+  color: #64748b;
 }
 
 /* 响应式设计 */

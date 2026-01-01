@@ -265,7 +265,7 @@ const loadOrderDetail = async () => {
           productId: item.productId,
           name: item.productName,
           specification: item.productSpec,
-          image: item.productImage || 'https://via.placeholder.com/120',
+          image: item.productImage ? item.productImage.split(',')[0] : 'https://via.placeholder.com/120',
           price: item.productPrice,
           quantity: item.quantity
         }))

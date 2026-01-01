@@ -1,7 +1,7 @@
 /**
  * 仪表盘工具函数
  * 
- * @author system
+ * @author lingbai
  * @date 2025-12-25
  */
 

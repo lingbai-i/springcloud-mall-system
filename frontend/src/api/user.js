@@ -65,6 +65,26 @@ export function uploadAvatar(file) {
   })
 }
 
+/**
+ * 上传头像到 MinIO 存储
+ * 推荐使用此接口，头像将存储到 MinIO 对象存储中
+ * @param {File} file 头像文件
+ * @returns {Promise<{success: boolean, data: string, message: string}>} 返回头像 URL
+ */
+export function uploadAvatarToMinio(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  
+  return request({
+    url: '/users/upload-avatar',
+    method: 'post',
+    data: formData,
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  })
+}
+
 // 检查用户名唯一性
 export function checkUsernameUnique(username) {
   return request({
@@ -160,6 +180,7 @@ export const userApi = {
   updateUserProfile,
   changePassword,
   uploadAvatar,
+  uploadAvatarToMinio,
   checkUsernameUnique,
   checkPhoneUnique,
   checkEmailUnique,

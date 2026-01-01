@@ -1,8 +1,9 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { register } from '@/api/auth'
 import { getUserProfile } from '@/api/user'
 import * as logger from '@/utils/logger'
+import router from '@/router'
 
 /**
  * 用户状态管理
@@ -155,6 +156,7 @@ export const useUserStore = defineStore('user', () => {
 
   /**
    * 退出登录
+   * 清除本地状态和存储，并通知其他标签页
    */
   const logout = () => {
     token.value = ''
@@ -167,6 +169,11 @@ export const useUserStore = defineStore('user', () => {
     localStorage.removeItem('userId')
     // 同时清除 Pinia persist 的 key
     localStorage.removeItem('user-store')
+    
+    // 触发跨标签页同步事件
+    // 使用一个特殊的 key 来通知其他标签页用户已退出
+    localStorage.setItem('logout-event', Date.now().toString())
+    localStorage.removeItem('logout-event')
   }
   
   // logout的别名，与前端其他部分保持兼容
@@ -189,8 +196,9 @@ export const useUserStore = defineStore('user', () => {
    * V1.2 2025-12-25：根据用户角色调用不同的接口，避免管理员/商家信息被普通用户信息覆盖
    * V1.3 2025-12-28：增强商家角色判断逻辑，同时检查 localStorage 中的 merchantId，避免页面刷新后商家信息被覆盖
    * V1.4 2025-12-28：修复普通用户首页刷新后显示手机号的问题，增加 forceRefresh 参数支持强制刷新
+   * V1.5 2025-12-29：修复商家仪表盘店名显示问题，即使 forceRefresh=true，商家用户也不调用普通用户接口，同时从 localStorage 恢复 shopName
    * @author lingbai
-   * @param {boolean} forceRefresh - 是否强制刷新，忽略角色检查
+   * @param {boolean} forceRefresh - 是否强制刷新，忽略角色检查（对商家用户无效）
    * @returns {Promise<Object>} 最新的用户信息对象
    * @throws {Error} 当服务端返回异常或会话无效时抛出错误
    */
@@ -201,32 +209,51 @@ export const useUserStore = defineStore('user', () => {
       return userInfo.value
     }
     
+    // 检查 localStorage 中是否有商家标识（用于判断是否为商家用户）
+    const savedMerchantId = localStorage.getItem('merchantId')
+    const savedUserInfo = localStorage.getItem('userInfo')
+    let savedShopName = null
+    if (savedUserInfo) {
+      try {
+        const parsed = JSON.parse(savedUserInfo)
+        savedShopName = parsed.shopName
+      } catch (e) {
+        // 忽略解析错误
+      }
+    }
+    
     // 如果是管理员，调用管理员信息接口（除非强制刷新）
     if (!forceRefresh && (userInfo.value.isAdmin || userInfo.value.role === 'admin')) {
       logger.info('当前用户是管理员，跳过普通用户信息刷新')
       return userInfo.value
     }
     
-    // 如果是商家，调用商家信息接口（除非强制刷新）
+    // 如果是商家，跳过普通用户信息刷新
     // 增强判断：同时检查 localStorage 中的 merchantId，避免页面刷新后状态丢失
-    // 注意：只有当 userInfo 中明确标记为商家时才跳过，避免普通用户首页被误判
-    if (!forceRefresh && (userInfo.value.isMerchant === true || userInfo.value.role === 'merchant')) {
-      const savedMerchantId = localStorage.getItem('merchantId')
+    // V1.5 2025-12-29：即使 forceRefresh=true，商家用户也不应该调用普通用户接口
+    const isMerchantUser = userInfo.value.isMerchant === true || 
+                          userInfo.value.role === 'merchant' || 
+                          !!savedMerchantId
+    
+    if (isMerchantUser) {
       logger.info('当前用户是商家，跳过普通用户信息刷新', { 
         isMerchant: userInfo.value.isMerchant, 
         role: userInfo.value.role,
-        savedMerchantId 
+        savedMerchantId,
+        savedShopName,
+        forceRefresh
       })
-      // 如果 userInfo 中缺少商家标识，从 localStorage 恢复
-      if (savedMerchantId && !userInfo.value.merchantId) {
+      // 如果 userInfo 中缺少商家标识或店名，从 localStorage 恢复
+      if (savedMerchantId && (!userInfo.value.merchantId || !userInfo.value.shopName)) {
         userInfo.value = { 
           ...userInfo.value, 
           merchantId: parseInt(savedMerchantId, 10),
           isMerchant: true,
-          role: 'merchant'
+          role: userInfo.value.role || 'merchant',
+          shopName: userInfo.value.shopName || savedShopName
         }
         localStorage.setItem('userInfo', JSON.stringify(userInfo.value))
-        logger.info('已从 localStorage 恢复商家标识')
+        logger.info('已从 localStorage 恢复商家标识和店名', { shopName: userInfo.value.shopName })
       }
       return userInfo.value
     }
@@ -348,6 +375,59 @@ export const useUserStore = defineStore('user', () => {
     })
   }
   
+  /**
+   * 跨标签页状态同步处理器
+   * 监听 localStorage 变化，当其他标签页退出登录时同步状态
+   * @param {StorageEvent} event - storage 事件对象
+   */
+  const handleStorageChange = (event) => {
+    // 监听退出登录事件
+    if (event.key === 'logout-event') {
+      console.log('[跨标签页同步] 检测到其他标签页退出登录')
+      token.value = ''
+      userInfo.value = {}
+      // 跳转到首页
+      router.push('/home')
+      return
+    }
+    
+    // 监听 token 被清除
+    if (event.key === 'token' && !event.newValue) {
+      console.log('[跨标签页同步] 检测到 token 被清除')
+      token.value = ''
+      userInfo.value = {}
+      router.push('/home')
+      return
+    }
+    
+    // 监听 user-store 被清除
+    if (event.key === 'user-store' && !event.newValue) {
+      console.log('[跨标签页同步] 检测到 user-store 被清除')
+      token.value = ''
+      userInfo.value = {}
+      router.push('/home')
+      return
+    }
+  }
+  
+  /**
+   * 启动跨标签页状态同步监听
+   * 应在应用初始化时调用
+   */
+  const startStorageSync = () => {
+    window.addEventListener('storage', handleStorageChange)
+    console.log('[跨标签页同步] 已启动监听')
+  }
+  
+  /**
+   * 停止跨标签页状态同步监听
+   * 应在应用卸载时调用
+   */
+  const stopStorageSync = () => {
+    window.removeEventListener('storage', handleStorageChange)
+    console.log('[跨标签页同步] 已停止监听')
+  }
+  
   return {
     // 状态
     token,
@@ -369,7 +449,9 @@ export const useUserStore = defineStore('user', () => {
     userLogout,
     updateUserInfo,
     fetchUserInfo,
-    initUserState
+    initUserState,
+    startStorageSync,
+    stopStorageSync
   }
 }, {
   persist: {

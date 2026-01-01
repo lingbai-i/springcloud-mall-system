@@ -64,7 +64,7 @@
         <h3>商品清单</h3>
         <div v-if="checkoutItems.length > 0" class="goods-list">
           <div v-for="item in checkoutItems" :key="item.productId" class="goods-item">
-            <img :src="item.productImage" :alt="item.productName" class="product-image">
+            <img :src="getFirstImage(item.productImage)" :alt="item.productName" class="product-image">
             <div class="product-info">
               <h4 class="product-name">{{ item.productName }}</h4>
               <p class="product-specs" v-if="item.specifications">{{ item.specifications }}</p>
@@ -211,6 +211,15 @@ const route = useRoute()
 const cartStore = useCartStore()
 const userStore = useUserStore()
 
+// 获取第一张图片URL（处理逗号分隔的多图片URL）
+const getFirstImage = (imageUrl) => {
+  if (!imageUrl) return ''
+  if (imageUrl.includes(',')) {
+    return imageUrl.split(',')[0].trim()
+  }
+  return imageUrl
+}
+
 // 响应式数据
 const checkoutItems = ref([])
 const addresses = ref([])
@@ -218,6 +227,7 @@ const selectedAddress = ref(null)
 const selectedPayment = ref(1)
 const orderRemark = ref('')
 const submitting = ref(false)
+const isBuyNowMode = ref(false) // 是否为直接购买模式
 
 // 地址相关
 const addressDialogVisible = ref(false)
@@ -266,6 +276,38 @@ const canSubmit = computed(() => {
 // 方法
 const loadCheckoutData = () => {
   console.log('=== 开始加载结算数据 ===')
+  
+  // 检查是否为直接购买模式
+  const mode = route.query.mode
+  console.log('结算模式:', mode)
+  
+  if (mode === 'buyNow') {
+    // 直接购买模式：从history.state获取商品信息
+    isBuyNowMode.value = true
+    const buyNowItem = history.state?.buyNowItem
+    console.log('直接购买商品:', buyNowItem)
+    
+    if (!buyNowItem) {
+      ElMessage.warning('商品信息丢失，请重新选择')
+      router.push('/')
+      return
+    }
+    
+    checkoutItems.value = [{
+      productId: buyNowItem.productId,
+      productName: buyNowItem.productName,
+      productImage: buyNowItem.productImage,
+      price: buyNowItem.price,
+      quantity: buyNowItem.quantity,
+      specifications: buyNowItem.specifications || ''
+    }]
+    
+    console.log('直接购买结算商品:', checkoutItems.value)
+    return
+  }
+  
+  // 购物车结算模式
+  isBuyNowMode.value = false
   console.log('购物车Store:', cartStore)
   console.log('购物车所有商品:', cartStore.cartItems)
   
@@ -276,7 +318,7 @@ const loadCheckoutData = () => {
   
   if (!selectedItems || selectedItems.length === 0) {
     ElMessage.warning('请先选择要结算的商品')
-    router.push('/cart')
+    router.push('/user/cart')
     return
   }
   
@@ -429,6 +471,37 @@ const submitOrder = async () => {
     
     submitting.value = true
     
+    // 前置验证：确保用户已登录
+    const currentUserId = userStore.userId
+    console.log('当前用户ID:', currentUserId, '类型:', typeof currentUserId)
+    
+    if (!currentUserId) {
+      ElMessage.error('请先登录后再提交订单')
+      submitting.value = false
+      return
+    }
+    
+    // 前置验证：确保有商品
+    if (!checkoutItems.value || checkoutItems.value.length === 0) {
+      ElMessage.error('订单商品不能为空')
+      submitting.value = false
+      return
+    }
+    
+    // 前置验证：确保商品数据有效
+    for (const item of checkoutItems.value) {
+      if (!item.productId) {
+        ElMessage.error('商品ID无效，请返回重新选择')
+        submitting.value = false
+        return
+      }
+      if (!item.quantity || item.quantity <= 0) {
+        ElMessage.error('商品数量无效，请返回重新选择')
+        submitting.value = false
+        return
+      }
+    }
+    
     // 构建订单数据（匹配后端CreateOrderRequest格式）
     const fullAddress = [
       selectedAddress.value.province,
@@ -437,17 +510,20 @@ const submitOrder = async () => {
       selectedAddress.value.detailAddress
     ].filter(Boolean).join(' ')
     
+    // 确保userId是数字类型
+    const userId = typeof currentUserId === 'string' ? parseInt(currentUserId, 10) : currentUserId
+    
     const orderData = {
-      userId: userStore.userId,
+      userId: userId,
       // 地址信息
       receiverName: selectedAddress.value.receiverName,
       receiverPhone: selectedAddress.value.receiverPhone,
       receiverAddress: fullAddress,
       // 商品信息（后端期望字段名为orderItems）
       orderItems: checkoutItems.value.map(item => ({
-        productId: item.productId,
+        productId: typeof item.productId === 'string' ? parseInt(item.productId, 10) : item.productId,
         productSpec: item.specifications || '',
-        quantity: item.quantity
+        quantity: typeof item.quantity === 'string' ? parseInt(item.quantity, 10) : item.quantity
       })),
       // 运费和优惠（暂时设为0）
       shippingFee: 0,
@@ -456,7 +532,7 @@ const submitOrder = async () => {
       remark: orderRemark.value || ''
     }
     
-    console.log('提交订单数据:', orderData)
+    console.log('提交订单数据:', JSON.stringify(orderData, null, 2))
     
     // 调用后端API创建订单
     const response = await createOrder(orderData)
@@ -465,8 +541,10 @@ const submitOrder = async () => {
     if (response.success) {
       ElMessage.success('订单提交成功')
       
-      // 清空购物车中的已结算商品
-      await cartStore.clearSelected()
+      // 只有购物车结算模式才清空购物车中的已结算商品
+      if (!isBuyNowMode.value) {
+        await cartStore.clearSelected()
+      }
       
       // 后端返回的订单对象中，订单ID字段名为id
       const orderId = response.data.id || response.data.orderId
@@ -487,7 +565,14 @@ const submitOrder = async () => {
   } catch (error) {
     if (error !== 'cancel') {
       console.error('订单提交失败:', error)
-      ElMessage.error('订单提交失败')
+      // 尝试获取后端返回的具体错误信息
+      let errorMessage = '订单提交失败'
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message
+      } else if (error.message) {
+        errorMessage = error.message
+      }
+      ElMessage.error(errorMessage)
     }
   } finally {
     submitting.value = false
@@ -508,10 +593,15 @@ const goHome = () => {
 onMounted(async () => {
   console.log('=== 结算页面 onMounted ===')
   
-  // 先加载购物车数据
-  if (cartStore.cartItems.length === 0) {
-    console.log('购物车为空，先加载购物车数据')
-    await cartStore.fetchCartItems()
+  // 检查是否为直接购买模式
+  const mode = route.query.mode
+  
+  if (mode !== 'buyNow') {
+    // 购物车结算模式：先加载购物车数据
+    if (cartStore.cartItems.length === 0) {
+      console.log('购物车为空，先加载购物车数据')
+      await cartStore.fetchCartItems()
+    }
   }
   
   loadCheckoutData()

@@ -10,7 +10,7 @@ import java.util.Map;
 /**
  * 用户服务Feign Client
  * 
- * @author system
+ * @author lingbai
  * @since 2025-01-09
  */
 @FeignClient(name = "user-service", path = "/users")
@@ -66,4 +66,12 @@ public interface UserServiceClient {
      */
     @GetMapping("/statistics")
     R<Map<String, Object>> getUserStatistics();
+
+    /**
+     * 获取用户分布数据（活跃度、注册时间）
+     * 
+     * @return 分布数据
+     */
+    @GetMapping("/distribution")
+    R<Map<String, Object>> getUserDistribution();
 }

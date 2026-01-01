@@ -87,10 +87,10 @@
             <el-descriptions-item label="展示结束日期">
               {{ reviewDetail.endDate }}
             </el-descriptions-item>
-            <el-descriptions-item label="申请时间">
-              {{ formatTime(reviewDetail.createTime) }}
+            <el-descriptions-item label="商家申请时间">
+              {{ formatTime(reviewDetail.submitTime) }}
             </el-descriptions-item>
-            <el-descriptions-item label="审核时间">
+            <el-descriptions-item label="管理员审核时间">
               {{ reviewDetail.reviewTime ? formatTime(reviewDetail.reviewTime) : '-' }}
             </el-descriptions-item>
           </el-descriptions>

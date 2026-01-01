@@ -15,7 +15,7 @@ import java.util.Optional;
  * 轮播图统计数据访问层
  * 提供轮播图统计相关的数据库操作方法
  * 
- * @author system
+ * @author lingbai
  * @version 1.0
  * @since 2025-12-28
  */

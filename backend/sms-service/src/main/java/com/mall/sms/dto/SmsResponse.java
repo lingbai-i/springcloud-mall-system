@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 /**
  * 短信服务统一响应DTO
  *
- * @author SMS Service
+ * @author lingbai
  * @since 2024-01-01
  */
 @Data

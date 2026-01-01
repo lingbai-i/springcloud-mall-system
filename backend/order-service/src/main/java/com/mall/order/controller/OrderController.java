@@ -86,7 +86,7 @@ public class OrderController {
      */
     @GetMapping("/{id}")
     public R<Order> getOrderById(
-            @PathVariable Long id, 
+            @PathVariable Long id,
             @RequestParam(required = false) Long userId,
             @RequestParam(required = false) Long merchantId) {
         log.info("获取订单详情，订单ID: {}, 用户ID: {}, 商家ID: {}", id, userId, merchantId);
@@ -310,7 +310,7 @@ public class OrderController {
             @RequestParam String logisticsCompany,
             @RequestParam String logisticsNo) {
 
-        log.info("商家发货，订单ID: {}, 商家ID: {}, 物流公司: {}, 物流单号: {}", 
+        log.info("商家发货，订单ID: {}, 商家ID: {}, 物流公司: {}, 物流单号: {}",
                 id, merchantId, logisticsCompany, logisticsNo);
 
         Boolean result = orderService.shipOrder(id, merchantId, logisticsCompany, logisticsNo);
@@ -335,7 +335,7 @@ public class OrderController {
      * 获取商家最近订单
      * 
      * @param merchantId 商家ID
-     * @param limit 数量限制
+     * @param limit      数量限制
      * @return 最近订单列表
      */
     @GetMapping("/merchant/recent")
@@ -352,8 +352,8 @@ public class OrderController {
      * 获取商家每日销售统计
      * 
      * @param merchantId 商家ID
-     * @param startDate 开始日期
-     * @param endDate 结束日期
+     * @param startDate  开始日期
+     * @param endDate    结束日期
      * @return 每日销售统计列表
      */
     @GetMapping("/merchant/daily-sales")
@@ -371,7 +371,7 @@ public class OrderController {
      * 获取商家热销商品统计
      * 
      * @param merchantId 商家ID
-     * @param limit 数量限制
+     * @param limit      数量限制
      * @return 热销商品列表
      */
     @GetMapping("/merchant/hot-products")
@@ -439,6 +439,18 @@ public class OrderController {
     }
 
     /**
+     * 获取订单详情（管理员）
+     * 
+     * @param id 订单ID
+     * @return 订单详情
+     */
+    @GetMapping("/admin/{id}")
+    public R<Order> getAdminOrderById(@PathVariable Long id) {
+        log.info("获取订单详情（管理员），订单ID: {}", id);
+        return R.ok(orderService.getOrderById(id));
+    }
+
+    /**
      * 管理员处理退款
      * 
      * @param id       订单ID
@@ -486,5 +498,19 @@ public class OrderController {
 
         List<Map<String, Object>> orders = orderService.getAdminRecentOrders(limit);
         return R.ok(orders);
+    }
+
+    /**
+     * 获取消费能力分布（管理员）
+     * 根据用户总消费金额进行分级统计
+     * 
+     * @return 消费能力分布数据
+     */
+    @GetMapping("/admin/consume-distribution")
+    public R<List<Map<String, Object>>> getConsumeDistribution() {
+        log.info("获取消费能力分布数据");
+
+        List<Map<String, Object>> distribution = orderService.getConsumeDistribution();
+        return R.ok(distribution);
     }
 }

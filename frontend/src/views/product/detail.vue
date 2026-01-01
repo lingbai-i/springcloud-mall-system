@@ -48,6 +48,16 @@
             <LocalIcon name="gouwuche" :size="16" />{{ currentStock <= 0 ? '暂时缺货' : '加入购物车' }}
           </el-button>
           <el-button type="danger" size="large" :disabled="currentStock <= 0" @click="buyNow" class="buy-now-btn">立即购买</el-button>
+          <el-button 
+            :type="isFavorited ? 'warning' : 'default'" 
+            size="large" 
+            :loading="favoriteLoading"
+            @click="toggleFavorite" 
+            class="favorite-btn"
+          >
+            <LocalIcon :name="isFavorited ? 'shoucang-fill' : 'shoucang'" :size="16" />
+            {{ isFavorited ? '已收藏' : '收藏' }}
+          </el-button>
         </div>
         <div class="service-section">
           <h3>服务保障</h3>
@@ -123,7 +133,15 @@
 
       <section id="section-detail" class="content-section" ref="detailSectionRef">
         <h2 class="section-title">商品详情</h2>
-        <div class="detail-content" v-html="product?.description || '暂无详细描述'"></div>
+        <div class="detail-content">
+          <div v-if="product?.description" v-html="product.description" class="description-text"></div>
+          <div v-if="product?.detailImages && product.detailImages.length > 0" class="detail-images">
+            <img v-for="(img, idx) in product.detailImages" :key="idx" :src="img" :alt="`商品详情图 ${idx + 1}`" class="detail-image" @click="previewDetailImage(idx)" />
+          </div>
+          <div v-if="!product?.description && (!product?.detailImages || product.detailImages.length === 0)">
+            <el-empty description="暂无详细描述"></el-empty>
+          </div>
+        </div>
       </section>
     </div>
 
@@ -137,6 +155,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useCartStore } from '@/stores/cart'
 import { useUserStore } from '@/stores/user'
+import { useFavoriteStore } from '@/stores/favorite'
 import LocalIcon from '@/components/LocalIcon.vue'
 import ImageMagnifier from '@/components/ImageMagnifier.vue'
 import { getProductDetail, getProductReviews } from '@/api/product'
@@ -145,6 +164,7 @@ const route = useRoute()
 const router = useRouter()
 const cartStore = useCartStore()
 const userStore = useUserStore()
+const favoriteStore = useFavoriteStore()
 
 const product = ref(null)
 const currentImage = ref('')
@@ -155,6 +175,8 @@ const showPreview = ref(false)
 const previewImages = ref([])
 const previewIndex = ref(0)
 const reviews = ref([])
+const isFavorited = ref(false)
+const favoriteLoading = ref(false)
 
 const sectionNavRef = ref(null)
 const contentSectionsRef = ref(null)
@@ -223,16 +245,58 @@ const loadProductDetail = async () => {
         params = Array.isArray(attrs) ? attrs : Object.entries(attrs).map(([name, value]) => ({ name, value }))
       }
     } catch {}
+    // 主图：mainImage 可能是逗号分隔的多个URL，取第一个作为封面，全部作为主图轮播
+    const mainImages = d.mainImage?.split(',').filter(Boolean) || []
+    // 详情图片：detailImages 用于商品详情区域展示
+    const detailImages = d.detailImages?.split(',').filter(Boolean) || []
     product.value = {
       id: d.id, name: d.name || d.productName, subtitle: d.seoDescription || '', price: d.price,
       originalPrice: d.originalPrice || d.marketPrice, stock: d.stock || d.stockQuantity || 0,
-      image: d.mainImage, images: (d.detailImages || d.images)?.split(',').filter(Boolean) || [d.mainImage],
+      image: mainImages[0] || '', images: mainImages.length > 0 ? mainImages : (detailImages.length > 0 ? detailImages : []),
+      detailImages: detailImages, // 详情图片单独存储
       description: d.description || '暂无详细描述', specifications: specs, parameters: params
     }
     currentImage.value = product.value.images?.[0] || ''
     if (specs.length) selectedSpec.value = specs[0].id
     await loadReviews()
+    // 检查收藏状态
+    await checkFavoriteStatus()
   } catch (e) { ElMessage.error('加载商品详情失败') }
+}
+
+const checkFavoriteStatus = async () => {
+  if (!userStore.isLoggedIn) {
+    isFavorited.value = false
+    return
+  }
+  try {
+    isFavorited.value = await favoriteStore.checkFavorited(Number(route.params.id))
+  } catch {
+    isFavorited.value = false
+  }
+}
+
+const toggleFavorite = async () => {
+  if (!userStore.isLoggedIn) {
+    ElMessage.warning('请先登录')
+    router.push('/login')
+    return
+  }
+  
+  try {
+    favoriteLoading.value = true
+    const result = await favoriteStore.toggleFavorite(Number(route.params.id))
+    if (result.success) {
+      isFavorited.value = !isFavorited.value
+      ElMessage.success(isFavorited.value ? '收藏成功' : '已取消收藏')
+    } else {
+      ElMessage.error(result.message || '操作失败')
+    }
+  } catch (e) {
+    ElMessage.error('操作失败')
+  } finally {
+    favoriteLoading.value = false
+  }
 }
 
 const loadReviews = async () => {
@@ -263,8 +327,22 @@ const addToCart = async () => {
 const buyNow = async () => {
   if (!userStore.isLoggedIn) { ElMessage.warning('请先登录'); router.push('/login'); return }
   if (currentStock.value <= 0) { ElMessage.warning('商品暂时缺货'); return }
-  await addToCart()
-  router.push('/checkout')
+  
+  // 直接购买：不加入购物车，通过路由state传递商品信息
+  const buyNowItem = {
+    productId: product.value.id,
+    productName: product.value.name,
+    productImage: currentImage.value || product.value.image,
+    price: product.value.price,
+    quantity: quantity.value,
+    specifications: selectedSpec.value ? product.value.specifications?.find(s => s.id === selectedSpec.value)?.name || '' : ''
+  }
+  
+  router.push({
+    path: '/checkout',
+    query: { mode: 'buyNow' },
+    state: { buyNowItem }
+  })
 }
 
 const showImagePreview = () => {
@@ -276,6 +354,13 @@ const showImagePreview = () => {
 }
 
 const previewImage = (url) => { previewImages.value = [url]; previewIndex.value = 0; showPreview.value = true }
+const previewDetailImage = (idx) => {
+  if (product.value?.detailImages?.length) {
+    previewImages.value = product.value.detailImages
+    previewIndex.value = idx
+    showPreview.value = true
+  }
+}
 const formatDate = (d) => new Date(d).toLocaleDateString('zh-CN')
 const goBack = () => router.back()
 const goHome = () => router.push('/')
@@ -317,6 +402,7 @@ onUnmounted(() => window.removeEventListener('scroll', handleScroll))
 .stock-info { color: #909399; font-size: 14px; }
 .action-buttons { display: flex; gap: 15px; }
 .add-to-cart-btn, .buy-now-btn { flex: 1; height: 50px; font-size: 16px; font-weight: 600; }
+.favorite-btn { height: 50px; font-size: 16px; font-weight: 600; min-width: 100px; }
 .service-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 .service-item { display: flex; align-items: center; gap: 8px; color: #606266; font-size: 14px; }
 
@@ -333,6 +419,10 @@ onUnmounted(() => window.removeEventListener('scroll', handleScroll))
 .section-title { margin: 0 0 20px; font-size: 20px; font-weight: 600; color: #303133; padding-bottom: 15px; border-bottom: 2px solid #409eff; display: inline-block; }
 .detail-content { line-height: 1.8; color: #606266; }
 .detail-content :deep(img) { max-width: 100%; height: auto; }
+.detail-content .description-text { margin-bottom: 20px; }
+.detail-content .detail-images { display: flex; flex-direction: column; align-items: center; gap: 15px; }
+.detail-content .detail-image { max-width: 100%; height: auto; cursor: pointer; border-radius: 8px; transition: transform 0.3s; }
+.detail-content .detail-image:hover { transform: scale(1.02); }
 .params-content { padding: 10px 0; }
 .no-params, .no-reviews { text-align: center; padding: 40px 0; }
 

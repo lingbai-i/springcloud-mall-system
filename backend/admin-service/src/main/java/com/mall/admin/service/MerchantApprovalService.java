@@ -8,7 +8,7 @@ import java.util.Map;
 /**
  * 商家审批服务接口
  * 
- * @author system
+ * @author lingbai
  * @since 2025-11-11
  */
 public interface MerchantApprovalService {

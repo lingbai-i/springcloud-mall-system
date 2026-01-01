@@ -19,21 +19,21 @@ import java.util.Date;
  */
 @Component
 public class JwtUtils {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(JwtUtils.class);
-    
+
     /** JWT密钥 */
     @Value("${jwt.secret:mallSecretKeyForJWTTokenGenerationAndValidation2025ThisIsAVeryLongSecretKeyThatMeetsTheMinimumRequirementOf256BitsAndEvenMoreToEnsureSecurityCompliance}")
     private String jwtSecret;
-    
+
     /** JWT过期时间（毫秒） */
     @Value("${jwt.expiration:86400000}")
     private Long jwtExpiration;
-    
+
     /** 刷新令牌过期时间（毫秒） */
     @Value("${jwt.refresh-expiration:604800000}")
     private Long refreshExpiration;
-    
+
     /**
      * 生成JWT令牌
      * 
@@ -41,17 +41,33 @@ public class JwtUtils {
      * @return JWT令牌
      */
     public String generateToken(String username) {
+        return generateToken(username, null);
+    }
+
+    /**
+     * 生成JWT令牌（包含用户ID）
+     * 
+     * @param username 用户名
+     * @param userId   用户ID
+     * @return JWT令牌
+     */
+    public String generateToken(String username, Long userId) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpiration);
-        
-        return Jwts.builder()
+
+        JwtBuilder builder = Jwts.builder()
                 .setSubject(username)
                 .setIssuedAt(now)
-                .setExpiration(expiryDate)
-                .signWith(getSigningKey(), SignatureAlgorithm.HS512)
+                .setExpiration(expiryDate);
+
+        if (userId != null) {
+            builder.claim("userId", userId);
+        }
+
+        return builder.signWith(getSigningKey(), SignatureAlgorithm.HS512)
                 .compact();
     }
-    
+
     /**
      * 生成刷新令牌
      * 
@@ -61,7 +77,7 @@ public class JwtUtils {
     public String generateRefreshToken(String username) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + refreshExpiration);
-        
+
         return Jwts.builder()
                 .setSubject(username)
                 .setIssuedAt(now)
@@ -70,7 +86,7 @@ public class JwtUtils {
                 .signWith(getSigningKey(), SignatureAlgorithm.HS512)
                 .compact();
     }
-    
+
     /**
      * 从JWT令牌中获取用户名
      * 
@@ -81,7 +97,25 @@ public class JwtUtils {
         Claims claims = getClaimsFromToken(token);
         return claims.getSubject();
     }
-    
+
+    /**
+     * 从JWT令牌中获取用户ID
+     * 
+     * @param token JWT令牌
+     * @return 用户ID，如果不存在则返回 null
+     */
+    public Long getUserIdFromToken(String token) {
+        Claims claims = getClaimsFromToken(token);
+        Object userId = claims.get("userId");
+        if (userId == null) {
+            return null;
+        }
+        if (userId instanceof Number) {
+            return ((Number) userId).longValue();
+        }
+        return Long.parseLong(userId.toString());
+    }
+
     /**
      * 验证JWT令牌
      * 
@@ -97,7 +131,7 @@ public class JwtUtils {
             return false;
         }
     }
-    
+
     /**
      * 检查令牌是否过期
      * 
@@ -112,7 +146,7 @@ public class JwtUtils {
             return true;
         }
     }
-    
+
     /**
      * 获取令牌过期时间
      * 
@@ -123,7 +157,7 @@ public class JwtUtils {
         Claims claims = getClaimsFromToken(token);
         return claims.getExpiration();
     }
-    
+
     /**
      * 从令牌中获取Claims
      * 
@@ -137,7 +171,7 @@ public class JwtUtils {
                 .parseClaimsJws(token)
                 .getBody();
     }
-    
+
     /**
      * 获取签名密钥
      * 
@@ -146,7 +180,7 @@ public class JwtUtils {
     private SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes());
     }
-    
+
     /**
      * 获取JWT过期时间（秒）
      * 
@@ -155,7 +189,7 @@ public class JwtUtils {
     public Long getExpirationSeconds() {
         return jwtExpiration / 1000;
     }
-    
+
     /**
      * 刷新Token
      * 

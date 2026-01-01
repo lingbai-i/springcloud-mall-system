@@ -441,6 +441,9 @@ public class ProductServiceImpl implements ProductService {
             if (product.getSales() == null) product.setSales(0);
             if (product.getStock() == null) product.setStock(0);
             if (product.getStatus() == null) product.setStatus(1);
+            if (product.getDeleted() == null) product.setDeleted(0);
+            if (product.getSortOrder() == null) product.setSortOrder(0);
+            if (product.getStockWarning() == null) product.setStockWarning(10);
 
             if (productMapper != null) {
                 int rows = productMapper.insert(product);

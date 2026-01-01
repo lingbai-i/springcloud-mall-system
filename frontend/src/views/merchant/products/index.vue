@@ -409,18 +409,26 @@ const loadProductList = async () => {
       const rawList = response.data.records || []
       
       // 映射后端字段到前端字段
-      productList.value = rawList.map(item => ({
-        id: item.id,
-        name: item.productName || '未命名商品',
-        sku: item.sku || `PROD-${item.id}`,
-        category: item.categoryId,
-        price: item.price || 0,
-        stock: item.stockQuantity || 0,
-        sales: item.salesCount || 0,
-        status: item.status === 1 ? 'on_sale' : 'off_sale',
-        image: item.mainImage || 'https://cube.elemecdn.com/e/fd/0fc7d20532fdaf769a25683617711png.png',
-        createTime: item.createTime || new Date().toISOString()
-      }))
+      productList.value = rawList.map(item => {
+        // 处理主图：可能是逗号分隔的多张图片，取第一张
+        let mainImage = item.mainImage || ''
+        if (mainImage && mainImage.includes(',')) {
+          mainImage = mainImage.split(',')[0].trim()
+        }
+        
+        return {
+          id: item.id,
+          name: item.productName || '未命名商品',
+          sku: item.sku || `PROD-${item.id}`,
+          category: item.categoryId,
+          price: item.price || 0,
+          stock: item.stockQuantity || 0,
+          sales: item.salesCount || 0,
+          status: item.status === 1 ? 'on_sale' : 'off_sale',
+          image: mainImage || 'https://cube.elemecdn.com/e/fd/0fc7d20532fdaf769a25683617711png.png',
+          createTime: item.createTime || new Date().toISOString()
+        }
+      })
       
       pagination.total = response.data.total || 0
       

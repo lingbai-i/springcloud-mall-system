@@ -44,7 +44,7 @@ REM ============================================
 REM Step 2: Start Infrastructure
 REM ============================================
 echo [Step 2/5] Starting infrastructure (MySQL, Redis, Nacos)...
-docker compose -f "%PROJECT_DIR%docker-compose-dev.yml" up -d
+docker compose -f "%PROJECT_DIR%docker-compose.yml" up -d
 if %errorlevel% neq 0 (
     echo.
     echo [ERROR] Failed to start infrastructure!
@@ -52,7 +52,7 @@ if %errorlevel% neq 0 (
     echo Possible causes:
     echo   1. Docker Desktop is not running
     echo   2. Ports are occupied (3307, 6379, 8848)
-    echo   3. docker-compose-dev.yml configuration error
+    echo   3. docker-compose.yml configuration error
     echo.
     echo 💡 Suggestion: Run diagnose.bat for detailed diagnosis
     echo.

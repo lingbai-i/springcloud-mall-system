@@ -444,7 +444,13 @@ const loadProducts = async () => {
     const response = await getProductList(params)
     
     if (response.code === 200) {
-      products.value = response.data.records || []
+      // 处理产品数据，确保图片URL格式正确（取逗号分隔的第一个URL）
+      const processedProducts = (response.data.records || []).map(product => ({
+        ...product,
+        // 从 mainImage 或 image 字段取第一个图片URL
+        image: getFirstImageUrl(product.mainImage || product.image)
+      }))
+      products.value = processedProducts
       total.value = response.data.total || 0
     } else {
       throw new Error(response.message || '获取商品列表失败')
@@ -457,6 +463,19 @@ const loadProducts = async () => {
   } finally {
     loading.value = false
   }
+}
+
+/**
+ * 从可能包含多个逗号分隔URL的字符串中获取第一个图片URL
+ * @param imageUrl 图片URL字符串，可能包含逗号分隔的多个URL
+ * @returns 第一个有效的图片URL
+ */
+const getFirstImageUrl = (imageUrl) => {
+  if (!imageUrl) return ''
+  if (imageUrl.includes(',')) {
+    return imageUrl.split(',')[0].trim()
+  }
+  return imageUrl
 }
 
 // 获取随机标签

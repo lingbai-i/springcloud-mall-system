@@ -19,7 +19,7 @@ import java.util.Map;
 /**
  * SMS推送服务实现类
  *
- * @author SMS Service
+ * @author lingbai
  * @since 2024-01-01
  */
 @Slf4j
@@ -93,6 +93,41 @@ public class SmsPushServiceImpl implements SmsPushService {
                 return "更换手机";
             default:
                 return "验证";
+        }
+    }
+
+    @Override
+    public void sendNotificationSms(String phoneNumber, String message, String purpose) {
+        try {
+            // 构建请求参数 - 使用form-data格式
+            MultiValueMap<String, String> requestBody = new LinkedMultiValueMap<>();
+            requestBody.add("name", smsProperties.getServiceName());  // 推送助手名称
+            requestBody.add("targets", phoneNumber);                  // 目标手机号
+            requestBody.add("content", message);                      // 短信内容（直接使用传入的内容）
+            
+            // 设置请求头 - 使用form-data格式
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+            
+            HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(requestBody, headers);
+            
+            // 发送请求
+            String url = smsProperties.getPush().getUrl();
+            log.info("发送通知短信请求 - URL: {}, 手机号: {}, 用途: {}, 内容: {}", url, phoneNumber, purpose, message);
+            
+            ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
+            
+            if (response.getStatusCode().is2xxSuccessful()) {
+                log.info("通知短信发送成功 - 手机号: {}, 用途: {}, 响应: {}", phoneNumber, purpose, response.getBody());
+            } else {
+                log.error("通知短信发送失败 - 手机号: {}, 用途: {}, 状态码: {}, 响应: {}", 
+                        phoneNumber, purpose, response.getStatusCode(), response.getBody());
+                throw new RuntimeException("通知短信发送失败，状态码: " + response.getStatusCode());
+            }
+            
+        } catch (Exception e) {
+            log.error("通知短信发送异常 - 手机号: {}, 用途: {}, 错误: {}", phoneNumber, purpose, e.getMessage(), e);
+            throw new RuntimeException("通知短信发送失败: " + e.getMessage());
         }
     }
 }

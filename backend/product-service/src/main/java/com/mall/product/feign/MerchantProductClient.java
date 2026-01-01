@@ -12,7 +12,7 @@ import java.util.Map;
  * 商家商品服务Feign客户端
  * 用于从merchant-service获取商品数据
  * 
- * @author system
+ * @author lingbai
  * @since 2025-11-12
  */
 @FeignClient(name = "merchant-service", contextId = "merchantProduct")

@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Configuration;
 /**
  * MinIO配置类
  * 
- * @author system
+ * @author lingbai
  * @since 2025-11-13
  */
 @Configuration

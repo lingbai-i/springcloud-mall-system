@@ -2,9 +2,10 @@
   <div class="admin-login">
     <div class="login-container">
       <div class="login-header">
-        <img src="/logo.png" alt="Logo" class="logo" />
+        <!-- 修复：使用正确的商标图片路径，统一品牌形象 -->
+        <img src="/商标png.png" alt="Logo" class="logo" />
         <h1 class="title">管理员登录</h1>
-        <p class="subtitle">欢迎使用在线商城管理系统</p>
+        <p class="subtitle">秉承匠心 · 诚就百物</p>
       </div>
       
       <el-form
@@ -247,7 +248,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #f4f7f5 0%, #d1dbd3 100%);
   position: relative;
   overflow: hidden;
 }
@@ -255,12 +256,13 @@ onMounted(() => {
 .login-container {
   width: 400px;
   padding: 40px;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 16px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 20px;
+  box-shadow: 0 20px 50px rgba(58, 80, 68, 0.1);
+  backdrop-filter: blur(15px);
   position: relative;
   z-index: 1;
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .login-header {
@@ -271,23 +273,55 @@ onMounted(() => {
 .logo {
   height: 64px;
   margin-bottom: 16px;
+  filter: drop-shadow(0 4px 8px rgba(58, 80, 68, 0.1));
 }
 
 .title {
   font-size: 28px;
   font-weight: 600;
-  color: #1890ff;
+  color: #3a5044;
   margin: 0 0 8px 0;
+  letter-spacing: 2px;
 }
 
 .subtitle {
   font-size: 14px;
-  color: #666;
+  color: #5c7c6a;
   margin: 0;
+  font-family: "STKaiti", "Kaiti SC", serif;
 }
 
 .login-form {
   margin-bottom: 24px;
+}
+
+/* 深度选择器修改 Element Plus 样式 */
+:deep(.el-input__wrapper) {
+  background-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 0 1px #dcdfe6 inset;
+  transition: all 0.3s;
+}
+
+:deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 1px #5c7c6a inset !important;
+  background-color: #fff;
+}
+
+:deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
+  background-color: #5c7c6a;
+  border-color: #5c7c6a;
+}
+
+:deep(.el-checkbox__input.is-checked + .el-checkbox__label) {
+  color: #3a5044;
+}
+
+:deep(.el-link.el-link--primary) {
+  color: #5c7c6a;
+}
+
+:deep(.el-link.el-link--primary:hover) {
+  color: #3a5044;
 }
 
 .captcha-container {
@@ -306,7 +340,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f5f7fa;
+  background: #fff;
 }
 
 .captcha-image img {
@@ -320,7 +354,7 @@ onMounted(() => {
   bottom: 0;
   left: 0;
   right: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(58, 80, 68, 0.8);
   color: white;
   font-size: 10px;
   text-align: center;
@@ -345,12 +379,16 @@ onMounted(() => {
   height: 48px;
   font-size: 16px;
   font-weight: 500;
-  background: linear-gradient(135deg, #1890ff, #096dd9);
+  background: linear-gradient(135deg, #5c7c6a, #3a5044);
   border: none;
+  border-radius: 8px;
+  transition: all 0.3s;
 }
 
 .login-btn:hover {
-  background: linear-gradient(135deg, #40a9ff, #1890ff);
+  background: linear-gradient(135deg, #6d8e7b, #4a6355);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(58, 80, 68, 0.2);
 }
 
 .login-footer {
@@ -363,7 +401,7 @@ onMounted(() => {
   justify-content: center;
   gap: 8px;
   font-size: 14px;
-  color: #666;
+  color: #5c7c6a;
   margin: 0 0 16px 0;
 }
 
@@ -387,31 +425,31 @@ onMounted(() => {
 .circle {
   position: absolute;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, rgba(92, 124, 106, 0.1), rgba(58, 80, 68, 0.05));
   animation: float 6s ease-in-out infinite;
 }
 
 .circle-1 {
-  width: 200px;
-  height: 200px;
-  top: 10%;
-  left: 10%;
+  width: 300px;
+  height: 300px;
+  top: -100px;
+  left: -100px;
   animation-delay: 0s;
 }
 
 .circle-2 {
-  width: 150px;
-  height: 150px;
-  top: 60%;
-  right: 10%;
+  width: 200px;
+  height: 200px;
+  bottom: -50px;
+  right: -50px;
   animation-delay: 2s;
 }
 
 .circle-3 {
-  width: 100px;
-  height: 100px;
-  bottom: 20%;
-  left: 20%;
+  width: 150px;
+  height: 150px;
+  top: 20%;
+  right: 15%;
   animation-delay: 4s;
 }
 

@@ -24,7 +24,7 @@ import java.util.List;
 @Data
 @EqualsAndHashCode(callSuper = false)
 @JsonIgnoreProperties(ignoreUnknown = true)
-@TableName("product")
+@TableName("products")
 public class Product extends BaseEntity {
     
     /**
@@ -42,13 +42,13 @@ public class Product extends BaseEntity {
     /**
      * 创建时间 - 覆盖父类字段，映射到正确的列名
      */
-    @TableField("create_time")
+    @TableField("created_time")
     private java.time.LocalDateTime createTime;
     
     /**
      * 更新时间 - 覆盖父类字段，映射到正确的列名
      */
-    @TableField("update_time")
+    @TableField("updated_time")
     private java.time.LocalDateTime updateTime;
     
     /**

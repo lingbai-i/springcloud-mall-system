@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 /**
  * 轮播图申请服务实现类
  * 
- * @author system
+ * @author lingbai
  * @version 1.0
  * @since 2025-12-28
  */

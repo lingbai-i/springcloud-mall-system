@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
  * 商家服务轮播图Feign Client
  * 用于调用merchant-service的轮播图内部API
  * 
- * @author system
+ * @author lingbai
  * @version 1.0
  * @since 2025-12-28
  */
